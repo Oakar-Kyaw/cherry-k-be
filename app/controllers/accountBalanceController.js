@@ -53,24 +53,32 @@ exports.getAccountBalance = async (req, res) => {
 
 exports.createAccountBalance = async (req, res, next) => {
     let newBody = req.body;
+    let { relatedAccounting, relatedBranch, amount } = newBody
+    let oldBody
     try {
         const { amount, date, relatedBranch, type } = req.body;
         let endDate
         let query 
         newBody.createdAt = Date.now()
         const exact = new Date(date);
-        const startDate = new Date(exact.getFullYear(), exact.getMonth(), exact.getDate()); // Set start date to the beginning of the day
-        if (type === "Closing"){
-            endDate = new Date(exact.getFullYear(), exact.getMonth(), exact.getDate() + 1)
-            query = { isDeleted:false, relatedBranch: relatedBranch, type:"Closing", date: { $gte : new Date(startDate), $lte: new Date(endDate)}}
-        }else {
-            endDate = new Date(exact.getFullYear(), exact.getMonth(), exact.getDate() - 1)
-            query = { isDeleted:false, relatedBranch: relatedBranch, type:"Opening", date: { $gte : new Date(endDate), $lte: new Date(startDate)}}
-        } 
-        console.log("Opening and Closing ", endDate, query)
+        // console.log("this is exact",exact)
+        // console.log("this is exact",exact.getDate())
+        
+        endDate = new Date(exact.getFullYear(), exact.getMonth(), exact.getDate() - 1, exact.getHours(), exact.getMinutes(), exact.getSeconds(), exact.getMilliseconds())
+        query = { isDeleted:false, relatedBranch: relatedBranch, type:"Closing", date: { $gte : new Date(endDate), $lt: new Date(exact)}}
+        oldBody = {
+                "relatedAccounting": relatedAccounting,
+                "type": "Closing",
+                "amount": amount,
+                "date": endDate,
+                "relatedBranch": relatedBranch,
+              }
+        // console.log("Opening and Closing ", endDate, query)
         const findAccountBalance = await AccountBalance.findOne(query)
         if(!findAccountBalance){
+                const oldAccountBalance = new AccountBalance(oldBody)
                 const newAccountBalance = new AccountBalance(newBody);
+                const oldResult = await oldAccountBalance.save();
                 const result = await newAccountBalance.save();
                 res.status(200).send({
                     message: 'AccountBalance create success',

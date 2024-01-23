@@ -10,9 +10,9 @@ const Appointment = require('../models/appointment')
 
 exports.listAllLog = async (req, res) => {
   try {
-    let { perPage, skip, limit } = req.query
-    perPage = perPage ? perPage : 0
-    skip = perPage * ( skip ? ( skip - 1 ) : 0)
+    let {  skip, limit } = req.query
+    limit ? limit = limit: 0
+    skip ? skip = ( skip - 1 ) * limit : 0
     let count = await Log.find({ isDeleted: false }).count();
     let result = await Log.find({ isDeleted: false }).populate('createdBy relatedStock relatedTreatmentSelection relatedAppointment relatedProcedureItems relatedBranch relatedAccessoryItems relatedMachine').populate({
       path: 'relatedTreatmentSelection',
@@ -32,12 +32,11 @@ exports.listAllLog = async (req, res) => {
       success: true,
       count: count,
       data: result,
-      meta_data: {
-        totalCount: count,
-        pagination: count / (perPage || 1),
-        skip: skip,
-        limit: limit
-      }
+      meta_data: { 
+        total_Page : count / ( limit ? limit : 1 ),
+        count: count,
+        per_page: (limit ? limit : count)
+     }
     });
   } catch (error) {
     return res.status(500).send({ error: true, message: 'No Record Found!' });
@@ -62,16 +61,27 @@ exports.getRelatedUsage = async (req, res) => {
 exports.filterLogs = async (req, res, next) => {
   try {
     let query = { isDeleted: false }
-    const { start, end, id } = req.query
+    let { start, end, id, limit, skip } = req.query
+    limit ? limit = limit: 0
+    skip ? skip = ( skip - 1 ) * limit : 0
     if (start && end) query.date = { $gte: start, $lte: end }
     if (id) {
       query.$or = []
       query.$or.push(...[{ relatedProcedureItems: id }, { relatedAccessoryItems: id }, { relatedMachine: id }])
     }
     if (Object.keys(query).length === 0) return res.status(404).send({ error: true, message: 'Please Specify A Query To Use This Function' })
-    const result = await Log.find(query).populate('createdBy relatedTreatmentSelection relatedAppointment relatedProcedureItems relatedAccessoryItems relatedMachine relatedBranch');
+    const result = await Log.find(query).populate('createdBy relatedMedicineItems relatedTreatmentSelection relatedAppointment relatedProcedureItems relatedAccessoryItems relatedMachine relatedBranch')
+                             .limit(limit)
+                             .skip(skip);
+    const count = await Log.find(query).count();
+                            
     if (result.length === 0) return res.status(404).send({ error: true, message: "No Record Found!" })
-    res.status(200).send({ success: true, data: result })
+    console.log("this is filter logs")
+    res.status(200).send({ success: true, data: result, meta_data: { 
+       total_Page : count / ( limit ? limit : 1 ),
+       count: count,
+       per_page: (limit ? limit : count)
+    } })
   } catch (err) {
     return res.status(500).send({ error: true, message: err.message })
   }

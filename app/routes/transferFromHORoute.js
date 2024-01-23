@@ -1,7 +1,7 @@
 "use strict"
 
 
-const { listAllTransferAmountFromHo, createTransferAmountFromHO, getTransferFromHOById, updateTransferFromHOById, deleteTransferFromHOById } = require("../controllers/transferFromHOController");
+const { listAllTransferAmountFromHo, createTransferAmountFromHO, getTransferFromHOById, updateTransferFromHOById, deleteTransferFromHOById } = require("../controllers/transferFromHoController");
 const { catchError } = require("../lib/errorHandler");
 const verifyToken = require("../lib/verifyToken");
 

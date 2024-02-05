@@ -196,7 +196,42 @@ let TreatmentSchema = new Schema({
   ThingangyunEstimateTotalPrice: {
     type: Number
   },
+  // for promotion with point
+  startPromotionPointDate: {
+    type: Date
+  },
+  endPromotionPointDate: {
+    type: Date
+  },
+  buyableWithPoint: {
+    type: Boolean
+  },
+  deductPoint: {
+    type: Number
+  },
+  deductByTier: [{
+     tierName:{
+      type: String
+     },
+     percent: {
+      type: Number
+     }
+  }],
+  addPoint: {
+    type: Number
+  },
+  promotionPointDate:[{
+    startPromotionPointDate: {
+      type: Date
+    },
+    endPromotionPointDate: {
+      type: Date
+    },
+    deductPoint: {
+      type: Number
+    },
 
+  }]
 });
 
 module.exports = mongoose.model('Treatments', TreatmentSchema);

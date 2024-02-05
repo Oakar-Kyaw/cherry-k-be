@@ -3,6 +3,8 @@ const Patient = require('../models/patient')
 const Attachment = require('../models/attachment')
 const Physical = require('../models/physicalExamination')
 const History = require('../models/history')
+const { encryptPassword, comparePassword } = require('../lib/generalFunction')
+
 
 function formatDateAndTime (dateString) {
   // format mongodb ISO 8601 date format into two readable var {date, time}.
@@ -189,7 +191,16 @@ exports.createPatient = async (req, res, next) => {
       const attachResult = await newAttachment.save()
       data = { ...data, img: attachResult._id.toString() }
     } //prepare img and save it into attachment schema
-
+    
+    // create patient password
+    if(data.password){
+        const hashPassword = await encryptPassword(data.password)
+        console.log("password is",hashPassword)
+        const secondHashPassword = await encryptPassword(data.password)
+        console.log("second password is",secondHashPassword)
+        const cm = await comparePassword(data.password,hashPassword)
+        console.log("data ",cm)
+    }
     const newPatient = new Patient(data)
     const result = await newPatient.save()
     res.status(200).send({

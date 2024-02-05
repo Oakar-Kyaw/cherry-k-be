@@ -346,7 +346,7 @@ exports.createKmaxVoucher = async (req, res, next) => {
     const fTransaction = new Transaction({
         "amount": balance,
         "date": Date.now(),
-        "remark": remark || "",
+        "remark": req.body.remark || "",
         "relatedAccounting": "6505692e8a572e8de464c0ea", //Account Receivable from Customer
         "type": "Debit",
         "createdBy": createdBy
@@ -361,7 +361,7 @@ exports.createKmaxVoucher = async (req, res, next) => {
         {
             "amount": msPaidAmount,
             "date": Date.now(),
-            "remark": remark || " ",
+            "remark": req.body.remark || " ",
             "relatedBank": relatedBank,
             "relatedCash": relatedCash,
             "type": "Debit",

@@ -105,7 +105,19 @@ let PatientSchema = new Schema({
   },
   unfinishedAppointments: {
     type: Number
+  },
+  // for mobile app account
+  password: {
+    type: String
+  },
+  token: {
+    type: String
+  },
+  tier: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "PointTiers"
   }
+  //end for mobile app account
 });
 const patient = mongoose.model('Patients', PatientSchema)
 module.exports = patient;

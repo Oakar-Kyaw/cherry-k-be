@@ -6,9 +6,9 @@ const verifyToken = require("../lib/verifyToken");
 const upload = require('../lib/fieldUploader').upload;
 
 module.exports = (app) => {
-
+// verifyToken,
     app.route('/api/patient')
-        .post(verifyToken, upload, catchError(patient.createPatient))
+        .post( upload, catchError(patient.createPatient))
         .put(verifyToken, upload, catchError(patient.updatePatient))
 
     app.route('/api/patient/:id')

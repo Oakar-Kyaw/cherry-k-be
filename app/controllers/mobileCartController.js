@@ -1,4 +1,4 @@
-const Mobilecart = require("../models/mobilecart")
+const Mobilecart = require("../models/mobileCart")
 
 exports.createMobileCart = async (req,res) => {
   let data = req.body

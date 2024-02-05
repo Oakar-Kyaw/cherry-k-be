@@ -6,6 +6,5 @@ const MobileCart = require("../controllers/mobileCartController");
 
 module.exports = (app) => {
     app.route("/api/mobile/cart")
-       .get(verifyToken)
        .post(MobileCart.createMobileCart)
 }

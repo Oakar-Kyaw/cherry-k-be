@@ -5,6 +5,6 @@ const { catchError } = require("../lib/errorHandler");
 const MobileCart = require("../controllers/mobileCartController");
 
 module.exports = (app) => {
-    app.route("/api/mobile/cart")
+    app.route("/api/mobile/carts")
        .post(MobileCart.createMobileCart)
 }

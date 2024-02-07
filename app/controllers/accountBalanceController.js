@@ -237,8 +237,8 @@ exports.getOpeningAndClosingWithExactDate = async (req, res) => {
     
     try {
         const date = new Date(exact);
-        const startDate = new Date(date.getFullYear(), date.getMonth(), date.getDate()); // Set start date to the beginning of the day
-        const endDate = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1); // Set end date to the beginning of the next day
+        const startDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), date.getMinutes(), date.getSeconds(), date.getMilliseconds()); // Set start date to the beginning of the day
+        const endDate = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1, date.getHours(), date.getMinutes(), date.getSeconds(), date.getMilliseconds()); // Set end date to the beginning of the next day
         const queryTransfer = { isDeleted:false, relatedBranch: relatedBranch, relatedAccounting: relatedAccounting, type: "Closing", date: { $gte: startDate, $lt: endDate } };
         const queryLatestDocument = { isDeleted:false, relatedBranch: relatedBranch, relatedAccounting: relatedAccounting, type: type, date: { $gte: startDate, $lt:endDate } };
         const query = { isDeleted:false, relatedBranch: relatedBranch, relatedAccounting: relatedAccounting, type: type, date: { $gte: startDate, $lte: endDate } };
@@ -428,7 +428,7 @@ exports.getOpeningAndClosingWithExactDate = async (req, res) => {
                                       TVFirstCashTotal: type === "Opening" ? TVFirstCashTotal : 0, 
                                       TVSecondCashTotal: type === "Opening" ? TVSecondCashTotal : 0,
                                       incomeTotal: type === "Opening" ? incomeTotal : 0, 
-                                      transferBalances: type === "Opening" ? transferBalance: 0 ,
+                                      transferBalances: type === "Closing" ? transferBalance: 0 ,
                                       total: medicineSaleFirstCashTotal + medicineSaleSecondCashTotal + TVFirstCashTotal + TVSecondCashTotal + combinedSaleFristCashTotal + combinedSaleSecondCashTotal + incomeTotal + openingTotal, 
                                       closingCash: type === "Opening" ? (medicineSaleFirstCashTotal + medicineSaleSecondCashTotal + TVFirstCashTotal + TVSecondCashTotal + combinedSaleFristCashTotal + combinedSaleSecondCashTotal + incomeTotal + openingTotal) - expenseTotal 
                                       : closingTotal ,

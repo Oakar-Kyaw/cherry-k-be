@@ -16,3 +16,21 @@ exports.createMobileCart = async (req,res) => {
    })
   }
 }
+
+exports.updateCartById = async (req,res) => {
+  let data = req.body
+  let {id} = req.params
+
+}
+
+exports.updateCartByEmployeeId = async (req,res) => {
+   let { relatedPatient }  = req.params
+   try {
+     
+   }catch(error){
+     res.status(500).send({
+      error: true,
+      message: error.message
+     })
+   }
+}

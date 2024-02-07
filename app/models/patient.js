@@ -116,6 +116,10 @@ let PatientSchema = new Schema({
   tier: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "PointTiers"
+  },
+  relatedCart: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "MobileCarts"
   }
   //end for mobile app account
 });

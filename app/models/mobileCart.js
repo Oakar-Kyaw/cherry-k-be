@@ -16,9 +16,16 @@ let mobileCartSchema = new Schema({
        },
        totalAmount: {
          type: Number
+       },
+       quantity: {
+         type: Number
        }
     }
     ],
+    relatedPatient: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Patients"
+    },
     isDeleted: {
         type: Boolean,
         default: false

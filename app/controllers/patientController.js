@@ -195,11 +195,7 @@ exports.createPatient = async (req, res, next) => {
     // create patient password
     if(data.password){
         const hashPassword = await encryptPassword(data.password)
-        console.log("password is",hashPassword)
-        const secondHashPassword = await encryptPassword(data.password)
-        console.log("second password is",secondHashPassword)
-        const cm = await comparePassword(data.password,hashPassword)
-        console.log("data ",cm)
+        data.password = hashPassword
     }
     const newPatient = new Patient(data)
     const result = await newPatient.save()

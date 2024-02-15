@@ -17,6 +17,7 @@ function verifyToken(req, res, next) {
     // if everything good, save to request for use in other routes
     let credentials = decodedCredentials(decoded);
     req['credentials'] = credentials;
+    console.log("credential and req aare ", req["credentials"], credentials)
     next();
   });
 }

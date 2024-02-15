@@ -3,6 +3,8 @@
 const User = require('../models/user');
 const jwt = require('jsonwebtoken');
 const CONFIG = require('../../config/db');
+const MobileWalletUser = require('../models/mobileWalletUser');
+const { comparePassword, generateTokens } = require('../lib/generalFunction');
 exports.verifyToken = (req, res) => {
   const authorization = req.headers['authorization'];
   if (!authorization) {
@@ -129,3 +131,55 @@ exports.login = (req, res) => {
 exports.logout = async (req, res) => {
   res.status(200).send({ auth: false });
 };
+
+exports.mobileLogin = async (req,res) => {
+  let datas = req.body
+  let { password, ...data } = req.body
+  // let query = { isDeleted: false, ...data }
+  try{
+    let foundedUser = await MobileWalletUser.findOne(data)
+    if(!foundedUser){
+      console.log("this ain't founded user")
+       res.status(404).send({
+        success: true,
+        message: "No User Found"
+       })
+    }
+      let compare = await comparePassword(password, foundedUser.password)
+      let token = generateTokens(foundedUser)
+      await MobileWalletUser.findByIdAndUpdate(foundedUser._id,{
+        token: token
+      }) 
+      if(compare){
+        let credentials = {
+          user_id: foundedUser._id,
+          isAdmin: foundedUser.isAdmin,
+          email: foundedUser.email,
+          phone: foundedUser.phone,
+          total_point: foundedUser.total_Point,
+          token: token
+        }
+       
+        !foundedUser.isDeleted ? 
+          res.status(200).send({
+              success: true,
+              user: credentials
+          })
+          : res.status(401).send({
+            error:true,
+            message:"Your Account is deactivated. Please contact service center"
+          })
+      }
+      else if(!compare){
+        res.status(401).send({
+          error: true,
+          message: "Wrong Password"
+      })
+      }
+  }catch(error){
+       res.status(400).send({
+        error: true,
+        message: error.message
+       })
+  }
+}

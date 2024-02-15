@@ -8,6 +8,6 @@ const { catchError } = require('../lib/errorHandler');
 module.exports = app => {
 
        app.route('/api/auth/login').post(auth.login);
-
+       app.route("/api/auth/mobile/login").post(verifyToken,auth.mobileLogin)
        app.route('/api/auth/logout').get(verifyToken, catchError(auth.logout));
 };

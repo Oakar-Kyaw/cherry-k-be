@@ -52,17 +52,29 @@ exports.createMobileCart = async (req,res) => {
 }
 
 exports.updateCartById = async (req,res) => {
-  let { treatment, ...data  } = req.body
+  let { treatment, ...editData  } = req.body
   let {flag} = req.query
   let {id} = req.params
   let updatedCartResult
   try{
     {
+      // add to cart (only one treatment id)
       if(flag === "add"){
-        updatedCartResult = await Mobilecart.findByIdAndUpdate(id,{$addToSet: {treatment: treatment}, ...data})
+        updatedCartResult = await Mobilecart.findByIdAndUpdate(id,{$addToSet: {treatment: treatment}, ...editData})
         }
+      // edit array item vaue in treatment
       else if (flag === "edit"){
-          
+        treatment.map( async(trt) => {
+          let data = {
+            "treatment.$.deductPoint": trt.deductPoint,
+            "treatment.$.totalAmount": trt.totalAmount,
+            "treatment.$.quantity": trt.quantity,
+            ...editData
+          }
+          console.log("data is ",data)
+          await Mobilecart.updateOne({"treatment.treatment_id":trt.treatment_id },data)
+         })
+        
       }
     }
     res.status(200).send({
@@ -77,6 +89,28 @@ exports.updateCartById = async (req,res) => {
     })
   }
 
+}
+
+//remove from cart 
+exports.removeFromCart = async (req,res)=>{
+   let { id, treatment_id } =  req.query
+   console.log("req.query is ")
+   try {
+      let removeResult = await Mobilecart.findByIdAndUpdate(id,{
+        $pull: { treatment: { treatment_id: treatment_id }}
+      },{new:true})
+      res.status(200).send({
+        success: true,
+        message: "Remove Successfully",
+        data: removeResult
+      })
+   }
+   catch(error){
+    res.status(500).send({
+      error: true,
+      message: error.message
+    })
+  }
 }
 
 exports.updateCartByEmployeeId = async (req,res) => {

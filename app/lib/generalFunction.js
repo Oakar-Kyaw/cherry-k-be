@@ -1,22 +1,44 @@
 const bcrypt = require("bcryptjs")
+const CONFIG = require('../../config/db');
+const jwt = require('jsonwebtoken');
 require('dotenv').config()
 
 exports.encryptPassword = async (givenPassword) => {
     let salt = process.env.SALT_KEY
     
     let saltRound = parseInt(process.env.SALT_ROUND)
-    console.log(givenPassword)
     let bcryptHash = await bcrypt.hash( givenPassword, saltRound )
     return bcryptHash
 }
 
+//compare password
 exports.comparePassword = async (givenPassword, hashedPassword) => {
-    let Password = "pass"
-    const equalPassword = await bcrypt.compare(Password,hashedPassword)
-    console.log("equal Password",equalPassword)
+    const equalPassword = await bcrypt.compare(givenPassword,hashedPassword)
     if(equalPassword){
         return true
     }
+    else {
+      return false
+    }
+}
+
+//generate token
+exports.generateTokens =  (user) => {
+   console.log("generate token")
+   var token = jwt.sign(
+      { credentials: `${user._id}.${CONFIG.jwtKey}.${user.phone}` },
+      CONFIG.jwtSecret,
+      { expiresIn: CONFIG.defaultPasswordExpire },
+    );
+   
+   return token;
+}
+
+//issue to clinic loop 
+exports.loopIssueToClinic = ( array,fn ) => {
+   for (const e of array) {
+      fn(e)
+   }
 }
 
 // loop through treatement for mobile

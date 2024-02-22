@@ -6,6 +6,9 @@ const verifyToken = require("../lib/verifyToken")
 module.exports = (app) => {
     app.route("/api/transfer-to-ho-request")
        .post(verifyToken, catchError(TransferToHoRequest.createTransferToHoRequest))
+    //list all transfer to ho request 
+    app.route("/api/transfer-to-ho-requests")
+       .post(verifyToken, catchError(TransferToHoRequest.listAllTransferToHoRequest))
     //transfer to ho request by id
     app.route("/api/transfer-to-ho-request/:id")
        .get(verifyToken, catchError(TransferToHoRequest.getTransferToHOById))

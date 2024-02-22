@@ -33,11 +33,11 @@ let MedicineItemSchema = new Schema({
     type: String,
   },
   fromUnit: {
-    type: String,
+    type: Number,
     default: 1
   },
   toUnit: {
-    type: String,
+    type: Number,
     default: 1
   },
   totalUnit: {

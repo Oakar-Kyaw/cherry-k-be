@@ -35,7 +35,7 @@ exports.generateTokens =  (user) => {
 }
 
 //issue to clinic loop 
-exports.loopIssueToClinic = ( array,fn ) => {
+exports.loopIssue = ( array,fn ) => {
    for (const e of array) {
       fn(e)
    }

@@ -4,10 +4,13 @@ const Branch = require('../models/branch');
 const Stock = require('../models/stock');
 const Log = require('../models/log')
 const AccessoryItemRecord = require('../models/accessoryItemRecord');
-const { loopIssueToClinic } = require('../lib/generalFunction');
+const { loopIssue } = require('../lib/generalFunction');
 const ProcedureItemRecord = require('../models/procedureItemRecord');
 const GeneralItemRecord = require('../models/generalItemRecord');
 const MedicineItemRecord = require('../models/medicineItemRecord');
+const TransferToHoRecord = require('../models/transferToHoRecord');
+const AddStockAndSubtractStock  = require('../lib/addStockAndSubtractFunction');
+const TransferToHoRequest = require('../models/transferToHoRequest');
 
 exports.issueToClinic = async (req, res) => {
     try {
@@ -43,7 +46,7 @@ exports.issueToClinic = async (req, res) => {
         }
       }
       if (accessoryItems && accessoryItems.length != 0 && relatedBranch) {
-        loopIssueToClinic(accessoryItems,async function(accessoryItem){
+        loopIssue(accessoryItems,async function(accessoryItem){
           const result = await Stock.find({ relatedAccessoryItems: accessoryItem.item_id, relatedBranch: relatedBranch })
             let totalUnit = result[0].totalUnit - accessoryItem.qty
             const from = result[0].fromUnit
@@ -56,6 +59,7 @@ exports.issueToClinic = async (req, res) => {
               { new: true },
             )
             const logResult = await Log.create({
+              "relatedBranch": relatedBranch,
               "relatedAccessoryItems": accessoryItem.item_id,
               "currentQty": accessoryItem.stock,
               "actualQty": accessoryItem.actual,
@@ -72,7 +76,7 @@ exports.issueToClinic = async (req, res) => {
       })
       } 
       if (procedureItems && procedureItems.length && relatedBranch){
-        loopIssueToClinic(procedureItems, async function(procedureItem){
+        loopIssue(procedureItems, async function(procedureItem){
           const result = await Stock.find({ relatedProcedureItems: procedureItem.item_id, relatedBranch: relatedBranch })
           let totalUnit = result[0].totalUnit - procedureItem.qty
           const from = result[0].fromUnit
@@ -85,6 +89,7 @@ exports.issueToClinic = async (req, res) => {
             { new: true },
           )
           const logResult = await Log.create({
+            "relatedBranch": relatedBranch,
             "relatedProcedureItems": procedureItem.item_id,
             "currentQty": procedureItem.stock,
             "actualQty": procedureItem.actual,
@@ -101,7 +106,7 @@ exports.issueToClinic = async (req, res) => {
      })
       }
       if (generalItems && generalItems.length && relatedBranch){
-        loopIssueToClinic(generalItems, async function(generalItem){
+        loopIssue(generalItems, async function(generalItem){
           const result = await Stock.find({ relatedGeneralItems: generalItem.item_id, relatedBranch: relatedBranch })
           let totalUnit = result[0].totalUnit - generalItem.qty
           const from = result[0].fromUnit
@@ -114,6 +119,7 @@ exports.issueToClinic = async (req, res) => {
             { new: true },
           )
           const logResult = await Log.create({
+            "relatedBranch": relatedBranch,
             "relatedGeneralItems": generalItem.item_id,
             "currentQty": generalItem.stock,
             "actualQty": generalItem.actual,
@@ -130,7 +136,7 @@ exports.issueToClinic = async (req, res) => {
     })
       }
     if (medicineItems && medicineItems.length && relatedBranch){
-         loopIssueToClinic(medicineItems, async function(medicineItem){
+         loopIssue(medicineItems, async function(medicineItem){
             const result = await Stock.find({ relatedMedicineItems: medicineItem.item_id, relatedBranch: relatedBranch })
             let totalUnit = result[0].totalUnit - medicineItem.qty
             const from = result[0].fromUnit
@@ -143,6 +149,7 @@ exports.issueToClinic = async (req, res) => {
               { new: true },
             )
             const logResult = await Log.create({
+              "relatedBranch": relatedBranch,
               "relatedMedicineItems": medicineItem.item_id,
               "currentQty": medicineItem.stock,
               "actualQty": medicineItem.actual,
@@ -165,3 +172,63 @@ exports.issueToClinic = async (req, res) => {
     }
   }
   
+  // when click confirm button from HO
+  exports.confirmIssueToHo = async (req,res) =>{
+    const { id, relatedBranch } = req.body;
+    try{
+       let response = {}
+       const stockInstance = new AddStockAndSubtractStock(relatedBranch);
+       const queryTransferToHoRequest = await TransferToHoRequest.findOne({_id: id})
+       //check if medicineItems exists
+       if(queryTransferToHoRequest.medicineItems && queryTransferToHoRequest.medicineItems.length != 0){
+          // if there are , loop
+          queryTransferToHoRequest.medicineItems.map(result => {
+             stockInstance.subtractMedicineStock(result.item_id, result.qty)
+             stockInstance.addMedicine(result.item_id, result.qty)
+          })
+       }
+       //check if procedureItems exists
+       if(queryTransferToHoRequest.procedureItems && queryTransferToHoRequest.procedureItems.length != 0){
+         // if there are , loop
+          queryTransferToHoRequest.procedureItems.map(result => {
+           stockInstance.subtractProcedureStock(result.item_id, result.qty)
+           stockInstance.addProcedure(result.item_id, result.qty)
+        })
+       }
+       //check if accessoryItems exists
+       if(queryTransferToHoRequest.accessoryItems && queryTransferToHoRequest.accessoryItems.length != 0){
+        // if there are , loop
+        queryTransferToHoRequest.accessoryItems.map(result => {
+           stockInstance.subtractAccessoryStock(result.item_id, result.qty)
+           stockInstance.addAccessory(result.item_id, result.qty)
+        })
+       }
+       //check if generalItems exists
+       if(queryTransferToHoRequest.generalItems && queryTransferToHoRequest.generalItems.length != 0){
+        // if there are , loop
+         queryTransferToHoRequest.generalItems.map(result => {
+          stockInstance.subtractGeneralStock(result.item_id, result.qty)
+          stockInstance.addGeneral(result.item_id, result.qty)
+       })
+      }
+       response.accessoryItems = queryTransferToHoRequest.accessoryItems
+       response.procedureItems = queryTransferToHoRequest.procedureItems
+       response.generalItems = queryTransferToHoRequest.generalItems
+       response.medicineItems = queryTransferToHoRequest.medicineItems
+       response.relatedBranch = queryTransferToHoRequest.relatedBranch
+       response.reason = queryTransferToHoRequest.reason
+       response.date = queryTransferToHoRequest.date
+       await TransferToHoRecord.create(response)
+       res.status(200).send({
+         success: true,
+         message: "Confirmed Requested Items Successfully"
+       })
+
+       
+    }catch(error){
+      res.status(500).send({
+        error: true,
+        message: error.message
+     })
+    }
+  }

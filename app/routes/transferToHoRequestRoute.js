@@ -14,4 +14,8 @@ module.exports = (app) => {
        .get(verifyToken, catchError(TransferToHoRequest.getTransferToHOById))
        .put(verifyToken, catchError(TransferToHoRequest.updateTransferToHoRequestById))
        .delete(verifyToken, catchError(TransferToHoRequest.deleteTransferToHORequestById))
+   
+   //generate request items's code
+   app.route("/api/transfer-to-ho-requests/get-code")
+      .get(catchError(TransferToHoRequest.getTransferToHoCode))
 }

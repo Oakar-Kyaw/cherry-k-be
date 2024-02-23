@@ -1,3 +1,4 @@
+const Branch = require("../models/branch")
 const TransferToHoRequest = require("../models/transferToHoRequest")
 
 exports.createTransferToHoRequest = async (req,res) => {
@@ -177,4 +178,23 @@ exports.deleteTransferToHORequestById = async ( req, res ) => {
             message:error.message
         })
     }   
+}
+
+exports.getTransferToHoCode = async (req,res) => {
+    let {relatedBranch} = req.query
+    try{
+       let queryBranch = await Branch.findById(relatedBranch)
+       let queryTTHRCount = await TransferToHoRequest.findOne({ isDeleted: false, relatedBranch: relatedBranch}).count()
+       let code = `TTHR-${ queryTTHRCount + 1 }-${queryBranch.name}`
+       res.status(200).send({
+         success: true,
+         code: code,
+         message: "This is Your Code"
+       })
+    }catch(error){
+        re.status(500).send({
+            error: true,
+            message: error.message
+        })
+    }
 }

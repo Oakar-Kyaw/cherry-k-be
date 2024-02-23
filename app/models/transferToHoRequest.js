@@ -9,6 +9,9 @@ const TransferToHoRequestSchema = new Schema({
         type: Boolean,
         default: false
     },
+    code: {
+        type: String
+    },
     relatedBranch: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Branches"

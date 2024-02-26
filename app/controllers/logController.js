@@ -233,7 +233,7 @@ exports.createUsage = async (req, res) => {
         for (const e of procedureMedicine) {
           if (e.stock < e.actual) {
             procedureItemsError.push(e);
-          } else if (e.stock > e.actual) {
+          } else if (e.stock >= e.actual) {
             let totalUnit = e.stock - e.actual;
             const result = await ProcedureItem.find({ _id: e.item_id });
             const from = result[0].fromUnit;
@@ -268,7 +268,7 @@ exports.createUsage = async (req, res) => {
         for (const e of procedureAccessory) {
           if (e.stock < e.actual) {
             accessoryItemsError.push(e)
-          } else if (e.stock > e.actual) {
+          } else if (e.stock >= e.actual) {
             let totalUnit = e.stock - e.actual
             const result = await AccessoryItem.find({ _id: e.item_id });
             const from = result[0].fromUnit
@@ -304,7 +304,7 @@ exports.createUsage = async (req, res) => {
         for (const e of machine) {
           if (e.stock < e.actual) {
             machineError.push(e)
-          } else if (e.stock > e.actual) {
+          } else if (e.stock >= e.actual) {
             const result = await Machine.find({ _id: e.item_id });
             let totalUnit = e.stock - e.actual
             const from = result[0].fromUnit

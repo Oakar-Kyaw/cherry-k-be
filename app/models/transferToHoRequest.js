@@ -9,6 +9,10 @@ const TransferToHoRequestSchema = new Schema({
         type: Boolean,
         default: false
     },
+    isConfirmed:{
+        type: Boolean,
+        default: false
+    },
     code: {
         type: String
     },

@@ -218,6 +218,8 @@ exports.issueToClinic = async (req, res) => {
        response.relatedBranch = queryTransferToHoRequest.relatedBranch
        response.reason = queryTransferToHoRequest.reason
        response.date = queryTransferToHoRequest.date
+       response.code = queryTransferToHoRequest.code
+       await TransferToHoRequest.findByIdAndUpdate(id,{ isConfirmed: true })
        await TransferToHoRecord.create(response)
        res.status(200).send({
          success: true,

@@ -145,7 +145,39 @@ exports.updateDismissItemFromHoById = async ( req, res ) => {
     let { id } = req.params
     const { accessoryItems, procedureItems, generalItems, medicineItems, ...data} = req.body;
     try{
-        let queryItemAndUpdate = await DismissItemFromHo.findByIdAndUpdate(id, {
+        let stockInstance = new AddStockAndSubtractStock()
+       
+        const queryTransferToHoRequest = await DismissItemFromHo.findOne({_id: id})
+        
+        //check if medicineItems exists
+        if(queryTransferToHoRequest.medicineItems && queryTransferToHoRequest.medicineItems.length != 0){
+           // if there are , loop
+           queryTransferToHoRequest.medicineItems.map(result => {
+              stockInstance.addMedicine(result.item_id, result.qty)
+           })
+        }
+        //check if procedureItems exists
+        if(queryTransferToHoRequest.procedureItems && queryTransferToHoRequest.procedureItems.length != 0){
+          // if there are , loop
+           queryTransferToHoRequest.procedureItems.map(result => {
+            stockInstance.addProcedure(result.item_id, result.qty)
+         })
+        }
+        //check if accessoryItems exists
+        if(queryTransferToHoRequest.accessoryItems && queryTransferToHoRequest.accessoryItems.length != 0){
+         // if there are , loop
+         queryTransferToHoRequest.accessoryItems.map(result => {
+            stockInstance.addAccessory(result.item_id, result.qty)
+         })
+        }
+        //check if generalItems exists
+        if(queryTransferToHoRequest.generalItems && queryTransferToHoRequest.generalItems.length != 0){
+         // if there are , loop
+          queryTransferToHoRequest.generalItems.map(result => {
+           stockInstance.addGeneral(result.item_id, result.qty)
+        })
+       }
+         let queryItemAndUpdate = await DismissItemFromHo.findByIdAndUpdate(id, {
             $unset: {
                 medicineItems: "",
                 generalItems: "",
@@ -153,6 +185,26 @@ exports.updateDismissItemFromHoById = async ( req, res ) => {
                 accessoryItems: "" 
             }
         })
+        if(accessoryItems && accessoryItems.length != 0){
+          accessoryItems.map(item =>{
+                stockInstance.subtractAccessory(item.item_id,item.qty)
+          })
+        }
+        if(procedureItems && procedureItems.length != 0){
+         procedureItems.map(item =>{
+               stockInstance.subtractProcedure(item.item_id,item.qty)
+         })
+       }
+       if(generalItems && generalItems.length != 0){
+         generalItems.map(item =>{
+               stockInstance.subtractGeneral(item.item_id,item.qty)
+         })
+       }
+       if(medicineItems && medicineItems.length != 0){
+         medicineItems.map(item =>{
+               stockInstance.subtractMedicine(item.item_id,item.qty)
+         })
+       }
         data["accessoryItems"] = accessoryItems || []
         data["procedureItems"] = procedureItems || []
         data["generalItems"] = generalItems || []

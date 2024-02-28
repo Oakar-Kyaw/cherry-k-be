@@ -1,15 +1,16 @@
 "use strict";
 const accessoryItem = require("../models/accessoryItem");
+const generalItem = require("../models/generalItem");
 const MedicineItem = require("../models/medicineItem");
 const procedureItem = require("../models/procedureItem");
 const Stock = require("../models/stock");
 
 
 exports.createCopyBranch = async (req,res) => { 
-  
-  async function ProcedureItems (){
+  let {relatedBranch} = req.body
+  async function MedicineItems (){
     let data = {
-      relatedBranch:"6474394fdab649311f9fcc32",
+      relatedBranch: relatedBranch,
       currentQty:0,
       fromUnit:1, 
       toUnit:1, 
@@ -26,9 +27,9 @@ exports.createCopyBranch = async (req,res) => {
          let stock = await Stock.create(data); 
       }
     }
- async function MedicineItems (){
+ async function ProcedureItems (){
   let data = {
-    relatedBranch:"6474394fdab649311f9fcc32",
+    relatedBranch: relatedBranch,
     currentQty:0,
     fromUnit:1, 
     toUnit:1, 
@@ -47,7 +48,7 @@ exports.createCopyBranch = async (req,res) => {
   }
   async function accessoryItems (){
     let data = {
-      relatedBranch:"6474394fdab649311f9fcc32",
+      relatedBranch: relatedBranch,
       currentQty:0,
       fromUnit:1, 
       toUnit:1, 
@@ -67,10 +68,33 @@ exports.createCopyBranch = async (req,res) => {
        let stock = await Stock.create(data); 
     }
   }
+  async function generalItems (){
+    let data = {
+      relatedBranch: relatedBranch,
+      currentQty:0,
+      fromUnit:1, 
+      toUnit:1, 
+      totalUnit:0, 
+      reOrderQuantity:0,
+      isDeleted:false
+     };
+    let GeneralItems = await generalItem.find({isDeleted:false});
+   // let MedicineItems = await MedicineItem.find({isDeleted:false});
+   // let count = await MedicineItem.find({isDeleted:false}).count();
+    let count1 = await generalItem.find({isDeleted:false}).count();
+    for(let i=0; i < count1; i++){
+       //data.relatedMedicineItems = MedicineItems[i];
+       
+      // data.relatedProcedureItems = ProcedureItems[i];
+        data.relatedGeneralItems = GeneralItems[i];
+       let stock = await Stock.create(data); 
+    }
+  }
 
   MedicineItems()
   accessoryItems()
   ProcedureItems()
+  generalItems()
  //  
   // 
   // let ProcedureItems = await procedureItem.find({isDeleted:false});
@@ -90,7 +114,8 @@ exports.createCopyBranch = async (req,res) => {
     
     res.status(200)
     .send({
-        success:"Success",
+        success: true,
+        message: "Success"
         //data:queryStock,
        // count: count
     })
@@ -101,6 +126,8 @@ exports.deleteCopy = async (req,res) => {
    // let count = await Stock.findByIdAndDelete({relatedBranch:ObjectId("6535f7fef68b0525e0eaf151")}).sort({"_id":-1}).limit(2).count()
     res.status(200)
     .send({
+      success: true,
+      message: "Delete"
      //   data:stock,
     //    count:count
     })

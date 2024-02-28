@@ -7,7 +7,7 @@ const verifyToken = require('../lib/verifyToken');
 
 module.exports = (app) => {
     app.route('/api/copybranch')
-        .post(verifyToken, catchError(createCopyBranch))
-        .delete(verifyToken, catchError(deleteCopy))
+        .post( catchError(createCopyBranch))
+        .delete(catchError(deleteCopy))
   
 };

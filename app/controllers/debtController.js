@@ -10,7 +10,21 @@ exports.listAllDebts = async (req, res) => {
         const { isPaid } = req.query
         let query = { isDeleted: false }
         if (isPaid) query.isPaid = isPaid
-        let result = await Debt.find(query);
+        let result = await Debt.find(query).populate({
+            path:"relatedBank",
+            populate:[{
+                path: "relatedType"
+            },{
+                path:"relatedHeader"
+            }]
+        }).populate({
+            path:"relatedCash",
+            populate:[{
+                path: "relatedType"
+            },{
+                path:"relatedHeader"
+            }]
+        });
         let count = await Debt.find(query).count();
         res.status(200).send({
             success: true,
@@ -33,6 +47,21 @@ exports.getDebt = async (req, res) => {
         : ""
         const results = await Debt.find(query)
         .populate('knasRelatedTreatmentVoucher relatedTreatmentVoucher relatedMedicineSale')
+        .populate({
+            path:"relatedBank",
+            populate:[{
+                path: "relatedType"
+            },{
+                path:"relatedHeader"
+            }]
+        }).populate({
+            path:"relatedCash",
+            populate:[{
+                path: "relatedType"
+            },{
+                path:"relatedHeader"
+            }]
+        })
         .populate({
             path: "relatedPatient",
             populate : {

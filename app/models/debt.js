@@ -9,6 +9,14 @@ let DebtSchema = new Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Patients'
     },
+    relatedBank: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'AccountingLists'
+    },
+    relatedCash: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'AccountingLists'
+    },
     relatedTreatmentVoucher: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'TreatmentVouchers'

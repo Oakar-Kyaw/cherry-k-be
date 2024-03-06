@@ -745,6 +745,7 @@ exports.stockRecieved = async (req, res) => {
                 }
             }
         }
+        
         const logResult = await Log.create({
             "relatedStock": result._id,
             "currentQty": requestedQty,

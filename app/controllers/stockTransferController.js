@@ -5,6 +5,7 @@ const StockRequest = require('../models/stockRequest')
 const ProcedureMedicine = require('../models/procedureItem')
 const MedicineLists = require('../models/medicineItem')
 const ProcedureAccessory = require('../models/accessoryItem')
+const General = require('../models/generalItem')
 const Branch = require('../models/branch')
 const Transaction = require('../models/transaction')
 const Accounting = require('../models/accountingList')
@@ -95,18 +96,20 @@ exports.getStockTransfer = async (req, res) => {
 }
 
 exports.createStockTransfer = async (req, res, next) => {
+    console.log(req.body,'body')
   let createdBy = req.credentials.id
   let newBody = req.body
-  const { procedureMedicine, medicineLists, procedureAccessory,general } = req.body
+
+  const { procedureMedicine, medicineLists, procedureAccessory,generalItems } = req.body
   let procedureMedicineError = []
   let medicineListsError = []
   let procedureAccessoryError = []
   let procedureMedicineFinished = []
   let medicineListsFinished = []
   let procedureAccessoryFinished = []
-  let generalError = []
-  let generalFinished = []
-  const gen = general.reduce((total, sale) => total + sale.totalPrice, 0)
+  let generalItemsError = []
+  let generalItemsFinished = []
+  const gen = generalItems.reduce((total, sale) => total + sale.totalPrice, 0)
   const pAcc = procedureAccessory.reduce((total, sale) => total + sale.totalPrice, 0)
   const med = medicineLists.reduce((total, sale) => total + sale.totalPrice, 0)
   const pMed = procedureMedicine.reduce((total, sale) => total + sale.totalPrice, 0)
@@ -122,12 +125,12 @@ exports.createStockTransfer = async (req, res, next) => {
     (total, sale) => total + sale.purchasePrice,
     0
   )
-  const genRes = general.reduce(
+  const generalItemsRes = generalItems.reduce(
     (total, sale) => total + sale.purchasePrice,
     0
   )
-  console.log(procedureMedicineRes, medicineListsRes, procedureAccessoryRes, genRes)
-  const total = procedureAccessoryRes + medicineListsRes + procedureAccessoryRes + genRes
+  console.log(procedureMedicineRes, medicineListsRes, procedureAccessoryRes, generalItemsRes)
+  const total = procedureAccessoryRes + medicineListsRes + procedureAccessoryRes + generalItemsRes
   console.log(total, 'total')
   const firstTransaction = {
     amount: total,
@@ -316,10 +319,10 @@ exports.createStockTransfer = async (req, res, next) => {
       })
     }
 
-    if (general !== undefined) {
-      general.map(async (e, i) => {
+    if (generalItems !== undefined) {
+      generalItems.map(async (e, i) => {
         if (e.stockQty < e.transferQty) {
-          generalError.push(e)
+          generalItemsError.push(e)
         } else if (e.stockQty >= e.transferQty) {
           let currentQty = e.stockQty - e.transferQty //both must be currentQty
           const result = await General.find({ _id: e.item_id })
@@ -327,7 +330,7 @@ exports.createStockTransfer = async (req, res, next) => {
           const to = result[0].toUnit
           let totalUnit = (to * currentQty) / from
           try {
-            generalFinished.push(e)
+            generalItemsFinished.push(e)
             // const stockResult = await Stock.findOneAndUpdate(
             //   { relatedMedicineItems: e.item_id, relatedBranch: req.mongoQuery.relatedBranch },
             //   { $inc: { currentQty: e.transferQty } }
@@ -347,7 +350,7 @@ exports.createStockTransfer = async (req, res, next) => {
             })
             gen = gen + parseInt(e.totalPrice)
           } catch (error) {
-            generalError.push(e)
+            generalItemsError.push(e)
           }
         }
       })
@@ -377,10 +380,10 @@ exports.createStockTransfer = async (req, res, next) => {
       response.medicineListsFinished = medicineListsFinished
     if (procedureAccessoryFinished !== undefined)
       response.procedureAccessoryFinished = procedureAccessoryFinished
-    if (generalError.length > 0)
-      response.generalError = generalError
-    if (generalFinished !== undefined)
-      response.generalFinished = generalFinished
+    if (generalItemsError.length > 0)
+      response.generalItemsError = generalItemsError
+    if (generalItemsFinished !== undefined)
+      response.generalItemsFinished = generalItemsFinished
     if (fTransResult !== undefined) response.fTransResult = fTransResult
     if (sTransResult !== undefined) response.sTransResult = sTransResult
     response = { ...response, data: result }

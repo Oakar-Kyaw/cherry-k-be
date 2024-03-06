@@ -12,9 +12,9 @@ module.exports = (app)=>{
      app.route("/api/top-selling-item/procedure")
         .get(catchError(TopMostSellingItems.listAllProcedure))
       
-     app.route("/api/top-selling-item/accessory")
+     app.route("/api/top-selling-item/medicine")
         .get(catchError(TopMostSellingItems.listAllMedicine))
    
-      app.route("/api/top-selling-item/accessory")
+      app.route("/api/top-selling-item/general")
         .get(catchError(TopMostSellingItems.listAllGeneral))
 }

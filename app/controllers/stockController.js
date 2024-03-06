@@ -435,7 +435,7 @@ exports.checkReorder = async (req, res) => {
 exports.stockRecieved = async (req, res) => {
     try {
         let createdBy = req.credentials.id
-        const { procedureItemID, medicineItemID, accessoryItemID, relatedBranch, recievedQty, requestedQty, fromUnit, toUnit, stockRequestID, isDone } = req.body
+        const { procedureItemID, medicineItemID, accessoryItemID, generalItemID, relatedBranch, recievedQty, requestedQty, fromUnit, toUnit, stockRequestID, isDone } = req.body
         let totalUnit = (toUnit * recievedQty) / fromUnit
         const sqResult = await StockRequest.find({
             _id: stockRequestID, isDeleted: false
@@ -664,6 +664,83 @@ exports.stockRecieved = async (req, res) => {
                     const srresult = await StockRequest.findOneAndUpdate(
                         { _id: stockRequestID, 'procedureAccessory.item_id': accessoryItemID },
                         { $set: { 'procedureAccessory.$.flag': true, 'procedureAccessory.$.recievedQty': 0 } }
+                    );
+                }
+            }
+        }
+        if (generalItemID) {
+            const srFilter = sqResult[0].generalItems.filter(item => item.item_id.toString() === generalItemID)
+            const recievedQuantity = srFilter[0].recievedQty
+            const realFlag = srFilter[0].flag
+            const flag = sqResult[0].relatedTransfer.generalItems.filter(item => item.item_id.toString() === generalItemID)
+            if (recievedQty > flag[0].transferQty) return res.status(500).send({ error: true, message: 'RecievedQty cannot be greater than TransferedQty!' })
+            if (flag.length === 0) return res.status(500).send({ error: true, message: 'This procedure item does not exists in the stock reqeust!' })
+            console.log('recivedQuantity', recievedQuantity, realFlag)
+            if (realFlag === true) {
+                return res.status(500).send({ error: true, message: 'Already Recieved' })
+            }
+            else if (realFlag === false && recievedQuantity > 0) {
+                console.log('second cond')
+                if (recievedQty > recievedQuantity) return res.status(500).send({ error: true, message: 'Input cannot be greater than RecievedQty!' })
+                var result = await Stock.findOneAndUpdate(
+                    { relatedGeneralItems: generalItemID, relatedBranch: relatedBranch },
+                    {
+                        $inc: {
+                            currentQty: parseInt(recievedQty),
+                            totalUnit: parseInt(totalUnit),
+                        }
+                    },
+                    { new: true }
+                ).populate('relatedBranch relatedProcedureItems relatedGeneralItems relatedMedicineItems relatedAccessoryItems relatedMachine').populate('createdBy', 'givenName')
+                const srresult = await StockRequest.findOneAndUpdate(
+                    { _id: stockRequestID, 'generalItems.item_id': generalItemID },
+                    { $set: { 'generalItems.$.recievedQty': recievedQuantity - recievedQty } }
+                );
+                console.log(srresult, 'here')
+                var RecievedRecordsResult = await RecievedRecords.create({
+                    createdAt: Date.now(),
+                    createdBy: createdBy,
+                    relatedBranch: relatedBranch,
+                    requestedQty: parseInt(flag[0].requestedQty),
+                    recievedQty: parseInt(flag[0].transferQty - recievedQty),
+                    relatedGeneralItems: generalItemID,
+                    type: 'Transfer'
+                })
+                if (isDone === true) {
+                    const srresult = await StockRequest.findOneAndUpdate(
+                        { _id: stockRequestID, 'generalItems.item_id': generalItemID },
+                        { $set: { 'generalItems.$.flag': true, 'generalItems.$.recievedQty': 0 } }
+                    );
+                }
+            }
+            else {
+                var result = await Stock.findOneAndUpdate(
+                    { relatedGeneralItems: generalItemID, relatedBranch: relatedBranch },
+                    {
+                        $inc: {
+                            currentQty: parseInt(recievedQty),
+                            totalUnit: parseInt(totalUnit),
+                        }
+                    },
+                    { new: true }
+                ).populate('relatedBranch relatedProcedureItems relatedGeneralItems relatedMedicineItems relatedAccessoryItems relatedMachine').populate('createdBy', 'givenName')
+                const srresult = await StockRequest.findOneAndUpdate(
+                    { _id: stockRequestID, 'generalItems.item_id': generalItemID },
+                    { $set: { 'generalItems.$.recievedQty': parseInt(flag[0].transferQty - recievedQty) } }
+                );
+                var RecievedRecordsResult = await RecievedRecords.create({
+                    createdAt: Date.now(),
+                    createdBy: createdBy,
+                    relatedBranch: relatedBranch,
+                    requestedQty: parseInt(flag[0].requestedQty),
+                    recievedQty: parseInt(recievedQty),
+                    relatedGeneralItems: generalItemID,
+                    type: 'Transfer'
+                })
+                if (isDone === true) {
+                    const srresult = await StockRequest.findOneAndUpdate(
+                        { _id: stockRequestID, 'generalItems.item_id': generalItemID },
+                        { $set: { 'generalItems.$.flag': true, 'generalItems.$.recievedQty': 0 } }
                     );
                 }
             }

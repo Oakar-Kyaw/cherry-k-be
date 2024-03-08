@@ -10,7 +10,7 @@ module.exports = (app)=>{
         .get(catchError(TopMostSellingItems.listAllAccessory))
       
      app.route("/api/top-selling-item/procedure")
-        .get(catchError(TopMostSellingItems.listAllProcedure))
+        .get(catchError(TopMostSelltems.listAllProcedure))
       
      app.route("/api/top-selling-item/medicine")
         .get(catchError(TopMostSellingItems.listAllMedicine))

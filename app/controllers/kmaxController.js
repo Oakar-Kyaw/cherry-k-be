@@ -712,7 +712,22 @@ exports.KmaxVoucherFilter = async (req, res) => {
             path:"relatedHeader",
             model:"AccountHeaders"
         }
-    })
+      }).populate({
+        path: "medicineSale",
+        populate: {
+            path: "medicineSale"
+        }
+      }).populate({
+        path: "procedureSale",
+        populate: {
+          path: "item_id"
+        }
+      }).populate({
+        path: "accessorySale",
+        populate: {
+          path: "item_id"
+        }
+      })
     let bankResult = await KmaxVoucher.find({...query,Refund: false})
       .populate(
         'relatedPatient relatedCash createdBy'
@@ -723,6 +738,21 @@ exports.KmaxVoucherFilter = async (req, res) => {
             path:"relatedHeader",
             model:"AccountHeaders"
         }
+    }).populate({
+      path: "medicineSale",
+      populate: {
+          path: "medicineSale"
+      }
+    }).populate({
+      path: "procedureSale",
+      populate: {
+        path: "item_id"
+      }
+    }).populate({
+      path: "accessorySale",
+      populate: {
+        path: "item_id"
+      }
     })
       
       // .populate({
@@ -751,6 +781,21 @@ exports.KmaxVoucherFilter = async (req, res) => {
               path:"relatedHeader",
               model:"AccountHeaders"
           }
+      }).populate({
+        path: "medicineSale",
+        populate: {
+            path: "medicineSale"
+        }
+      }).populate({
+        path: "procedureSale",
+        populate: {
+          path: "item_id"
+        }
+      }).populate({
+        path: "accessorySale",
+        populate: {
+          path: "item_id"
+        }
       })
         let cashResult = await KmaxVoucher.find({...query2, Refund: false}) //relatedAccounting payment relatedTreatmentSelection medicineItems.item_id multiTreatment.item_id relatedTreatment secondAccount relatedBranch relatedDoctor relatedBank
         .populate(
@@ -762,6 +807,21 @@ exports.KmaxVoucherFilter = async (req, res) => {
               path:"relatedHeader",
               model:"AccountHeaders"
           }
+      }).populate({
+        path: "medicineSale",
+        populate: {
+            path: "medicineSale"
+        }
+      }).populate({
+        path: "procedureSale",
+        populate: {
+          path: "item_id"
+        }
+      }).populate({
+        path: "accessorySale",
+        populate: {
+          path: "item_id"
+        }
       })
         // .populate({
         //   path: 'relatedTreatmentSelection',

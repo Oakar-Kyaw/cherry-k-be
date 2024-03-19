@@ -45,6 +45,12 @@ let RepaymentSchema = new Schema({
   relatedPatient: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Patients"
+  },
+  expireAt: {
+    type: Date,
+    index: {
+      expireAfterSeconds: 1
+    }
   }
 });
 

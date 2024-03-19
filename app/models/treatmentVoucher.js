@@ -150,6 +150,15 @@ let TreatmentVoucherSchema = new Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Attachments'
     },
+    relatedTreatmentPackage: [{
+       item_id: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'TreatmentPackages'
+       },
+       qty: {
+            type: Number
+       }
+    }],
     relatedPackageSelection: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'PackageSelections'
@@ -242,6 +251,10 @@ let TreatmentVoucherSchema = new Schema({
     payment: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Attachments'
+    },
+    relatedRepay: {
+        type: [mongoose.Schema.Types.ObjectId],
+        ref: "Repayments"
     }
 });
 

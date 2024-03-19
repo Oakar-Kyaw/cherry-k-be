@@ -4,12 +4,14 @@ const TreatmentVoucher = require('../models/treatmentVoucher');
 const TreatmentSelection = require('../models/treatmentSelection');
 const AccountingList = require('../models/accountingList');
 const Transaction = require('../models/transaction');
+const Repayment = require('../models/repayment');
 
 exports.listAllDebts = async (req, res) => {
     try {
-        const { isPaid } = req.query
+        const { isPaid, relatedBranch } = req.query
         let query = { isDeleted: false }
         if (isPaid) query.isPaid = isPaid
+        relatedBranch ? query["relatedBranch"] = relatedBranch : ""
         let result = await Debt.find(query).populate({
             path:"relatedBank",
             populate:[{
@@ -170,3 +172,69 @@ exports.activateDebt = async (req, res, next) => {
         return res.status(500).send({ "error": true, "message": error.message })
     }
 };
+
+exports.payTheDebts = async(req,res) => {
+    try{
+        let { balance, date, relatedTreatmentVoucher, relatedBranch, description, relatedCash, relatedBank, relatedPatient } = req.body
+        
+        let findDebt = await Debt.findById(req.params.id)
+        if(findDebt.isPaid != true) {
+            let subtractDebt = findDebt.balance - balance
+            if(subtractDebt > 0){
+                let data = {
+                    repaymentDate: date,
+                    repaymentAmount: balance,
+                    remaningCredit: subtractDebt,
+                    description: description || null,
+                    relatedDebt: req.params.id,
+                    relatedTreatmentVoucher: relatedTreatmentVoucher,
+                    relatedBranch: relatedBranch,
+                    relatedBank : relatedBank,
+                    relatedCash: relatedCash,
+                    relatedPatient: relatedPatient
+                }
+                let repay = await Repayment.create(data)
+                await TreatmentVoucher.findByIdAndUpdate(relatedTreatmentVoucher, {$inc: {balance: balance}, $push: {relatedRepay: repay._id}})
+                await Debt.findByIdAndUpdate(req.params.id, {$inc: {balance: -balance}, $push:{ relatedRepay: repay._id }})
+            }
+            else if(subtractDebt < 0) {
+                res.status(500).send({
+                    error: true,
+                    message: "Can't Subtract Balance which is less than 0"
+                })
+            }
+            else if(subtractDebt === 0){
+                let data = {
+                    repaymentDate: date,
+                    repaymentAmount: balance,
+                    remaningCredit: subtractDebt,
+                    description: description || null,
+                    relatedDebt: req.params.id,
+                    relatedTreatmentVoucher: relatedTreatmentVoucher,
+                    relatedBranch: relatedBranch,
+                    relatedBank : relatedBank,
+                    relatedCash: relatedCash,
+                    relatedPatient: relatedPatient
+                }
+                let repay = await Repayment.create(data)
+                await TreatmentVoucher.findByIdAndUpdate(relatedTreatmentVoucher, {$inc: {balance: balance}, $push: {relatedRepay: repay._id}})
+                await Debt.findByIdAndUpdate(req.params.id, { isPaid: true, $inc: {balance: -balance}, $push:{ relatedRepay: repay._id } })
+            }
+            res.status(200).send({
+                success: true,
+                message: "Repayment created"
+            })
+        }
+        else {
+            res.status(500).send({
+                error: true,
+                message: "You have already paid Debts"
+            })
+        }
+    }catch(error){
+        res.status(500).send({
+            error: true,
+            message: error.message
+        })
+    }
+}

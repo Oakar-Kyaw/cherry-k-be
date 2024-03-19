@@ -47,6 +47,14 @@ let DebtSchema = new Schema({
     isPaid: {
         type: Boolean,
         default: false
+    },
+    relatedBranch: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Branches"
+    },
+    relatedRepay: {
+        type: [mongoose.Schema.Types.ObjectId],
+        ref: "Repayments"
     }
 });
 

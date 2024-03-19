@@ -477,7 +477,13 @@ exports.listAllTreatmentVouchers = async (req, res) => {
             ? (regexKeyword = new RegExp(keyword, 'i'))
             : '';
         regexKeyword ? (query['name'] = regexKeyword) : '';
-        let result = await TreatmentVoucher.find(query).populate('createdBy relatedTreatment relatedAppointment relatedPatient payment relatedTreatmentSelection relatedBranch')
+        let result = await TreatmentVoucher.find(query).populate('createdBy relatedTreatment relatedAppointment relatedPatient payment relatedTreatmentSelection relatedBranch relatedRepay')
+                            .populate({
+                                path: "relatedTreatmentPackage",
+                                populate:{
+                                    path: "item_id"
+                                }
+                            })
         count = await TreatmentVoucher.find(query).count();
         const division = count / limit;
         page = Math.ceil(division);
@@ -501,7 +507,13 @@ exports.listAllTreatmentVouchers = async (req, res) => {
 exports.getTreatmentVoucherWithTreatmentID = async (req, res) => {
     let query = req.mongoQuery
     if (req.params.id) query.relatedTreatmentSelection = req.params.id
-    const result = await TreatmentVoucher.find(query).populate('createdBy relatedTreatment relatedAppointment relatedPatient')
+    const result = await TreatmentVoucher.find(query).populate('createdBy relatedTreatment relatedAppointment relatedPatient relatedRepay')
+                   .populate({
+                        path: "relatedTreatmentPackage",
+                        populate:{
+                            path: "item_id"
+                        }
+                    })
     if (!result)
         return res.status(500).json({ error: true, message: 'No Record Found' });
     return res.status(200).send({ success: true, data: result });
@@ -510,7 +522,13 @@ exports.getTreatmentVoucherWithTreatmentID = async (req, res) => {
 exports.getTreatmentVoucher = async (req, res) => {
     let query = req.mongoQuery
     if (req.params.id) query._id = req.params.id
-    const result = await TreatmentVoucher.find(query).populate('createdBy relatedTreatment relatedAppointment relatedPatient relatedTreatmentSelection medicineItems.item_id multiTreatment.item_id relatedPackage relatedPackageSelection')
+    const result = await TreatmentVoucher.find(query).populate('createdBy relatedTreatment relatedAppointment relatedPatient relatedTreatmentSelection medicineItems.item_id multiTreatment.item_id relatedPackage relatedPackageSelection relatedRepay')
+                        .populate({
+                            path: "relatedTreatmentPackage",
+                            populate:{
+                                path: "item_id"
+                            }
+                        })
     if (!result)
         return res.status(500).json({ error: true, message: 'No Record Found' });
     return res.status(200).send({ success: true, data: result });
@@ -526,7 +544,13 @@ exports.getRelatedTreatmentVoucher = async (req, res) => {
         if (treatmentSelection) query.relatedTreatmentSelection = treatmentSelection
         if (createdBy) query.createdBy = createdBy
         if (relatedBranch) query.relatedBranch = relatedBranch
-        const result = await TreatmentVoucher.find(query).populate('createdBy relatedTreatment relatedAppointment relatedPatient relatedTreatmentSelection')
+        const result = await TreatmentVoucher.find(query).populate('createdBy relatedTreatment relatedAppointment relatedPatient relatedTreatmentSelection  relatedRepay')
+                            .populate({
+                                path: "relatedTreatmentPackage",
+                                populate:{
+                                    path: "item_id"
+                                }
+                            })
         if (!result)
             return res.status(404).json({ error: true, message: 'No Record Found' });
         return res.status(200).send({ success: true, data: result });
@@ -541,7 +565,13 @@ exports.searchTreatmentVoucher = async (req, res, next) => {
         let { search, relatedPatient } = req.body
         if (relatedPatient) query.relatedPatient = relatedPatient
         if (search) query.$text = { $search: search }
-        const result = await TreatmentVoucher.find(query).populate('createdBy relatedTreatment relatedAppointment relatedPatient relatedTreatmentSelection')
+        const result = await TreatmentVoucher.find(query).populate('createdBy relatedTreatment relatedAppointment relatedPatient relatedTreatmentSelection relatedRepay')
+                            .populate({
+                                path: "relatedTreatmentPackage",
+                                populate:{
+                                    path: "item_id"
+                                }
+                            })
         if (result.length === 0) return res.status(404).send({ error: true, message: 'No Record Found!' })
         return res.status(200).send({ success: true, data: result })
     } catch (err) {
@@ -669,7 +699,13 @@ exports.filterTreatmentVoucher = async (req, res, next) => {
         if (relatedDoctor) query.relatedDoctor = relatedDoctor
         if (relatedPatient) query.relatedPatient = relatedPatient
         if (Object.keys(query).length === 0) return res.status(404).send({ error: true, message: 'Please Specify A Query To Use This Function' })
-        const result = await TreatmentVoucher.find(query).populate('createdBy relatedTreatment relatedAppointment relatedPatient payment relatedTreatmentSelection relatedBranch')
+        const result = await TreatmentVoucher.find(query).populate('createdBy relatedTreatment relatedAppointment relatedPatient payment relatedTreatmentSelection relatedBranch relatedRepay')
+                            .populate({
+                                path: "relatedTreatmentPackage",
+                                populate:{
+                                    path: "item_id"
+                                }
+                            })
         if (result.length === 0) return res.status(404).send({ error: true, message: "No Record Found!" })
         res.status(200).send({ success: true, data: result })
     } catch (err) {
@@ -685,12 +721,17 @@ exports.getTodaysTreatmentVoucher = async (req, res) => {
         start.setHours(0, 0, 0, 0);
         end.setHours(23, 59, 59, 999);
         if (start && end) query.originalDate = { $gte: start, $lt: end }
-        const result = await TreatmentVoucher.find(query).populate('createdBy relatedAppointment relatedPatient').populate({
+        const result = await TreatmentVoucher.find(query).populate('createdBy relatedAppointment relatedPatient relatedRepay').populate({
             path: 'relatedTreatment',
             model: 'Treatments',
             populate: {
                 path: 'treatmentName',
                 model: 'TreatmentLists'
+            }
+        }).populate({
+            path: "relatedTreatmentPackage",
+            populate:{
+                path: "item_id"
             }
         })
         if (result.length === 0) return res.status(404).json({ error: true, message: 'No Record Found!' })
@@ -706,12 +747,17 @@ exports.getwithExactDate = async (req, res) => {
         const date = new Date(exact);
         const startDate = new Date(date.getFullYear(), date.getMonth(), date.getDate()); // Set start date to the beginning of the day
         const endDate = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1); // Set end date to the beginning of the next day
-        let result = await TreatmentVoucher.find({ createdAt: { $gte: startDate, $lt: endDate } }).populate('createdBy relatedAppointment relatedPatient relatedCash').populate({
+        let result = await TreatmentVoucher.find({ createdAt: { $gte: startDate, $lt: endDate } }).populate('createdBy relatedAppointment relatedPatient relatedCash relatedRepay').populate({
             path: 'relatedTreatment',
             model: 'Treatments',
             populate: {
                 path: 'treatmentName',
                 model: 'TreatmentLists'
+            }
+        }).populate({
+            path: "relatedTreatmentPackage",
+            populate:{
+                path: "item_id"
             }
         })
         //.populate('createdBy relatedTreatment relatedAppointment relatedPatient');
@@ -744,7 +790,7 @@ exports.TreatmentVoucherFilter = async (req, res) => {
         if (purchaseType) query.purchaseType = purchaseType
         if (relatedDoctor) query.relatedDoctor = relatedDoctor
         if (relatedBranch) query.relatedBranch = relatedBranch
-        let bankResult = await TreatmentVoucher.find({...query,Refund: false}).populate('medicineItems.item_id multiTreatment.item_id relatedTreatment relatedBranch relatedDoctor relatedBank relatedCash relatedPatient relatedTreatmentSelection relatedAccounting payment createdBy newTreatmentVoucherId').populate({
+        let bankResult = await TreatmentVoucher.find({...query,Refund: false}).populate('medicineItems.item_id multiTreatment.item_id relatedTreatment relatedBranch relatedDoctor relatedBank relatedCash relatedPatient relatedTreatmentSelection relatedAccounting payment createdBy newTreatmentVoucherId relatedRepay').populate({
             path: 'relatedTreatmentSelection',
             model: 'TreatmentSelections',
             populate: {
@@ -766,8 +812,13 @@ exports.TreatmentVoucherFilter = async (req, res) => {
                 path:"relatedHeader",
                 model:"AccountHeaders"
             }
+        }).populate({
+            path: "relatedTreatmentPackage",
+            populate:{
+                path: "item_id"
+            }
         })
-        let allBankResult = await TreatmentVoucher.find(query).populate('medicineItems.item_id multiTreatment.item_id relatedTreatment relatedBranch relatedDoctor relatedBank relatedCash relatedPatient relatedTreatmentSelection relatedAccounting payment createdBy newTreatmentVoucherId').populate({
+        let allBankResult = await TreatmentVoucher.find(query).populate('medicineItems.item_id multiTreatment.item_id relatedTreatment relatedBranch relatedDoctor relatedBank relatedCash relatedPatient relatedTreatmentSelection relatedAccounting payment createdBy newTreatmentVoucherId relatedRepay').populate({
             path: 'relatedTreatmentSelection',
             model: 'TreatmentSelections',
             populate: {
@@ -788,13 +839,18 @@ exports.TreatmentVoucherFilter = async (req, res) => {
             populate: {
                 path:"relatedHeader",
                 model:"AccountHeaders"
+            }
+        }).populate({
+            path: "relatedTreatmentPackage",
+            populate:{
+                path: "item_id"
             }
         })
         if (!bankID) {
             const { relatedBank, ...query2 } = query;
             query2.relatedCash = { $exists: true };
             if (startDate && endDate) query2.createdAt = { $gte: startDate, $lte: endDate }
-            let cashResult = await TreatmentVoucher.find({...query2, Refund: false}).populate('newTreatmentVoucherId medicineItems.item_id multiTreatment.item_id relatedTreatment secondAccount relatedBranch relatedDoctor relatedBank relatedCash relatedPatient relatedTreatmentSelection relatedAccounting payment createdBy').populate({
+            let cashResult = await TreatmentVoucher.find({...query2, Refund: false}).populate('newTreatmentVoucherId medicineItems.item_id multiTreatment.item_id relatedTreatment secondAccount relatedBranch relatedDoctor relatedBank relatedCash relatedPatient relatedTreatmentSelection relatedAccounting payment createdBy relatedRepay').populate({
                 path: 'relatedTreatmentSelection',
                 model: 'TreatmentSelections',
                 populate: {
@@ -816,8 +872,13 @@ exports.TreatmentVoucherFilter = async (req, res) => {
                     path:"relatedHeader",
                     model:"AccountHeaders"
                 }
+            }).populate({
+                path: "relatedTreatmentPackage",
+                populate:{
+                    path: "item_id"
+                }
             })
-            let allCashResult = await TreatmentVoucher.find(query2).populate('newTreatmentVoucherId medicineItems.item_id multiTreatment.item_id relatedTreatment secondAccount relatedBranch relatedDoctor relatedBank relatedCash relatedPatient relatedTreatmentSelection relatedAccounting payment createdBy').populate({
+            let allCashResult = await TreatmentVoucher.find(query2).populate('newTreatmentVoucherId medicineItems.item_id multiTreatment.item_id relatedTreatment secondAccount relatedBranch relatedDoctor relatedBank relatedCash relatedPatient relatedTreatmentSelection relatedAccounting payment createdBy relatedRepay').populate({
                 path: 'relatedTreatmentSelection',
                 model: 'TreatmentSelections',
                 populate: {
@@ -832,6 +893,11 @@ exports.TreatmentVoucherFilter = async (req, res) => {
                     path: 'relatedTreatment',
                     model: 'Treatments',
                 } 
+            }).populate({
+                path: "relatedTreatmentPackage",
+                populate:{
+                    path: "item_id"
+                }
             })
             
             // if(secondAccount && secondAccount.relatedHeader.name === "Cash At Bank" ){
@@ -897,8 +963,6 @@ exports.TreatmentVoucherFilter = async (req, res) => {
     //     console.log(`${key}: ${secondBankAndCashAccount[key]}`);
     //     }
 
-        console.log("bank name i s ",BankNames)
-        console.log("second bank and cash is  i s ",secondBankCashAmount)
         // for(let i=0; i < secondBankCashAmount.length; i++){
              
         // }

@@ -17,8 +17,9 @@ let Package = new Schema({
         type: [mongoose.Schema.Types.ObjectId],
         ref: 'Treatments'
     },
-    totalprice: {
-        type: Number
+    relatedTreatmentLists: {
+        type: [mongoose.Schema.Types.ObjectId],
+        ref: "TreatmentLists"
     },
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
@@ -44,7 +45,14 @@ let Package = new Schema({
         type: Number
     },
     status: {
-        type: String
+        type: String,
+        enum:["Active","Expired"]
+    },
+    expireAt: {
+        type: Date,
+        index: {
+           expireAfterSeconds: 1
+        }
     }
 });
 

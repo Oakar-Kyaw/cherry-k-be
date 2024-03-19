@@ -15,7 +15,10 @@ exports.listAllPackages = async (req, res) => {
             ? (regexKeyword = new RegExp(keyword, 'i'))
             : '';
         regexKeyword ? (query['name'] = regexKeyword) : '';
-        let result = await Package.find(query).populate('relatedTreatments relatedDiscount').populate('createdBy','givenName')
+        let result = await Package.find(query)
+                           .populate('relatedTreatments relatedDiscount')
+                           .populate('createdBy','givenName')
+                           .populate("relatedTreatmentLists")
         count = await Package.find(query).count();
         const division = count / limit;
         page = Math.ceil(division);
@@ -40,7 +43,7 @@ exports.getPackage = async (req, res) => {
     try {
         let query = req.mongoQuery
         if (req.params.id) query._id = req.params.id
-        const result = await Package.find(query).populate('relatedTreatments relatedDiscount').populate('createdBy','givenName')
+        const result = await Package.find(query).populate('relatedTreatments relatedTreatmentLists relatedDiscount').populate('createdBy','givenName')
         if (result.length === 0)
             return res.status(500).json({ error: true, message: 'No Record Found' });
         return res.status(200).send({ success: true, data: result });
@@ -68,11 +71,21 @@ exports.createPackage = async (req, res, next) => {
 
 exports.updatePackage = async (req, res, next) => {
     try {
+        let newBody = { ...req.body, createdBy: req.credentials.id }
+        const updateTreatmentAndLists = await Package.findOneAndUpdate(
+            { _id: req.params.id },
+            {
+                $unset:{
+                    relatedTreatments: "",
+                    relatedTreatmentLists: ""
+            },
+            },
+        )
         const result = await Package.findOneAndUpdate(
-            { _id: req.body.id },
-            req.body,
+            { _id: req.params.id },
+            newBody,
             { new: true },
-        ).populate('relatedTreatments relatedDiscount').populate('createdBy','givenName')
+        ).populate('relatedTreatments relatedDiscount relatedTreatmentLists').populate('createdBy',"givenName")
         return res.status(200).send({ success: true, data: result });
     } catch (error) {
         return res.status(500).send({ "error": true, "message": error.message })
@@ -81,9 +94,18 @@ exports.updatePackage = async (req, res, next) => {
 
 exports.deletePackage = async (req, res, next) => {
     try {
+        const today = new Date()
+        const deleteDate = new Date(
+                                 today.getFullYear(),
+                                 today.getMonth() + 1,
+                                 today.getDate(),
+                                 today.getHours(),
+                                 today.getMinutes(),
+                                 today.getMilliseconds()
+                                )
         const result = await Package.findOneAndUpdate(
             { _id: req.params.id },
-            { isDeleted: true },
+            { isDeleted: true, expireAt: deleteDate},
             { new: true },
         );
         return res.status(200).send({ success: true, data: { isDeleted: result.isDeleted } });

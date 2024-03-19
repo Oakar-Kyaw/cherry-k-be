@@ -66,6 +66,10 @@ let PatientSchema = new Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Attachments',
   },
+  relatedTreatmentPackage: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "TreatmentPackages"
+  }],
   relatedTreatmentSelection: {
     type: [mongoose.Schema.Types.ObjectId],
     ref: 'TreatmentSelections'

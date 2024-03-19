@@ -10,6 +10,7 @@ const Attachment = require('../models/attachment');
 const AdvanceRecords = require('../models/advanceRecord');
 const Treatment = require('../models/treatment');
 const Debt = require('../models/debt');
+const { ObjectId } = require('mongodb');
 
 exports.listMultiTreatmentSelections = async (req, res) => {
     let { keyword, role, limit, skip } = req.query;
@@ -162,7 +163,7 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
     let files = req.files
     let data = req.body
     let createdBy = req.credentials.id
-    let { selections, relatedPatient, totalAmount, totalDiscount, totalPaidAmount, treatmentReturn, refundAmount, newTreatmentVoucherCode, date, type, refundVoucherId,  multiTreatment, paidAmount, relatedBank, relatedCash, relatedAppointment, bankType, paymentType, remark, relatedDiscount, relatedDoctor, paymentMethod } = req.body
+    let { selections, relatedPatient, totalAmount, totalDiscount, totalPaidAmount, treatmentReturn, refundAmount, newTreatmentVoucherCode, date, type, refundVoucherId,  multiTreatment, paidAmount, relatedBank, relatedCash, relatedAppointment, bankType, paymentType, remark, relatedDiscount, relatedDoctor, paymentMethod, treatmentPackage, relatedBranch } = req.body
     let tvcCreate = false;
     let TSArray = []
     let attachID;
@@ -247,6 +248,7 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
                 "secondAccount": req.body.secondAccount,
                 "isDouble": req.body.isDouble,
                 "relatedTreatmentSelection": TSArray,
+                "relatedTreatmentPackage": treatmentPackage || null,
                 "deposit": req.body.deposit,
                 "relatedBranch": req.body.relatedBranch,
                 "purchaseType": req.body.purchaseType,
@@ -288,12 +290,17 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
         if (treatmentVoucherResult) {
             var populatedTV = await TreatmentVoucher.find({ _id: treatmentVoucherResult._id }).populate('relatedDiscount multiTreatment.item_id')
         }
-        var updatePatient = await Patient.findOneAndUpdate({ _id: relatedPatient }, { $addToSet: { relatedTreatmentSelection: TSArray }, $inc: { conditionAmount: req.body.totalAmount, conditionPurchaseFreq: 1, conditionPackageQty: 1 } })
+        let treatmentPackageArray = []
+        if(treatmentPackage && treatmentPackage.length != 0 ){
+            treatmentPackageArray = treatmentPackage.map(item => item.item_id)
+        }
+        var updatePatient = await Patient.findOneAndUpdate({ _id: relatedPatient }, { $addToSet: { relatedTreatmentSelection: TSArray }, $push: { relatedTreatmentPackage: { $each: treatmentPackageArray }}, $inc: { conditionAmount: req.body.totalAmount, conditionPurchaseFreq: 1, conditionPackageQty: 1 } })
         if (req.body.balance > 0) {
             const debtCreate = await Debt.create({
                 "balance": req.body.balance,
                 "relatedPatient": data.relatedPatient,
-                "relatedTreatmentVoucher": treatmentVoucherResult._id
+                "relatedTreatmentVoucher": treatmentVoucherResult._id,
+                "relatedBranch": relatedBranch
             })
             const fTransaction = new Transaction({
                 "amount": req.body.balance,
@@ -432,7 +439,6 @@ exports.createTreatmentSelection = async (req, res, next) => {
     let tvcCreate = false;
     let createdBy = req.credentials.id
     let files = req.files
-    // if (flag === true) patient advance update(-totalAmount)
     try {
 
         if (req.body.originalDate === undefined) return res.status(500).send({ error: true, message: 'Original Date is required' })
@@ -1389,51 +1395,6 @@ exports.searchTreatmentSelections = async (req, res, next) => {
     }
 }
 
-// exports.TopTenFilter = async (req, res) => {
-//     try {
-//         let query = req.mongoQuery
-//         let { start, end } = req.query
-//         if (start, end) query.createdAt = { $gte: start, $lte: end }
-//         const TreatmentResult = await TreatmentSelection.find(query).populate('relatedTreatment').populate({
-//             path: 'relatedTreatment',
-//             populate: [{
-//                 path: 'treatmentName',
-//                 model: 'TreatmentLists',
-//                 // populate:{
-//                 //     path:'treatmentName',
-//                 //     model:'TreatmentLists'
-//                 // }
-//             }]
-//         })
-//         const TreatmentName = [];
-//         TreatmentResult.forEach(({ relatedTreatment }) => {
-//             const { name, treatmentName } = relatedTreatment;
-//             const tempObj = {
-//                 treatmentUnit: name,
-//                 treatment: treatmentName.name,
-//                 qty: 1
-//             };
-//             TreatmentName.push(tempObj);
-//         });
-//         const reducedTreatmentNames = TreatmentName.reduce((result, current) => {
-//             const existingItem = result.find(item => item.treatmentUnit === current.treatmentUnit);
-//             if (existingItem) {
-//                 existingItem.qty += current.qty;
-//             } else {
-//                 result.push(current);
-//             }
-//             return result;
-//         }, []);
-
-//         const sortedTreatmentNames = reducedTreatmentNames.sort((a, b) => b.qty - a.qty); //Descending
-//         console.log(sortedTreatmentNames);
-
-//         return res.status(200).send({ success: true, data: sortedTreatmentNames, list: TreatmentResult })
-//     } catch (error) {
-//         return res.status(500).send({ error: true, message: error.message })
-//     }
-// }
-
 exports.TopTenFilter = async (req, res) => {
     try {
         let query = req.mongoQuery;
@@ -1489,16 +1450,3 @@ exports.TopTenFilter = async (req, res) => {
         return res.status(500).send({ error: true, message: error.message });
     }
 };
-
-
-// const TreatmentNames = TreatmentResult.reduce((result, { relatedTreatment }) => {
-//     const { name, treatmentName } = relatedTreatment;
-//     result[name] = (result[name] || 0) + 1; // Increment count by 1
-//     return result;
-// }, []);
-// const sortedTreatmentNames = Object.entries(TreatmentNames)
-//     .sort((a, b) => b[1] - a[1])
-//     .reduce((sortedObj, [name, count]) => {
-//         sortedObj[name] = count;
-//         return sortedObj;
-//     }, {}); //Descending

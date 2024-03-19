@@ -18,20 +18,34 @@ let RepaymentSchema = new Schema({
   description: {
     type: String,
   },
-  relatedPateintTreatment: {
+  relatedDebt: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'PatientTreatments',
-    required: true,
+    ref: "Debts"
+  },
+  relatedTreatmentVoucher: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "TreatmentVouchers"
   },
   isDeleted: {
     type: Boolean,
-    required: true,
     default: false
+  },
+  relatedBank: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'AccountingLists'
+  },
+  relatedCash: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'AccountingLists'
   },
   relatedBranch: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Branches'
   },
+  relatedPatient: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Patients"
+  }
 });
 
 module.exports = mongoose.model('Repayments', RepaymentSchema);

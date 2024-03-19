@@ -15,6 +15,7 @@ module.exports = (app) => {
         .get(verifyToken, catchError(debt.getDebt))
         .delete(verifyToken, catchError(debt.deleteDebt))
         .post(verifyToken, catchError(debt.activateDebt))
+        .put(catchError(debt.payTheDebts))
 
     app.route('/api/debts').get(verifyToken, catchError(debt.listAllDebts))
 

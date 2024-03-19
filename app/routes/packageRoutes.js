@@ -8,10 +8,10 @@ module.exports = (app) => {
 
     app.route('/api/package')
         .post(verifyToken, catchError(packages.createPackage))
-        .put(verifyToken, catchError(packages.updatePackage))
 
     app.route('/api/package/:id')
         .get(verifyToken, catchError(packages.getPackage))
+        .put(verifyToken, catchError(packages.updatePackage))
         .delete(verifyToken, catchError(packages.deletePackage))
         .post(verifyToken, catchError(packages.activatePackage))
 

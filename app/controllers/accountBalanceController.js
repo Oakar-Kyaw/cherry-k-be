@@ -6,6 +6,7 @@ const Income = require('../models/income');
 const TreatmentVoucher = require('../models/treatmentVoucher');
 const AccountingList = require('../models/accountingList');
 const Transfer = require('../models/transfer');
+const kmaxVoucher = require('../models/kmaxVoucher');
 
 exports.listAllAccountBalances = async (req, res) => {
     let { keyword, role, limit, skip } = req.query;
@@ -431,6 +432,112 @@ exports.getOpeningAndClosingWithExactDate = async (req, res) => {
                                       transferBalances: type === "Closing" ? transferBalance: 0 ,
                                       total: medicineSaleFirstCashTotal + medicineSaleSecondCashTotal + TVFirstCashTotal + TVSecondCashTotal + combinedSaleFristCashTotal + combinedSaleSecondCashTotal + incomeTotal + openingTotal, 
                                       closingCash: type === "Opening" ? (medicineSaleFirstCashTotal + medicineSaleSecondCashTotal + TVFirstCashTotal + TVSecondCashTotal + combinedSaleFristCashTotal + combinedSaleSecondCashTotal + incomeTotal + openingTotal) - expenseTotal 
+                                      : closingTotal ,
+                                      }
+                                      )
+    } catch (error) {
+        console.log(error)
+        return res.status(500).send({ error: true, message: error.message })
+    }
+}
+
+exports.knasGetOpeningAndClosingWithExactDate = async (req, res) => {
+    let { exact, relatedBranch, type, relatedAccounting } = req.query;
+    
+    try {
+        const date = new Date(exact);
+        const startDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), date.getMinutes(), date.getSeconds(), date.getMilliseconds()); // Set start date to the beginning of the day
+        const endDate = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1, date.getHours(), date.getMinutes(), date.getSeconds(), date.getMilliseconds()); // Set end date to the beginning of the next day
+        const queryTransfer = { isDeleted:false, relatedBranch: relatedBranch, relatedAccounting: relatedAccounting, type: "Closing", date: { $gte: startDate, $lt: endDate } };
+        const queryLatestDocument = { isDeleted:false, relatedBranch: relatedBranch, relatedAccounting: relatedAccounting, type: type, date: { $gte: startDate, $lt:endDate } };
+        const query = { isDeleted:false, relatedBranch: relatedBranch, relatedAccounting: relatedAccounting, type: type, date: { $gte: startDate, $lte: endDate } };
+        const latestDocument = await AccountBalance.findOne(queryLatestDocument);
+        console.log(queryLatestDocument,latestDocument, "today")
+        console.log(latestDocument,"getOpening")
+        let openingTotal = latestDocument && latestDocument.type === "Opening" ? latestDocument.amount : 0 
+        let closingBalance =  await AccountBalance.findOne(queryTransfer)
+        let closingTotal = closingBalance && closingBalance.type === "Closing" ? closingBalance.amount : 0
+       
+        console.log("findTrn ",closingBalance)
+        let transferBalance = closingBalance ? closingBalance.transferAmount : 0 
+        console.log(startDate, endDate)
+        let queryMedicineTotal = {
+            isDeleted:false,
+            tsType:"MS" ,
+            relatedCash:{ $exists:true },
+            relatedBranch: relatedBranch ,
+            createdAt: { $gte: startDate, $lt: endDate },
+        }
+        //createdAt: { $gte: startDate, $lt: endDate }, 
+        //relatedCash exists by Oakar Kyaw
+        const medicineSaleFirstCashTotal = await kmaxVoucher.find(queryMedicineTotal).then(msResult => {
+          console.log("ms result i s "+msResult)
+           if(msResult){
+            const msTotal = msResult.reduce((accumulator, currentValue) => { return accumulator + currentValue.paidAmount }, 0)
+            return msTotal
+           } 
+           return 0;
+        }
+        )
+        //secondAccount cash exists
+        const { relatedCash, ...query2 } = queryMedicineTotal;
+        query2.secondAccount = { $exists: true };
+        console.log("second account is ",query2)
+        const medicineSaleSecondCashTotal = await kmaxVoucher.find(query2)
+                        .populate({
+                            path:"secondAccount",
+                            populate:{
+                                path: "relatedHeader"
+                        }
+                    })
+                    .then(msResult => {
+                console.log("medicine second cash total is " ,msResult)
+                //   return res.status(200).send({data:msResult})
+                const total = msResult.reduce((accumulator, currentValue) => {
+                if(currentValue.secondAccount.relatedHeader.name === "Cash In Hand"){
+                return accumulator + currentValue.secondAmount
+                } 
+                else {
+                return accumulator;
+                }
+                }
+
+                ,0)
+
+                return total;
+
+                }
+                ) 
+
+        const expenseTotal = await Expense.find({ isDeleted:false, date: { $gte: startDate, $lt: endDate }, relatedBranch: relatedBranch }).then(result => {
+           if(result){
+            console.log("expense result is ",result)
+            const total = result.reduce((accumulator, currentValue) => { return accumulator + currentValue.finalAmount }, 0)
+            return total
+           }
+            return 0;
+        }
+        )
+        
+        
+        const incomeTotal = await Income.find({ date: { $gte: startDate, $lt: endDate }, relatedBranch: relatedBranch }).then(result => {
+            if(result){
+              const total = result.reduce((accumulator, currentValue) => { return accumulator + currentValue.finalAmount }, 0)
+              return total  
+            }
+            return 0;
+        }
+        )
+        console.log('Final Data',({transferBalances: type === "Opening" ? transferBalance: 0 }))
+        return res.status(200).send({ success: true, 
+                                      openingTotal: openingTotal, 
+                                      medicineSaleFirstCashTotal: type === "Opening" ? medicineSaleFirstCashTotal : 0,
+                                      medicineSaleSecondCashTotal: type === "Opening" ? medicineSaleSecondCashTotal : 0,    
+                                      expenseTotal: type === "Opening" ? expenseTotal : 0, 
+                                      incomeTotal: type === "Opening" ? incomeTotal : 0, 
+                                      transferBalances: type === "Closing" ? transferBalance: 0 ,
+                                      total: medicineSaleFirstCashTotal + medicineSaleSecondCashTotal + incomeTotal + openingTotal, 
+                                      closingCash: type === "Opening" ? (medicineSaleFirstCashTotal + medicineSaleSecondCashTotal + incomeTotal + openingTotal) - expenseTotal 
                                       : closingTotal ,
                                       }
                                       )

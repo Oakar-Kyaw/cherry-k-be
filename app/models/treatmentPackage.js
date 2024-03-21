@@ -30,6 +30,18 @@ const treatmentPackageSchema = Schema({
     TCLEstimateTotalPrice: {
         type: Number
     },
+    SOKSellingPrice: {
+        type: Number
+    },
+    SOKEstimateTotalPrice: {
+        type: Number
+    },
+    TGISellingPrice: {
+        type: Number
+    },
+    TGIEstimateTotalPrice: {
+        type: Number
+    },
     EightMileSellingPrice: {
         type: Number
     },

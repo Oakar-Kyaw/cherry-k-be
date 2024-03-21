@@ -27,25 +27,49 @@ const treatmentPackageSchema = Schema({
     TCLSellingPrice: {
         type: Number
     },
+    TCLEstimateTotalPrice: {
+        type: Number
+    },
     EightMileSellingPrice: {
+        type: Number
+    },
+    EightMileEstimateTotalPrice: {
         type: Number
     },
     NPTSellingPrice: {
         type: Number
     },
+    NPTEstimateTotalPrice: {
+        type: Number
+    },
     LSHSellingPrice: {
+        type: Number
+    },
+    LSHEstimateTotalPrice: {
         type: Number
     },
     MDYSellingPrice: {
         type: Number
     },
+    MDYEstimateTotalPrice: {
+        type: Number
+    },
     KShoppingSellingPrice: {
+        type: Number
+    },
+    KShoppingEstimateTotalPrice: {
         type: Number
     },
     SanChaungSellingPrice: {
         type: Number
     },
+    SanChaungEstimateTotalPrice: {
+        type: Number
+    },
     ThingangyunSellingPrice: {
+        type: Number
+    },
+    ThingangyunEstimateTotalPrice: {
         type: Number
     },
     relatedBranch: {

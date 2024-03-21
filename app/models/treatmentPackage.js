@@ -27,6 +27,9 @@ const treatmentPackageSchema = Schema({
     total_price: {
         type: Number
     },
+    total_cost: {
+        type: Number
+    },
     relatedBranch: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Branches"

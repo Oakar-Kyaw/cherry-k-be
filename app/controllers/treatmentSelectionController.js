@@ -286,7 +286,6 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
            
             if(treatmentPackage && treatmentPackage.length != 0 ){
                   let dataTVCTreatmentPackageArray = []
-                  
                   treatmentPackage = JSON.parse(treatmentPackage)
                   treatmentPackage.map(treatment=> {
                     dataTVCTreatmentPackageArray.push({item_id: treatment.item_id, qty: treatment.qty})

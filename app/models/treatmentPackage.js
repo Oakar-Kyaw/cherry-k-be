@@ -12,6 +12,9 @@ const treatmentPackageSchema = Schema({
     name: {
         type: String
     },
+    description: {
+        type: String
+    },
     relatedTreatment: [
         {
             type: mongoose.Schema.Types.ObjectId,

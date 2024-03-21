@@ -24,10 +24,28 @@ const treatmentPackageSchema = Schema({
             ref: "TreatmentLists"
         }
     ],
-    total_price: {
+    TCLSellingPrice: {
         type: Number
     },
-    total_cost: {
+    EightMileSellingPrice: {
+        type: Number
+    },
+    NPTSellingPrice: {
+        type: Number
+    },
+    LSHSellingPrice: {
+        type: Number
+    },
+    MDYSellingPrice: {
+        type: Number
+    },
+    KShoppingSellingPrice: {
+        type: Number
+    },
+    SanChaungSellingPrice: {
+        type: Number
+    },
+    ThingangyunSellingPrice: {
         type: Number
     },
     relatedBranch: {

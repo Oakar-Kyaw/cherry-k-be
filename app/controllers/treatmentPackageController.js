@@ -63,7 +63,7 @@ exports.listAllTreatmentPackage = async (req,res) => {
 exports.getTreatmentPackageById = async ( req, res ) => {
     let { id } = req.params
     try{
-      let result = await TreatmentPackage.findOne({ _id: id }).populate("relatedBranch relatedTreatment relatedTreatmentList ")
+      let result = await TreatmentPackage.findOne({ _id: id }).populate("relatedBranch relatedTreatment relatedTreatmentList")
       result ? res.status(200).send({
                                  success: true,
                                  data: result

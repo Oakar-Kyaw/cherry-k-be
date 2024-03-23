@@ -85,6 +85,7 @@ exports.getKmaxVoucher = async (req, res) => {
 
 exports.createKmaxVoucher = async (req, res, next) => {
   let data = req.body
+  let { msPaidAmount } = req.body
   let createdBy = req.credentials.id
   try {
     let { medicineSale, procedureSale, accessorySale, relatedBranch, balance, relatedPatient, payAmount, relatedBank, relatedCash  } = data

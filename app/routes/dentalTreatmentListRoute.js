@@ -17,13 +17,13 @@ module.exports = (app) => {
 
     app.route('/api/dental-treatment-lists').get(verifyToken,catchError(dentalTreatmentList.listAllDentalTreatmentLists))
 
-    app.route('/api/dental-treatment-lists/mobile').get(catchError(DentalTreatmentList.listAllDentalTreatmentLists))
+    app.route('/api/dental-treatment-lists/mobile').get(catchError(dentalTreatmentList.listAllDentalTreatmentLists))
 
     app.route('/api/dental-treatment-lists-filter')
-        .get(verifyToken,catchError(DentalTreatmentList.filterDentalTreatmentLists))
+        .get(verifyToken,catchError(dentalTreatmentList.filterDentalTreatmentLists))
 
     app.route('/api/dental-treatment-lists-search')
-        .post(verifyToken,catchError(DentalTreatmentList.searchDentalTreatmentLists))
+        .post(verifyToken,catchError(dentalTreatmentList.searchDentalTreatmentLists))
         
-    app.route('/api/dental-treatment-lists/treatment/:id').get(verifyToken,catchError(DentalTreatmentList.getRelatedDentalTreatments))
+    app.route('/api/dental-treatment-lists/treatment/:id').get(verifyToken,catchError(dentalTreatmentList.getRelatedDentalTreatments))
 };

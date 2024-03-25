@@ -78,6 +78,14 @@ let PatientSchema = new Schema({
     type: [mongoose.Schema.Types.ObjectId],
     ref: 'PackageSelections'
   },
+  relatedDentalTreatmentPackage: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "DentalTreatmentPackages"
+  }],
+  relatedDentalTreatmentSelection: {
+    type: [mongoose.Schema.Types.ObjectId],
+    ref: 'DentalTreatmentSelections'
+  },
   relatedBranch: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Branches'

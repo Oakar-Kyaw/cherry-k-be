@@ -3,7 +3,6 @@
 const treatmentSelection = require("../controllers/treatmentSelectionController");
 const { catchError } = require("../lib/errorHandler");
 const verifyToken = require('../lib/verifyToken');
-const treatment = require("../models/treatment");
 const upload = require('../lib/fieldUploader').upload;
 
 module.exports = (app) => {

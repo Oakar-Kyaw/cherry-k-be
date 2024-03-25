@@ -14,6 +14,6 @@ module.exports = (app) => {
         .delete(catchError(dentalTreatmentPackage.deleteDentalTreatmentPackageById)) 
         .put(catchError(dentalTreatmentPackage.updateDentalTreatmentPackageById))
 
-    app.route('/api/dental-treatment-packages').get(catchError(treatmentPackage.listAllDentalTreatmentPackage))
+    app.route('/api/dental-treatment-packages').get(catchError(dentalTreatmentPackage.listAllDentalTreatmentPackage))
 
 };

@@ -118,7 +118,7 @@ exports.deleteDentalTreatment = async (req, res, next) => {
       { isDeleted: true },
       { new: true },
     );
-    return res.status(200).send({ success: true, data: { isDeleted: result.isDeleted } });
+    return res.status(200).send({ success: true, data: "Deleted Successfully" });
   } catch (error) {
     return res.status(500).send({ "error": true, "message": error.message })
 
@@ -150,7 +150,7 @@ exports.searchDentalTreatments = async (req, res, next) => {
 
 exports.getRelatedDentalTreatmentByTreatmentListID = async (req, res) => {
   try {
-    const result = await Treatment.find({ dentalTreatmentName: req.params.id, isDeleted: false })
+    const result = await dentalTreatment.find({ dentalTreatmentName: req.params.id, isDeleted: false })
       .populate('relatedDoctor')
       .populate('relatedTherapist')
       .populate('relatedPatient')

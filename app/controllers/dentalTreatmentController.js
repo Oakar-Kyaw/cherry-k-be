@@ -113,6 +113,7 @@ exports.updateDentalTreatment = async (req, res, next) => {
 
 exports.deleteDentalTreatment = async (req, res, next) => {
   try {
+    console.log("efd",req.params.id)
     const result = await dentalTreatment.findOneAndUpdate(
       { _id: req.params.id },
       { isDeleted: true },

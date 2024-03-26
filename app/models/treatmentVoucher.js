@@ -58,6 +58,10 @@ let TreatmentVoucherSchema = new Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Treatments'
     },
+    relatedDentalTreatment: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "DentalTreatments"
+    },
     secondAccount: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'AccountingLists'
@@ -102,6 +106,10 @@ let TreatmentVoucherSchema = new Schema({
     relatedTreatmentSelection: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'TreatmentSelections'
+    }],
+    relatedDentalTreatmentSelection: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "DentalTreatmentSelections"
     }],
     remark: {
         type: String
@@ -159,6 +167,15 @@ let TreatmentVoucherSchema = new Schema({
             type: Number
        }
     }],
+    relatedDentalTreatmentPackage: [{
+        item_id: {
+             type: mongoose.Schema.Types.ObjectId,
+             ref: 'DentalTreatmentPackages'
+        },
+        qty: {
+             type: Number
+        }
+     }],
     relatedPackageSelection: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'PackageSelections'
@@ -213,6 +230,15 @@ let TreatmentVoucherSchema = new Schema({
         item_id: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Treatments'
+        },
+        discountAmount: Number,
+        price: Number,
+        qty: Number
+    }],
+    multiDentalTreatment: [{
+        item_id: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'DentalTreatments'
         },
         discountAmount: Number,
         price: Number,

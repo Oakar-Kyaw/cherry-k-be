@@ -185,6 +185,8 @@ exports.createStockTransfer = async (req, res, next) => {
       break
     case 'Thingangyun':
       secID = '6535f811f68b0525e0eaf152'
+    case 'Hlaing Thar Yar':
+      secID = '66023ad88bb368fe815343da'
       break
     default:
       return null

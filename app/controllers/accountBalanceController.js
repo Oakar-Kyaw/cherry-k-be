@@ -514,8 +514,8 @@ exports.knasGetOpeningAndClosingWithExactDate = async (req, res) => {
                                       expenseTotal: type === "Opening" ? expenseTotal : 0, 
                                       incomeTotal: type === "Opening" ? incomeTotal : 0, 
                                       transferBalances: type === "Closing" ? transferBalance: 0 ,
-                                      total: medicineSaleFirstCashTotal + medicineSaleSecondCashTotal + incomeTotal + openingTotal, 
-                                      closingCash:  (medicineSaleFirstCashTotal + medicineSaleSecondCashTotal + incomeTotal + openingTotal) - expenseTotal
+                                      total: type === "Opening" ? medicineSaleFirstCashTotal + medicineSaleSecondCashTotal + incomeTotal + openingTotal : 0, 
+                                      closingCash: type === "Opening" ?  (medicineSaleFirstCashTotal + medicineSaleSecondCashTotal + incomeTotal + openingTotal) - expenseTotal : 0
                                       }
                                       )
     } catch (error) {

@@ -703,7 +703,7 @@ exports.KmaxVoucherFilter = async (req, res) => {
     if (relatedDoctor) query.relatedDoctor = relatedDoctor
    
     if (relatedBranch) query.relatedBranch = relatedBranch //relatedTreatment secondAccount relatedTreatmentSelection  relatedBranch relatedDoctor relatedBank relatedCash medicineItems.item_id multiTreatment.item_id relatedAccounting payment
-    let allBankResult = await KmaxVoucher.find(query)
+    let allBankResult = await KmaxVoucher.find({...query})
       .populate(
         'relatedPatient relatedCash createdBy'
       ).populate({
@@ -772,7 +772,7 @@ exports.KmaxVoucherFilter = async (req, res) => {
       const { relatedBank, ...query2 } = query
       query2.relatedCash = { $exists: true } 
      
-      let allCashResult = await KmaxVoucher.find(query2) //relatedAccounting payment relatedTreatmentSelection medicineItems.item_id multiTreatment.item_id relatedTreatment secondAccount relatedBranch relatedDoctor relatedBank
+      let allCashResult = await KmaxVoucher.find({...query2}) //relatedAccounting payment relatedTreatmentSelection medicineItems.item_id multiTreatment.item_id relatedTreatment secondAccount relatedBranch relatedDoctor relatedBank
         .populate(
           'relatedCash relatedPatient createdBy'
         ).populate({

@@ -111,9 +111,9 @@ exports.accountBalanceTransfer = async (req, res) => {
         const startDate = date ? new Date(date) : ""; // Set start date to the beginning of the daynew Date(day.getFullYear(), day.getMonth(), day.getDate() + 1)
         const endDate = nextDay ? new Date(nextDay) : ""; 
          console.log("this is day",startDate,endDate) 
-        let query = { isDeleted:false, relatedBranch: relatedBranch, type:"Closing", date:{ $gte:new Date(startDate), $lt: new Date(endDate)}}
-        let queryAccountBalance = await AccountBalance.findOne(query)
-        if(!queryAccountBalance){
+        // let query = { isDeleted:false, relatedBranch: relatedBranch, type:"Closing", date:{ $gte:new Date(startDate), $lt: new Date(endDate)}}
+        // let queryAccountBalance = await AccountBalance.findOne(query)
+        // if(!queryAccountBalance){
         const transfered = await AccountingList.findOneAndUpdate({ _id: transferAcc }, { $inc: { amount: transferAmount } }, { new: true })
         const transferList = await Transfer.create({
             remark: remark,
@@ -123,9 +123,9 @@ exports.accountBalanceTransfer = async (req, res) => {
             date: date
         })
        
-        if (closingAmount != undefined && closingAmount >= 0 && Today >= givenTime ) {
-            console.log("this iis closing")
-            const closing = await AccountBalance.create({
+        // if (closingAmount != undefined && closingAmount >= 0 && Today >= givenTime ) {
+        //     console.log("this iis closing")
+        const closing = await AccountBalance.create({
                 type: 'Closing',
                 amount: closingAmount,
                 relatedBranch: relatedBranch,
@@ -135,44 +135,44 @@ exports.accountBalanceTransfer = async (req, res) => {
                 createdAt: Date.now(),
                 transferAmount: transferAmount
             })
-            const opening = await AccountBalance.create({
-               type:"Opening",
-               amount: closingAmount,
-               relatedBranch: relatedBranch,
-               remark: remark,
-               relatedAccounting: closingAcc,
-               date: endDate,
-               createdAt: Date.now()
-            })
+            // const opening = await AccountBalance.create({
+            //    type:"Opening",
+            //    amount: closingAmount,
+            //    relatedBranch: relatedBranch,
+            //    remark: remark,
+            //    relatedAccounting: closingAcc,
+            //    date: endDate,
+            //    createdAt: Date.now()
+            // })
 
             return res.status(200).send({
                 success: true, data: {
                     transferResult: transfered,
                     closingResult: closing,
-                    openingResult : opening,
+                    // openingResult : opening,
                     transferList: transferList
                 }
             })
-        }
-        else if( givenTime > Today ){
-            return res.status(500).send({
-                error: true, 
-                message: "Can't create the date which is greater than today"
-            })
-        }
-        else if(closingAmount == undefined || closingAmount == null || closingAmount < 0 ){
-                return res.status(500).send({
-                    error: true, 
-                    message: "Please Input Valid Transfer Amount"
-                })
-        }
-       }
-        else {
-            return res.status(500).send({
-                error: true, 
-                message: "Already Transfered Amount for Today"
-            })
-        } 
+        // }
+    //     else if( givenTime > Today ){
+    //         return res.status(500).send({
+    //             error: true, 
+    //             message: "Can't create the date which is greater than today"
+    //         })
+    //     }
+    //     else if(closingAmount == undefined || closingAmount == null || closingAmount < 0 ){
+    //             return res.status(500).send({
+    //                 error: true, 
+    //                 message: "Please Input Valid Transfer Amount"
+    //             })
+    //     }
+    //    }
+    //     else {
+    //         return res.status(500).send({
+    //             error: true, 
+    //             message: "Already Transfered Amount for Today"
+    //         })
+        // } 
  } catch (error) {
         console.log(error)
     }
@@ -240,20 +240,14 @@ exports.getOpeningAndClosingWithExactDate = async (req, res) => {
         const date = new Date(exact);
         const startDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), date.getMinutes(), date.getSeconds(), date.getMilliseconds()); // Set start date to the beginning of the day
         const endDate = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1, date.getHours(), date.getMinutes(), date.getSeconds(), date.getMilliseconds()); // Set end date to the beginning of the next day
-        const queryTransfer = { isDeleted:false, relatedBranch: relatedBranch, relatedAccounting: relatedAccounting, type: "Closing", date: { $gte: startDate, $lt: endDate } };
-        const queryLatestDocument = { isDeleted:false, relatedBranch: relatedBranch, relatedAccounting: relatedAccounting, type: type, date: { $gte: startDate, $lt:endDate } };
-        const query = { isDeleted:false, relatedBranch: relatedBranch, relatedAccounting: relatedAccounting, type: type, date: { $gte: startDate, $lte: endDate } };
-        const latestDocument = await AccountBalance.findOne(queryLatestDocument);
-        console.log(queryLatestDocument,latestDocument, "today")
-        console.log(latestDocument,"getOpening")
-        let openingTotal = latestDocument && latestDocument.type === "Opening" ? latestDocument.amount : 0 
-        let closingBalance =  await AccountBalance.findOne(queryTransfer)
-        let closingTotal = closingBalance && closingBalance.type === "Closing" ? closingBalance.amount : 0
-       
-        console.log("findTrn ",closingBalance)
-        let transferBalance = closingBalance ? closingBalance.transferAmount : 0 
+        const query = { isDeleted:false, relatedBranch: relatedBranch, relatedAccounting: relatedAccounting, type: type, date: { $gte: startDate, $lt: endDate } };
+        const latestDocument = await AccountBalance.find(query).sort({_id: -1}).limit(1);
+        // console.log(latestDocument,"getOpening")
+        let openingTotal = latestDocument.length != 0 && latestDocument[0].type === "Opening" ? latestDocument[0].amount : 0 
+        let transferBalance = latestDocument.length != 0 && latestDocument[0].type === "Closing" ?  latestDocument[0].transferAmount : 0
         console.log(startDate, endDate)
         let queryMedicineTotal = {
+            Refund: false,
             isDeleted:false,
             tsType:"MS" ,
             relatedCash:{ $exists:true },
@@ -359,6 +353,7 @@ exports.getOpeningAndClosingWithExactDate = async (req, res) => {
         
         //query first cash combined vocucher
         let queryCombineTreatmentVoucher = {
+            Refund: false,
             isDeleted : false,
             createdAt: { $gte: startDate, $lt: endDate }, 
             relatedCash: { $exists: true },
@@ -378,6 +373,7 @@ exports.getOpeningAndClosingWithExactDate = async (req, res) => {
         
         //query second cash combined voucher
        let queryCombineTreatmentVoucher2 = {
+        Refund: false,
         isDeleted : false,
         createdAt: { $gte: startDate, $lt: endDate }, 
         secondAccount: { $exists: true },
@@ -431,8 +427,7 @@ exports.getOpeningAndClosingWithExactDate = async (req, res) => {
                                       incomeTotal: type === "Opening" ? incomeTotal : 0, 
                                       transferBalances: type === "Closing" ? transferBalance: 0 ,
                                       total: medicineSaleFirstCashTotal + medicineSaleSecondCashTotal + TVFirstCashTotal + TVSecondCashTotal + combinedSaleFristCashTotal + combinedSaleSecondCashTotal + incomeTotal + openingTotal, 
-                                      closingCash: type === "Opening" ? (medicineSaleFirstCashTotal + medicineSaleSecondCashTotal + TVFirstCashTotal + TVSecondCashTotal + combinedSaleFristCashTotal + combinedSaleSecondCashTotal + incomeTotal + openingTotal) - expenseTotal 
-                                      : closingTotal ,
+                                      closingCash:(medicineSaleFirstCashTotal + medicineSaleSecondCashTotal + TVFirstCashTotal + TVSecondCashTotal + combinedSaleFristCashTotal + combinedSaleSecondCashTotal + incomeTotal + openingTotal) - expenseTotal,
                                       }
                                       )
     } catch (error) {
@@ -448,28 +443,22 @@ exports.knasGetOpeningAndClosingWithExactDate = async (req, res) => {
         const date = new Date(exact);
         const startDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), date.getMinutes(), date.getSeconds(), date.getMilliseconds()); // Set start date to the beginning of the day
         const endDate = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1, date.getHours(), date.getMinutes(), date.getSeconds(), date.getMilliseconds()); // Set end date to the beginning of the next day
-        const queryTransfer = { isDeleted:false, relatedBranch: relatedBranch, relatedAccounting: relatedAccounting, type: "Closing", date: { $gte: startDate, $lt: endDate } };
-        const queryLatestDocument = { isDeleted:false, relatedBranch: relatedBranch, relatedAccounting: relatedAccounting, type: type, date: { $gte: startDate, $lt:endDate } };
-        const query = { isDeleted:false, relatedBranch: relatedBranch, relatedAccounting: relatedAccounting, type: type, date: { $gte: startDate, $lte: endDate } };
-        const latestDocument = await AccountBalance.findOne(queryLatestDocument);
-        console.log(queryLatestDocument,latestDocument, "today")
-        console.log(latestDocument,"getOpening")
-        let openingTotal = latestDocument && latestDocument.type === "Opening" ? latestDocument.amount : 0 
-        let closingBalance =  await AccountBalance.findOne(queryTransfer)
-        let closingTotal = closingBalance && closingBalance.type === "Closing" ? closingBalance.amount : 0
-       
-        console.log("findTrn ",closingBalance)
-        let transferBalance = closingBalance ? closingBalance.transferAmount : 0 
-        console.log(startDate, endDate)
+        const query = { isDeleted:false, relatedBranch: relatedBranch, relatedAccounting: relatedAccounting, type: type, date: { $gte: startDate, $lt: endDate } };
+        const latestDocument = await AccountBalance.find(query).sort({_id: -1}).limit(1);
+        // console.log(latestDocument,"getOpening")
+        let openingTotal = latestDocument.length != 0 && latestDocument[0].type === "Opening" ? latestDocument[0].amount : 0 
+        let transferBalance = latestDocument.length != 0 && latestDocument[0].type === "Closing" ?  latestDocument[0].transferAmount : 0 
+        // console.log(startDate, endDate)
         let queryMedicineTotal = {
+            Refund: false,
             isDeleted:false,
             tsType:"MS" ,
             relatedCash:{ $exists:true },
             relatedBranch: relatedBranch ,
             createdAt: { $gte: startDate, $lt: endDate },
         }
-        //createdAt: { $gte: startDate, $lt: endDate }, 
-        //relatedCash exists by Oakar Kyaw
+        // //createdAt: { $gte: startDate, $lt: endDate }, 
+        // //relatedCash exists by Oakar Kyaw
         const medicineSaleFirstCashTotal = await kmaxVoucher.find(queryMedicineTotal).then(msResult => {
           console.log("ms result i s "+msResult)
            if(msResult){
@@ -482,7 +471,6 @@ exports.knasGetOpeningAndClosingWithExactDate = async (req, res) => {
         //secondAccount cash exists
         const { relatedCash, ...query2 } = queryMedicineTotal;
         query2.secondAccount = { $exists: true };
-        console.log("second account is ",query2)
         const medicineSaleSecondCashTotal = await kmaxVoucher.find(query2)
                         .populate({
                             path:"secondAccount",
@@ -528,7 +516,7 @@ exports.knasGetOpeningAndClosingWithExactDate = async (req, res) => {
             return 0;
         }
         )
-        console.log('Final Data',({transferBalances: type === "Opening" ? transferBalance: 0 }))
+        // console.log('Final Data',({transferBalances: type === "Opening" ? transferBalance: 0 }))
         return res.status(200).send({ success: true, 
                                       openingTotal: openingTotal, 
                                       medicineSaleFirstCashTotal: type === "Opening" ? medicineSaleFirstCashTotal : 0,
@@ -537,8 +525,7 @@ exports.knasGetOpeningAndClosingWithExactDate = async (req, res) => {
                                       incomeTotal: type === "Opening" ? incomeTotal : 0, 
                                       transferBalances: type === "Closing" ? transferBalance: 0 ,
                                       total: medicineSaleFirstCashTotal + medicineSaleSecondCashTotal + incomeTotal + openingTotal, 
-                                      closingCash: type === "Opening" ? (medicineSaleFirstCashTotal + medicineSaleSecondCashTotal + incomeTotal + openingTotal) - expenseTotal 
-                                      : closingTotal ,
+                                      closingCash:  (medicineSaleFirstCashTotal + medicineSaleSecondCashTotal + incomeTotal + openingTotal) - expenseTotal
                                       }
                                       )
     } catch (error) {

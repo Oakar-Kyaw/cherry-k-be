@@ -7,6 +7,7 @@ const TreatmentVoucher = require('../models/treatmentVoucher');
 const AccountingList = require('../models/accountingList');
 const Transfer = require('../models/transfer');
 const kmaxVoucher = require('../models/kmaxVoucher');
+const moment = require("moment")
 
 exports.listAllAccountBalances = async (req, res) => {
     let { keyword, role, limit, skip } = req.query;
@@ -66,7 +67,6 @@ exports.createAccountBalance = async (req, res, next) => {
         // console.log("this is exact",exact.getDate())
         
         endDate = new Date(exact.getFullYear(), exact.getMonth(), exact.getDate() - 1, exact.getHours(), exact.getMinutes(), exact.getSeconds(), exact.getMilliseconds())
-        query = { isDeleted:false, relatedBranch: relatedBranch, type:"Closing", date: { $gte : new Date(endDate), $lt: new Date(exact)}}
         oldBody = {
                 "relatedAccounting": relatedAccounting,
                 "type": "Closing",
@@ -74,25 +74,15 @@ exports.createAccountBalance = async (req, res, next) => {
                 "date": endDate,
                 "relatedBranch": relatedBranch,
               }
-        // console.log("Opening and Closing ", endDate, query)
-        const findAccountBalance = await AccountBalance.findOne(query)
-        if(!findAccountBalance){
-                const oldAccountBalance = new AccountBalance(oldBody)
-                const newAccountBalance = new AccountBalance(newBody);
-                const oldResult = await oldAccountBalance.save();
-                const result = await newAccountBalance.save();
-                res.status(200).send({
-                    message: 'AccountBalance create success',
-                    success: true,
-                    data: result
+        const oldAccountBalance = new AccountBalance(oldBody)
+        const newAccountBalance = new AccountBalance(newBody);
+        const oldResult = await oldAccountBalance.save();
+        const result = await newAccountBalance.save();
+        res.status(200).send({
+             message: 'AccountBalance create success',
+             success: true,
+             data: result
                 });
-        }
-        else {
-            return res.status(500).send({
-               error:true,
-               message:"Already save amounts"
-            })
-        }
        
     } catch (error) {
         // console.log(error )
@@ -426,8 +416,8 @@ exports.getOpeningAndClosingWithExactDate = async (req, res) => {
                                       TVSecondCashTotal: type === "Opening" ? TVSecondCashTotal : 0,
                                       incomeTotal: type === "Opening" ? incomeTotal : 0, 
                                       transferBalances: type === "Closing" ? transferBalance: 0 ,
-                                      total: medicineSaleFirstCashTotal + medicineSaleSecondCashTotal + TVFirstCashTotal + TVSecondCashTotal + combinedSaleFristCashTotal + combinedSaleSecondCashTotal + incomeTotal + openingTotal, 
-                                      closingCash:(medicineSaleFirstCashTotal + medicineSaleSecondCashTotal + TVFirstCashTotal + TVSecondCashTotal + combinedSaleFristCashTotal + combinedSaleSecondCashTotal + incomeTotal + openingTotal) - expenseTotal,
+                                      total: type === "Opening" ? (medicineSaleFirstCashTotal + medicineSaleSecondCashTotal + TVFirstCashTotal + TVSecondCashTotal + combinedSaleFristCashTotal + combinedSaleSecondCashTotal + incomeTotal + openingTotal) : 0 , 
+                                      closingCash: type === "Opening" ? (medicineSaleFirstCashTotal + medicineSaleSecondCashTotal + TVFirstCashTotal + TVSecondCashTotal + combinedSaleFristCashTotal + combinedSaleSecondCashTotal + incomeTotal + openingTotal) - expenseTotal : 0,
                                       }
                                       )
     } catch (error) {

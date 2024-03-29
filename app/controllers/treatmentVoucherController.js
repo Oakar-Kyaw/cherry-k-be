@@ -522,7 +522,13 @@ exports.getTreatmentVoucherWithTreatmentID = async (req, res) => {
 exports.getTreatmentVoucher = async (req, res) => {
     let query = req.mongoQuery
     if (req.params.id) query._id = req.params.id
-    const result = await TreatmentVoucher.find(query).populate('createdBy relatedTreatment relatedAppointment relatedPatient relatedTreatmentSelection medicineItems.item_id multiTreatment.item_id relatedPackage relatedPackageSelection relatedRepay')
+    const result = await TreatmentVoucher.find(query).populate('createdBy relatedTreatment relatedAppointment relatedPatient relatedTreatmentSelection medicineItems.item_id multiTreatment.item_id relatedDentalTreatmentSelection relatedPackage relatedPackageSelection relatedRepay')
+                        .populate({
+                            path: "multiDentalTreatment",
+                            populate:{
+                                path: "item_id"
+                            }
+                        })
                         .populate({
                             path: "relatedTreatmentPackage",
                             populate:{

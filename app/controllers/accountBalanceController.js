@@ -125,15 +125,15 @@ exports.accountBalanceTransfer = async (req, res) => {
                 createdAt: Date.now(),
                 transferAmount: transferAmount
             })
-            // const opening = await AccountBalance.create({
-            //    type:"Opening",
-            //    amount: closingAmount,
-            //    relatedBranch: relatedBranch,
-            //    remark: remark,
-            //    relatedAccounting: closingAcc,
-            //    date: endDate,
-            //    createdAt: Date.now()
-            // })
+            const opening = await AccountBalance.create({
+               type:"Opening",
+               amount: closingAmount,
+               relatedBranch: relatedBranch,
+               remark: remark,
+               relatedAccounting: closingAcc,
+               date: endDate,
+               createdAt: Date.now()
+            })
 
             return res.status(200).send({
                 success: true, data: {

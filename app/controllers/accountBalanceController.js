@@ -139,7 +139,7 @@ exports.accountBalanceTransfer = async (req, res) => {
                 success: true, data: {
                     transferResult: transfered,
                     closingResult: closing,
-                    // openingResult : opening,
+                    openingResult : opening,
                     transferList: transferList
                 }
             })

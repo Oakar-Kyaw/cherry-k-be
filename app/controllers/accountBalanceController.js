@@ -95,11 +95,9 @@ exports.accountBalanceTransfer = async (req, res) => {
     try {
         const { transferAmount, closingAmount, closingAcc, transferAcc, relatedBranch, remark, date, nextDay } = req.body;
         console.log("ts ",req.body)
-        const now = new Date().toISOString()
-        const givenTime = new Date(date).getTime()
-        const Today = new Date(now).getTime()
-        const startDate = date ? new Date(date) : ""; // Set start date to the beginning of the daynew Date(day.getFullYear(), day.getMonth(), day.getDate() + 1)
-        const endDate = nextDay ? new Date(nextDay) : ""; 
+        const today = new Date(date)
+        const startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), today.getHours(), today.getMinutes(), today.getSeconds(), today.getMilliseconds()); // Set start date to the beginning of the day
+        const endDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + 1, startDate.getHours(), startDate.getMinutes(), startDate.getSeconds(), startDate.getMilliseconds()); // Set end date to the beginning of the next day
          console.log("this is day",startDate,endDate) 
         // let query = { isDeleted:false, relatedBranch: relatedBranch, type:"Closing", date:{ $gte:new Date(startDate), $lt: new Date(endDate)}}
         // let queryAccountBalance = await AccountBalance.findOne(query)
@@ -236,7 +234,7 @@ exports.getOpeningAndClosingWithExactDate = async (req, res) => {
         const closingLatestDocument = await AccountBalance.find(closingQueryData).sort({_id: -1}).limit(1)
         let openingTotal = latestDocument.length != 0 && latestDocument[0].type === "Opening" ? latestDocument[0].amount : 0 
         let transferBalance = closingLatestDocument.length != 0 ?  closingLatestDocument[0].transferAmount : 0
-        console.log("hello",startDate, endDate, closingLatestDocument)
+        console.log("hello",startDate, endDate, closingLatestDocument,latestDocument)
         let queryMedicineTotal = {
             Refund: false,
             isDeleted:false,

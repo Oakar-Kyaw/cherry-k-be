@@ -230,11 +230,12 @@ exports.getOpeningAndClosingWithExactDate = async (req, res) => {
         const date = new Date(exact);
         const startDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), date.getMinutes(), date.getSeconds(), date.getMilliseconds()); // Set start date to the beginning of the day
         const endDate = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1, date.getHours(), date.getMinutes(), date.getSeconds(), date.getMilliseconds()); // Set end date to the beginning of the next day
-        const query = { isDeleted:false, relatedBranch: relatedBranch, relatedAccounting: relatedAccounting, type: type, date: { $gte: startDate, $lt: endDate } };
-        const latestDocument = await AccountBalance.find(query).sort({_id: -1}).limit(1);
-        // console.log(latestDocument,"getOpening")
-        let openingTotal = latestDocument.length != 0 && latestDocument[0].type === "Opening" ? latestDocument[0].amount : 0 
-        let transferBalance = latestDocument.length != 0 && latestDocument[0].type === "Closing" ?  latestDocument[0].transferAmount : 0
+        const query = { isDeleted:false, relatedBranch: relatedBranch, relatedAccounting: relatedAccounting, type: type, date: { $gte: startDate, $lt: endDate } }
+        const latestDocument = await AccountBalance.findOne(query).sort({_id: -1}).limit(1)
+        const closingQueryData= { isDeleted:false, relatedBranch: relatedBranch, relatedAccounting: relatedAccounting, type: "Closing", date: { $gte: startDate, $lt: endDate } }
+        const closingLatestDocument = await AccountBalance.findOne(closingQueryData).sort({_id: -1}).limit(1)
+        let openingTotal = latestDocument.length != 0 && latestDocument.type === "Opening" ? latestDocument.amount : 0 
+        let transferBalance = closingLatestDocument.length != 0  ?  closingLatestDocument.transferAmount : 0
         console.log(startDate, endDate)
         let queryMedicineTotal = {
             Refund: false,
@@ -417,7 +418,7 @@ exports.getOpeningAndClosingWithExactDate = async (req, res) => {
                                       incomeTotal: type === "Opening" ? incomeTotal : 0, 
                                       transferBalances: type === "Closing" ? transferBalance: 0 ,
                                       total: type === "Opening" ? (medicineSaleFirstCashTotal + medicineSaleSecondCashTotal + TVFirstCashTotal + TVSecondCashTotal + combinedSaleFristCashTotal + combinedSaleSecondCashTotal + incomeTotal + openingTotal) : 0 , 
-                                      closingCash: type === "Opening" ? (medicineSaleFirstCashTotal + medicineSaleSecondCashTotal + TVFirstCashTotal + TVSecondCashTotal + combinedSaleFristCashTotal + combinedSaleSecondCashTotal + incomeTotal + openingTotal) - expenseTotal : 0,
+                                      closingCash: type === "Opening" ? (medicineSaleFirstCashTotal + medicineSaleSecondCashTotal + TVFirstCashTotal + TVSecondCashTotal + combinedSaleFristCashTotal + combinedSaleSecondCashTotal + incomeTotal + openingTotal) - ( expenseTotal + transferBalance) : 0,
                                       }
                                       )
     } catch (error) {

@@ -231,12 +231,12 @@ exports.getOpeningAndClosingWithExactDate = async (req, res) => {
         const startDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), date.getMinutes(), date.getSeconds(), date.getMilliseconds()); // Set start date to the beginning of the day
         const endDate = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1, date.getHours(), date.getMinutes(), date.getSeconds(), date.getMilliseconds()); // Set end date to the beginning of the next day
         const query = { isDeleted:false, relatedBranch: relatedBranch, relatedAccounting: relatedAccounting, type: type, date: { $gte: startDate, $lt: endDate } }
-        const latestDocument = await AccountBalance.findOne(query).sort({_id: -1}).limit(1)
+        const latestDocument = await AccountBalance.find(query).sort({_id: -1}).limit(1)
         const closingQueryData= { isDeleted:false, relatedBranch: relatedBranch, relatedAccounting: relatedAccounting, type: "Closing", date: { $gte: startDate, $lt: endDate } }
-        const closingLatestDocument = await AccountBalance.findOne(closingQueryData).sort({_id: -1}).limit(1)
-        let openingTotal = latestDocument  && latestDocument.type === "Opening" ? latestDocument.amount : 0 
-        let transferBalance = closingLatestDocument ?  closingLatestDocument.transferAmount : 0
-        console.log(startDate, endDate)
+        const closingLatestDocument = await AccountBalance.find(closingQueryData).sort({_id: -1}).limit(1)
+        let openingTotal = latestDocument.length != 0 && latestDocument[0].type === "Opening" ? latestDocument[0].amount : 0 
+        let transferBalance = closingLatestDocument.length != 0 ?  closingLatestDocument[0].transferAmount : 0
+        console.log("hello",startDate, endDate, closingLatestDocument)
         let queryMedicineTotal = {
             Refund: false,
             isDeleted:false,
@@ -248,7 +248,6 @@ exports.getOpeningAndClosingWithExactDate = async (req, res) => {
         //createdAt: { $gte: startDate, $lt: endDate }, 
         //relatedCash exists by Oakar Kyaw
         const medicineSaleFirstCashTotal = await TreatmentVoucher.find(queryMedicineTotal).then(msResult => {
-          console.log("ms result i s "+msResult)
            if(msResult){
             const msTotal = msResult.reduce((accumulator, currentValue) => { return accumulator + currentValue.msPaidAmount }, 0)
             return msTotal
@@ -259,7 +258,6 @@ exports.getOpeningAndClosingWithExactDate = async (req, res) => {
         //secondAccount cash exists
         const { relatedCash, ...query2 } = queryMedicineTotal;
         query2.secondAccount = { $exists: true };
-        console.log("second account is ",query2)
         const medicineSaleSecondCashTotal = await TreatmentVoucher.find(query2)
                         .populate({
                             path:"secondAccount",
@@ -268,7 +266,6 @@ exports.getOpeningAndClosingWithExactDate = async (req, res) => {
                         }
                     })
                     .then(msResult => {
-                console.log("medicine second cash total is " ,msResult)
                 //   return res.status(200).send({data:msResult})
                 const total = msResult.reduce((accumulator, currentValue) => {
                 if(currentValue.secondAccount.relatedHeader.name === "Cash In Hand"){
@@ -288,7 +285,6 @@ exports.getOpeningAndClosingWithExactDate = async (req, res) => {
 
         const expenseTotal = await Expense.find({ isDeleted:false, date: { $gte: startDate, $lt: endDate }, relatedBranch: relatedBranch }).then(result => {
            if(result){
-            console.log("expense result is ",result)
             const total = result.reduce((accumulator, currentValue) => { return accumulator + currentValue.finalAmount }, 0)
             return total
            }
@@ -324,7 +320,6 @@ exports.getOpeningAndClosingWithExactDate = async (req, res) => {
                                     }
                                   })
                                 .then(result => {
-               console.log("TV second cash total is " ,result)
            //   return res.status(200).send({data:result})
            const total = result.reduce((accumulator, currentValue) => {
             if(currentValue.secondAccount.relatedHeader.name === "Cash In Hand"){
@@ -379,7 +374,6 @@ exports.getOpeningAndClosingWithExactDate = async (req, res) => {
                     }
                 })
                 .then(cmResult => {
-            console.log("TV second cash total is " ,cmResult)
             //   return res.status(200).send({data:result})
             const total = cmResult.reduce((accumulator, currentValue) => {
             if(currentValue.secondAccount.relatedHeader.name === "Cash In Hand"){

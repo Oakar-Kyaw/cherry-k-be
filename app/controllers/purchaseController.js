@@ -521,7 +521,7 @@ exports.purchaseRecieved = async (req, res) => {
                     ).populate('relatedBranch relatedProcedureItems relatedMedicineItems relatedAccessoryItems relatedGeneralItems relatedMachine').populate('createdBy', 'givenName')
                         .catch(error => { return res.status(200).send({ error: true, message: error.message }) })
                 } else if (relatedBranch === undefined) {
-                    var result = await GenerallItems.findOneAndUpdate({ _id: generalItemID }, {
+                    var result = await GeneralItems.findOneAndUpdate({ _id: generalItemID }, {
                         $inc: {
                             currentQuantity: parseInt(recievedQty),
                             totalUnit: parseInt(totalUnit)

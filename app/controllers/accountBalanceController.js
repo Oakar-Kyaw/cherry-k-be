@@ -234,8 +234,8 @@ exports.getOpeningAndClosingWithExactDate = async (req, res) => {
         const latestDocument = await AccountBalance.findOne(query).sort({_id: -1}).limit(1)
         const closingQueryData= { isDeleted:false, relatedBranch: relatedBranch, relatedAccounting: relatedAccounting, type: "Closing", date: { $gte: startDate, $lt: endDate } }
         const closingLatestDocument = await AccountBalance.findOne(closingQueryData).sort({_id: -1}).limit(1)
-        let openingTotal = latestDocument.length != 0 && latestDocument.type === "Opening" ? latestDocument.amount : 0 
-        let transferBalance = closingLatestDocument.length != 0  ?  closingLatestDocument.transferAmount : 0
+        let openingTotal = latestDocument  && latestDocument.type === "Opening" ? latestDocument.amount : 0 
+        let transferBalance = closingLatestDocument ?  closingLatestDocument.transferAmount : 0
         console.log(startDate, endDate)
         let queryMedicineTotal = {
             Refund: false,

@@ -231,7 +231,30 @@ let DentalTreatmentSchema = new Schema({
       type: Number
     },
 
-  }]
+  }],
+  editTime: {
+    type: String
+  },
+  editPerson: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Users"
+  },
+  editEmail: {
+    type: String
+  },
+  location: {
+    type: String
+  },
+  deleteTime: {
+    type: String
+  },
+  deletePerson: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Users"
+  },
+  deleteEmail: {
+    type: String
+  },
 });
 
 module.exports = mongoose.model('DentalTreatments', DentalTreatmentSchema);

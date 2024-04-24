@@ -101,7 +101,30 @@ const treatmentPackageSchema = Schema({
         index: {
            expireAfterSeconds: 1
         }
-    }
+    },
+    editTime: {
+        type: String
+      },
+      editPerson: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Users"
+      },
+      editEmail: {
+        type: String
+      },
+      location: {
+        type: String
+      },
+      deleteTime: {
+        type: String
+      },
+      deletePerson: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Users"
+      },
+      deleteEmail: {
+        type: String
+      },
 })
 
 module.exports = new mongoose.model("TreatmentPackages",treatmentPackageSchema)

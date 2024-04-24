@@ -1,6 +1,7 @@
 'use strict';
 const dentalTreatmentList = require('../models/dentalTreatmentList');
 const Treatment = require('../models/treatment');
+const moment = require("moment")
 
 exports.listAllDentalTreatmentLists = async (req, res) => {
   let { keyword, role, limit, skip } = req.query;
@@ -69,6 +70,9 @@ exports.createDentalTreatmentList = async (req, res) => {
 
 exports.updateDentalTreatmentList = async (req, res, next) => {
   try {
+    req.body.editTime = moment().format('MMMM Do YYYY, h:mm:ss a')
+    req.body.editPerson = req.credentials.id
+    req.body.editEmail =  req.credentials.email
     const result = await dentalTreatmentList.findOneAndUpdate(
       { _id: req.body.id },
       req.body,
@@ -82,9 +86,12 @@ exports.updateDentalTreatmentList = async (req, res, next) => {
 
 exports.deleteDentalTreatmentList = async (req, res, next) => {
   try {
+    req.body.deleteTime = moment().format('MMMM Do YYYY, h:mm:ss a')
+    req.body.deletePerson = req.credentials.id
+    req.body.deleteEmail =  req.credentials.email
     const result = await dentalTreatmentList.findOneAndUpdate(
       { _id: req.params.id },
-      { isDeleted: true },
+      { isDeleted: true, ...req.body },
       { new: true },
     );
     return res.status(200).send({ success: true, data: { isDeleted: result.isDeleted } });

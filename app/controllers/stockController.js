@@ -8,6 +8,7 @@ const Log = require('../models/log');
 const RecievedRecords = require('../models/recievedRecord');
 const StockRequest = require('../models/stockRequest');
 const { relative } = require('path');
+const moment = require("moment")
 
 exports.listAllStocks = async (req, res) => {
     let query = req.mongoQuery
@@ -256,6 +257,9 @@ exports.createStock = async (req, res, next) => {
 
 exports.updateStock = async (req, res, next) => {
     try {
+        req.body.editTime = moment().format('MMMM Do YYYY, h:mm:ss a')
+        req.body.editPerson = req.credentials.id
+        req.body.editEmail =  req.credentials.email
         const getResult = await Stock.find({ _id: req.body.id })
         console.log("id is ", req.body.id)
         const result = await Stock.findOneAndUpdate(
@@ -279,9 +283,12 @@ exports.updateStock = async (req, res, next) => {
 
 exports.deleteStock = async (req, res, next) => {
     try {
+        req.body.deleteTime = moment().format('MMMM Do YYYY, h:mm:ss a')
+        req.body.deletePerson = req.credentials.id
+        req.body.deleteEmail =  req.credentials.email
         const result = await Stock.findOneAndUpdate(
             { _id: req.params.id },
-            { isDeleted: true },
+            { isDeleted: true, ...req.body },
             { new: true },
         );
         return res.status(200).send({ success: true, data: { isDeleted: result.isDeleted } });

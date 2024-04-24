@@ -1,5 +1,6 @@
 const Branch = require("../models/branch")
 const TreatmentPackage = require("../models/treatmentPackage")
+const moment = require("moment") 
 
 exports.createTreatmentPackage = async (req,res) => {
     try{
@@ -83,6 +84,9 @@ exports.getTreatmentPackageById = async ( req, res ) => {
 
 exports.updateTreatmentPackageById = async ( req, res ) => {
     let { id } = req.params
+    req.body.editTime = moment().format('MMMM Do YYYY, h:mm:ss a')
+    req.body.editPerson = req.credentials.id
+    req.body.editEmail =  req.credentials.email
     const { relatedTreatment, relatedTreatmentList, relatedBranch, ...data} = req.body;
     try{
         if(relatedTreatment && relatedTreatment.length != 0 ){
@@ -123,6 +127,9 @@ exports.updateTreatmentPackageById = async ( req, res ) => {
 
 exports.deleteTreatmentPackageById = async ( req, res ) => {
     let { id } = req.params
+    req.body.deleteTime = moment().format('MMMM Do YYYY, h:mm:ss a')
+    req.body.deletePerson = req.credentials.id
+    req.body.deleteEmail =  req.credentials.email
     try{
       let time = new Date()
       let deleteTime = new Date(
@@ -134,7 +141,7 @@ exports.deleteTreatmentPackageById = async ( req, res ) => {
             time.getSeconds(),
             time.getMilliseconds()
       )
-      let result = await TreatmentPackage.findByIdAndUpdate(id,{isDeleted: true, expireAt: deleteTime})
+      let result = await TreatmentPackage.findByIdAndUpdate(id,{isDeleted: true, ...req.body, expireAt: deleteTime})
       result ? res.status(200).send({
                                  success: true,
                                  message: "Deleted Successfully"

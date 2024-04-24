@@ -3,6 +3,7 @@ const ProcedureItem = require('../models/procedureItem')
 const Branch = require('../models/branch');
 const Stock = require('../models/stock');
 const Log = require('../models/log');
+const moment = require("moment")
 
 exports.listAllProcedureItems = async (req, res) => {
   let { keyword, role, limit, skip } = req.query;
@@ -87,6 +88,9 @@ exports.createProcedureItem = async (req, res, next) => {
 
 exports.updateProcedureItem = async (req, res, next) => {
   try {
+    req.body.editTime = moment().format('MMMM Do YYYY, h:mm:ss a')
+    req.body.editPerson = req.credentials.id
+    req.body.editEmail =  req.credentials.email
     const getResult = await ProcedureItem.find({ _id: req.body.id })
     const result = await ProcedureItem.findOneAndUpdate(
       { _id: req.body.id },
@@ -109,9 +113,12 @@ exports.updateProcedureItem = async (req, res, next) => {
 
 exports.deleteProcedureItem = async (req, res, next) => {
   try {
+    req.body.deleteTime = moment().format('MMMM Do YYYY, h:mm:ss a')
+    req.body.deletePerson = req.credentials.id
+    req.body.deleteEmail =  req.credentials.email
     const result = await ProcedureItem.updateMany(
       { _id: req.params.id },
-      { isDeleted: true },
+      { isDeleted: true, ...req.body },
       { new: true },
     );
     const deleteProcedureStock = await Stock.updateMany(

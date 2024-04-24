@@ -1,4 +1,5 @@
 const dentalTreatmentPackage = require("../models/dentalTreatmentPackage")
+const moment = require("moment")
 
 exports.createDentalTreatmentPackage = async (req,res) => {
     try{
@@ -82,6 +83,9 @@ exports.getDentalTreatmentPackageById = async ( req, res ) => {
 
 exports.updateDentalTreatmentPackageById = async ( req, res ) => {
     let { id } = req.params
+    req.body.editTime = moment().format('MMMM Do YYYY, h:mm:ss a')
+    req.body.editPerson = req.credentials.id
+    req.body.editEmail =  req.credentials.email
     const { relatedDentalTreatment, relatedDentalTreatmentList, relatedBranch, ...data} = req.body;
     try{
         if(relatedDentalTreatment && relatedDentalTreatment.length != 0 ){
@@ -122,6 +126,9 @@ exports.updateDentalTreatmentPackageById = async ( req, res ) => {
 
 exports.deleteDentalTreatmentPackageById = async ( req, res ) => {
     let { id } = req.params
+    req.body.deleteTime = moment().format('MMMM Do YYYY, h:mm:ss a')
+    req.body.deletePerson = req.credentials.id
+    req.body.deleteEmail =  req.credentials.email
     try{
       let time = new Date()
       let deleteTime = new Date(
@@ -133,7 +140,7 @@ exports.deleteDentalTreatmentPackageById = async ( req, res ) => {
             time.getSeconds(),
             time.getMilliseconds()
       )
-      let result = await dentalTreatmentPackage.findByIdAndUpdate(id,{isDeleted: true, expireAt: deleteTime})
+      let result = await dentalTreatmentPackage.findByIdAndUpdate(id,{isDeleted: true, ...req.body, expireAt: deleteTime})
       result ? res.status(200).send({
                                  success: true,
                                  message: "Deleted Successfully"

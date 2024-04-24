@@ -1,4 +1,5 @@
 const MedicineItemRecord = require("../models/medicineItemRecord")
+const moment = require("moment")
 
 exports.listAllMedicineItemRecord = async (req,res) => {
     let { skip, limit, exact, relatedBranch } =req.query
@@ -86,6 +87,9 @@ exports.createMedicineItemRecord  = async(req,res) => {
 }
 
 exports.editMedicineItemRecord = async(req,res) => {
+    req.body.editTime = moment().format('MMMM Do YYYY, h:mm:ss a')
+    req.body.editPerson = req.credentials.id
+    req.body.editEmail =  req.credentials.email
     let { medicineItems, ...data } = req.body
     try {
         if(medicineItems){
@@ -118,7 +122,10 @@ exports.editMedicineItemRecord = async(req,res) => {
 
 exports.deleteMedicineItemRecord = async (req,res) => {
     try{
-        let result = await MedicineItemRecord.findByIdAndUpdate(req.params.id,{isDeleted: true})
+        req.body.deleteTime = moment().format('MMMM Do YYYY, h:mm:ss a')
+        req.body.deletePerson = req.credentials.id
+        req.body.deleteEmail =  req.credentials.email
+        let result = await MedicineItemRecord.findByIdAndUpdate(req.params.id,{isDeleted: true, ...req.body})
         res.status(200).send({
             success: true,
             message: "Deleted Medicine Item Record Successfully."

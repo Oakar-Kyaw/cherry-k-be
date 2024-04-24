@@ -11,6 +11,7 @@ const AdvanceRecords = require('../models/advanceRecord');
 const dentalTreatment = require('../models/dentalTreatment');
 const Debt = require('../models/debt');
 const { ObjectId } = require('mongodb');
+const moment = require("moment")
 
 exports.listMultiDentalTreatmentSelections = async (req, res) => {
     let { keyword, role, limit, skip } = req.query;
@@ -1067,6 +1068,9 @@ exports.createDentalTreatmentSelection = async (req, res, next) => {
 
 exports.updateDentalTreatmentSelection = async (req, res, next) => {
     try {
+        req.body.editTime = moment().format('MMMM Do YYYY, h:mm:ss a')
+        req.body.editPerson = req.credentials.id
+        req.body.editEmail =  req.credentials.email
         let data = req.body;
         if (data.paidAmount) {
             data = { ...data, leftOverAmount: data.totalAmount - data.paidAmount } // leftOverAmount Calculation
@@ -1280,9 +1284,12 @@ exports.dentalTreatmentPayment = async (req, res, next) => {
 
 exports.deleteDentalTreatmentSelection = async (req, res, next) => {
     try {
+        req.body.deleteTime = moment().format('MMMM Do YYYY, h:mm:ss a')
+        req.body.deletePerson = req.credentials.id
+        req.body.deleteEmail =  req.credentials.email
         const result = await dentalTreatmentSelection.findOneAndUpdate(
             { _id: req.params.id },
-            { isDeleted: true },
+            { isDeleted: true, ...req.body },
             { new: true },
         );
         return res.status(200).send({ success: true, data: { isDeleted: result.isDeleted } });

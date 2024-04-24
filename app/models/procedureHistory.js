@@ -79,7 +79,30 @@ let ProcedureHistorySchema = new Schema({
     },
     remark: {
         type: String
-    }
+    },
+    editTime: {
+        type: String
+      },
+      editPerson: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Users"
+      },
+      editEmail: {
+        type: String
+      },
+      location: {
+        type: String
+      },
+      deleteTime: {
+        type: String
+      },
+      deletePerson: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Users"
+      },
+      deleteEmail: {
+        type: String
+      },
 });
 
 module.exports = mongoose.model('ProcedureHistories', ProcedureHistorySchema);

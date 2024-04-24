@@ -1,4 +1,5 @@
 const ProcedureItemRecord = require("../models/procedureItemRecord")
+const moment = require("moment")
 
 exports.listAllProcedureItemRecord = async (req,res) => {
     let { skip, limit, exact, relatedBranch } =req.query
@@ -86,6 +87,9 @@ exports.createProcedureItemRecord  = async(req,res) => {
 }
 
 exports.editProcedureItemRecord = async(req,res) => {
+    req.body.editTime = moment().format('MMMM Do YYYY, h:mm:ss a')
+    req.body.editPerson = req.credentials.id
+    req.body.editEmail =  req.credentials.email
     let { procedureItems, ...data } = req.body
     try {
         if(procedureItems){
@@ -118,7 +122,10 @@ exports.editProcedureItemRecord = async(req,res) => {
 
 exports.deleteProcedureItemRecord = async (req,res) => {
     try{
-        let result = await ProcedureItemRecord.findByIdAndUpdate(req.params.id,{isDeleted: true})
+        req.body.deleteTime = moment().format('MMMM Do YYYY, h:mm:ss a')
+        req.body.deletePerson = req.credentials.id
+        req.body.deleteEmail =  req.credentials.email
+        let result = await ProcedureItemRecord.findByIdAndUpdate(req.params.id,{isDeleted: true, ...req.body})
         res.status(200).send({
             success: true,
             message: "Deleted Procedure Item Record Successfully."

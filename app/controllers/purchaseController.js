@@ -523,7 +523,7 @@ exports.purchaseRecieved = async (req, res) => {
                 } else if (relatedBranch === undefined) {
                     var result = await GeneralItems.findOneAndUpdate({ _id: generalItemID }, {
                         $inc: {
-                            currentQuantity: parseInt(recievedQty),
+                            currentQuantity : parseInt(recievedQty),
                             totalUnit: parseInt(totalUnit)
                         }
                     }, { upsert: true, new: true }).catch(error => { return res.status(200).send({ error: true, message: error.message }) })

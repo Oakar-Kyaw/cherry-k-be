@@ -1,6 +1,7 @@
 'use strict';
 const dentalTreatment = require('../models/dentalTreatment');
 const Accounting = require('../models/accountingList');
+const moment = require("moment")
 
 //loop all medicine
 const loop = (length, arr, allLists, name) => {
@@ -93,6 +94,9 @@ exports.createDentalTreatment = async (req, res, next) => {
 
 exports.updateDentalTreatment = async (req, res, next) => {
   try {
+    req.body.editTime = moment().format('MMMM Do YYYY, h:mm:ss a')
+    req.body.editPerson = req.credentials.id
+    req.body.editEmail =  req.credentials.email
     const result = await dentalTreatment.findOneAndUpdate(
       { _id: req.body.id },
       req.body,
@@ -113,10 +117,12 @@ exports.updateDentalTreatment = async (req, res, next) => {
 
 exports.deleteDentalTreatment = async (req, res, next) => {
   try {
-    console.log("efd",req.params.id)
+    req.body.deleteTime = moment().format('MMMM Do YYYY, h:mm:ss a')
+    req.body.deletePerson = req.credentials.id
+    req.body.deleteEmail =  req.credentials.email
     const result = await dentalTreatment.findOneAndUpdate(
       { _id: req.params.id },
-      { isDeleted: true },
+      { isDeleted: true, ...req.body },
       { new: true },
     );
     return res.status(200).send({ success: true, data: "Deleted Successfully" });

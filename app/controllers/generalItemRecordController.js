@@ -1,4 +1,5 @@
 const GeneralItemRecord = require("../models/generalItemRecord")
+const moment = require("moment")
 
 exports.listAllGeneralItemRecord = async (req,res) => {
     let { skip, limit, exact, relatedBranch } =req.query
@@ -86,6 +87,9 @@ exports.createGeneralItemRecord  = async(req,res) => {
 }
 
 exports.editGeneralItemRecord = async(req,res) => {
+    req.body.editTime = moment().format('MMMM Do YYYY, h:mm:ss a')
+    req.body.editPerson = req.credentials.id
+    req.body.editEmail =  req.credentials.email
     let { generalItems, ...data } = req.body
     try {
         if(generalItems){
@@ -118,7 +122,10 @@ exports.editGeneralItemRecord = async(req,res) => {
 
 exports.deleteGeneralItemRecord = async (req,res) => {
     try{
-        let result = await GeneralItemRecord.findByIdAndUpdate(req.params.id,{isDeleted: true})
+        req.body.deleteTime = moment().format('MMMM Do YYYY, h:mm:ss a')
+        req.body.deletePerson = req.credentials.id
+        req.body.deleteEmail =  req.credentials.email
+        let result = await GeneralItemRecord.findByIdAndUpdate(req.params.id,{isDeleted: true, ...req.body})
         res.status(200).send({
             success: true,
             message: "Deleted General Item Record Successfully."

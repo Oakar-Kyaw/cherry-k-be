@@ -126,7 +126,7 @@ exports.updateTreatmentPackageById = async ( req, res ) => {
 }
 
 exports.deleteTreatmentPackageById = async ( req, res ) => {
-    let { id } = req.params
+    let { id } = req.params.id
     req.body.deleteTime = moment().format('MMMM Do YYYY, h:mm:ss a')
     req.body.deletePerson = req.credentials.id
     req.body.deleteEmail =  req.credentials.email

@@ -71,6 +71,12 @@ let StockTransferSchema = new Schema({
     requestedBy: {
         type: String
     },
+      transferNo: {
+        type: String
+    },
+    transferBy: {
+        type: String
+    },
     isDeleted: {
         type: Boolean,
         default: false

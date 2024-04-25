@@ -1,6 +1,6 @@
 'use strict';
 const TreatmentUnit = require('../models/treatmentUnit')
-const moment = require("moment")
+const moment = require('moment-timezone');
 
 exports.listAllTreatmentUnits = async (req, res) => {
   let { keyword, role, limit, skip } = req.query;
@@ -69,7 +69,7 @@ exports.createTreatmentUnit = async (req, res, next) => {
 
 exports.updateTreatmentUnit = async (req, res, next) => {
   try {
-    req.body.editTime = moment().format('MMMM Do YYYY, h:mm:ss a')
+    req.body.editTime = moment().tz('Asia/Yangon').format('MMMM Do YYYY, h:mm:ss a')
     req.body.editPerson = req.credentials.id
     req.body.editEmail =  req.credentials.email
     const result = await TreatmentUnit.findOneAndUpdate(
@@ -85,7 +85,7 @@ exports.updateTreatmentUnit = async (req, res, next) => {
 
 exports.deleteTreatmentUnit = async (req, res, next) => {
   try {
-    req.body.deleteTime = moment().format('MMMM Do YYYY, h:mm:ss a')
+    req.body.deleteTime = moment().tz('Asia/Yangon').format('MMMM Do YYYY, h:mm:ss a')
     req.body.deletePerson = req.credentials.id
     req.body.deleteEmail =  req.credentials.email
     const result = await TreatmentUnit.findOneAndUpdate(

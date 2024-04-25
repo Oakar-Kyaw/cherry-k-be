@@ -3,7 +3,7 @@ const MedicineItem = require('../models/medicineItem');
 const Branch = require('../models/branch');
 const Stock = require('../models/stock');
 const Log = require('../models/log');
-const moment = require("moment")
+const moment = require("moment-timezone")
 
 exports.listAllMedicineItems = async (req, res) => {
   let { keyword, role, limit, skip } = req.query;
@@ -99,7 +99,7 @@ exports.updateMedicineItem = async (req, res, next) => {
   try { 
     let {currentQuantity, fromUnit, toUnit, totalUnit,id } = req.body;
     const getResult = await MedicineItem.find({ _id: req.body.id })
-    req.body.editTime = moment().format('MMMM Do YYYY, h:mm:ss a')
+    req.body.editTime =moment().tz('Asia/Yangon').format('MMMM Do YYYY, h:mm:ss a')
     req.body.editPerson = req.credentials.id
     req.body.editEmail =  req.credentials.email
     const result = await MedicineItem.findOneAndUpdate(
@@ -128,7 +128,7 @@ exports.updateMedicineItem = async (req, res, next) => {
 
 exports.deleteMedicineItem = async (req, res, next) => {
   try {
-    req.body.deleteTime = moment().format('MMMM Do YYYY, h:mm:ss a')
+    req.body.deleteTime = moment().tz('Asia/Yangon').format('MMMM Do YYYY, h:mm:ss a')
     req.body.deletePerson = req.credentials.id
     req.body.deleteEmail =  req.credentials.email
     const result = await MedicineItem.findOneAndUpdate(

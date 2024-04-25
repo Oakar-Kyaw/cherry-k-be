@@ -1,6 +1,6 @@
 'use strict';
 const ProcedureAccessory = require('../models/procedureAccessory')
-const moment = require("moment")
+const moment = require("moment-timezone")
 
 exports.listAllProcedureAccessorys = async (req, res) => {
   let { keyword, role, limit, skip } = req.query;
@@ -62,7 +62,7 @@ exports.createProcedureAccessory = async (req, res, next) => {
 
 exports.updateProcedureAccessory = async (req, res, next) => {
   try {
-    req.body.editTime = moment().format('MMMM Do YYYY, h:mm:ss a')
+    req.body.editTime = moment().tz('Asia/Yangon').format('MMMM Do YYYY, h:mm:ss a')
     req.body.editPerson = req.credentials.id
     req.body.editEmail =  req.credentials.email
     const result = await ProcedureAccessory.findOneAndUpdate(
@@ -78,7 +78,7 @@ exports.updateProcedureAccessory = async (req, res, next) => {
 
 exports.deleteProcedureAccessory = async (req, res, next) => {
   try {
-    req.body.deleteTime = moment().format('MMMM Do YYYY, h:mm:ss a')
+    req.body.deleteTime = moment().tz('Asia/Yangon').format('MMMM Do YYYY, h:mm:ss a')
     req.body.deletePerson = req.credentials.id
     req.body.deleteEmail =  req.credentials.email
     const result = await ProcedureAccessory.findOneAndUpdate(

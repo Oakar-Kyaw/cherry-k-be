@@ -4,6 +4,7 @@ const Branch = require('../models/branch');
 const Stock = require('../models/stock');
 const Log = require('../models/log')
 const AccessoryItemRecord = require('../models/accessoryItemRecord')
+const moment = require("moment-timezone")
 
 exports.listAllAccessoryItems = async (req, res) => {
   let { keyword, role, limit, skip } = req.query;
@@ -91,6 +92,9 @@ exports.createAccessoryItem = async (req, res, next) => {
 
 exports.updateAccessoryItem = async (req, res, next) => {
   try {
+    req.body.editTime = moment().tz('Asia/Yangon').format('MMMM Do YYYY, h:mm:ss a')
+    req.body.editPerson = req.credentials.id
+    req.body.editEmail =  req.credentials.email
     const getResult = await AccessoryItem.find({ _id: req.body.id })
     const result = await AccessoryItem.findOneAndUpdate(
       { _id: req.body.id },
@@ -113,9 +117,12 @@ exports.updateAccessoryItem = async (req, res, next) => {
 
 exports.deleteAccessoryItem = async (req, res, next) => {
   try {
+    req.body.deleteTime = moment().tz('Asia/Yangon').format('MMMM Do YYYY, h:mm:ss a')
+    req.body.deletePerson = req.credentials.id
+    req.body.deleteEmail =  req.credentials.email
     const result = await AccessoryItem.findOneAndUpdate(
       { _id: req.params.id },
-      { isDeleted: true },
+      { isDeleted: true, ...req.body },
       { new: true },
     );
     const deleteStocks = await Stock.updateMany(

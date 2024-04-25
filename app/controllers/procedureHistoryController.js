@@ -5,7 +5,7 @@ const procedureHistory = require('../models/procedureHistory');
 const MedicineItems = require('../models/medicineItem');
 const medicineItem = require('../models/medicineItem');
 const Stock = require('../models/stock');
-const moment = require("moment")
+const moment = require("moment-timezone")
 
 exports.listAllProcedureHistorys = async (req, res) => {
   let { keyword, role, limit, skip } = req.query;
@@ -119,7 +119,7 @@ exports.createProcedureHistory = async (req, res, next) => {
 
 
 exports.updateProcedureHistory = async (req, res, next) => {
-  req.body.editTime = moment().format('MMMM Do YYYY, h:mm:ss a')
+  req.body.editTime = moment().tz('Asia/Yangon').format('MMMM Do YYYY, h:mm:ss a')
   req.body.editPerson = req.credentials.id
   req.body.editEmail =  req.credentials.email
   let data = req.body;
@@ -170,7 +170,7 @@ exports.updateProcedureHistory = async (req, res, next) => {
 
 exports.deleteProcedureHistory = async (req, res, next) => {
   try {
-    req.body.deleteTime = moment().format('MMMM Do YYYY, h:mm:ss a')
+    req.body.deleteTime = moment().tz('Asia/Yangon').format('MMMM Do YYYY, h:mm:ss a')
     req.body.deletePerson = req.credentials.id
     req.body.deleteEmail =  req.credentials.email
     const result = await ProcedureHistory.findOneAndUpdate(

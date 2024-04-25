@@ -1,5 +1,6 @@
 'use strict';
 const AccessoryItemRecord = require('../models/accessoryItemRecord');
+const moment = require("moment-timezone")
 
 exports.listAllAccessoryItemRecordes = async (req, res) => {
   let { keyword, role, limit, skip } = req.query;
@@ -61,6 +62,9 @@ exports.createAccessoryItemRecord = async (req, res, next) => {
 
 exports.updateAccessoryItemRecord = async (req, res, next) => {
   try {
+    req.body.editTime = moment().tz('Asia/Yangon').format('MMMM Do YYYY, h:mm:ss a')
+    req.body.editPerson = req.credentials.id
+    req.body.editEmail =  req.credentials.email 
     const result = await AccessoryItemRecord.findOneAndUpdate(
       { _id: req.body.id },
       req.body,
@@ -74,9 +78,12 @@ exports.updateAccessoryItemRecord = async (req, res, next) => {
 
 exports.deleteAccessoryItemRecord = async (req, res, next) => {
   try {
+    req.body.deleteTime = moment().tz('Asia/Yangon').format('MMMM Do YYYY, h:mm:ss a')
+    req.body.deletePerson = req.credentials.id
+    req.body.deleteEmail =  req.credentials.email
     const result = await AccessoryItemRecord.findOneAndUpdate(
       { _id: req.params.id },
-      { isDeleted: true },
+      { isDeleted: true, ...req.body },
       { new: true },
     );
     return res.status(200).send({ success: true, data: { isDeleted: result.isDeleted } });

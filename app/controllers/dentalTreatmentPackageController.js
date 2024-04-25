@@ -1,5 +1,5 @@
 const dentalTreatmentPackage = require("../models/dentalTreatmentPackage")
-const moment = require("moment")
+const moment = require("moment-timezone")
 
 exports.createDentalTreatmentPackage = async (req,res) => {
     try{
@@ -82,8 +82,8 @@ exports.getDentalTreatmentPackageById = async ( req, res ) => {
 }
 
 exports.updateDentalTreatmentPackageById = async ( req, res ) => {
-    let { id } = req.params
-    req.body.editTime = moment().format('MMMM Do YYYY, h:mm:ss a')
+    let id  = req.params.id
+    req.body.editTime = moment().tz('Asia/Yangon').format('MMMM Do YYYY, h:mm:ss a')
     req.body.editPerson = req.credentials.id
     req.body.editEmail =  req.credentials.email
     const { relatedDentalTreatment, relatedDentalTreatmentList, relatedBranch, ...data} = req.body;
@@ -125,8 +125,8 @@ exports.updateDentalTreatmentPackageById = async ( req, res ) => {
 }
 
 exports.deleteDentalTreatmentPackageById = async ( req, res ) => {
-    let { id } = req.params
-    req.body.deleteTime = moment().format('MMMM Do YYYY, h:mm:ss a')
+    let id  = req.params.id
+    req.body.deleteTime = moment().tz('Asia/Yangon').format('MMMM Do YYYY, h:mm:ss a')
     req.body.deletePerson = req.credentials.id
     req.body.deleteEmail =  req.credentials.email
     try{

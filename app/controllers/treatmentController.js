@@ -1,7 +1,7 @@
 'use strict';
 const Treatment = require('../models/treatment');
 const Accounting = require('../models/accountingList');
-const moment = require("moment")
+const moment = require("moment-timezone")
 
 //loop all medicine
 const loop = (length, arr, allLists, name) => {
@@ -94,7 +94,7 @@ exports.createTreatment = async (req, res, next) => {
 
 exports.updateTreatment = async (req, res, next) => {
   try {
-    req.body.editTime = moment().format('MMMM Do YYYY, h:mm:ss a')
+    req.body.editTime = moment().tz('Asia/Yangon').format('MMMM Do YYYY, h:mm:ss a')
     req.body.editPerson = req.credentials.id
     req.body.editEmail =  req.credentials.email
     const result = await Treatment.findOneAndUpdate(
@@ -117,7 +117,7 @@ exports.updateTreatment = async (req, res, next) => {
 
 exports.deleteTreatment = async (req, res, next) => {
   try {
-    req.body.deleteTime = moment().format('MMMM Do YYYY, h:mm:ss a')
+    req.body.deleteTime = moment().tz('Asia/Yangon').format('MMMM Do YYYY, h:mm:ss a')
     req.body.deletePerson = req.credentials.id
     req.body.deleteEmail =  req.credentials.email
     const result = await Treatment.findOneAndUpdate(

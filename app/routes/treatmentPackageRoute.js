@@ -2,6 +2,7 @@
 
 const treatmentPackage = require("../controllers/treatmentPackageController");
 const { catchError } = require("../lib/errorHandler");
+const { createAccountList } = require("../lib/generalFunction");
 const verifyToken = require("../lib/verifyToken");
 
 module.exports = (app) => {
@@ -15,5 +16,4 @@ module.exports = (app) => {
         .put(verifyToken,catchError(treatmentPackage.updateTreatmentPackageById))
 
     app.route('/api/treatment-packages').get(verifyToken,catchError(treatmentPackage.listAllTreatmentPackage))
-
 };

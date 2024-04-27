@@ -1,6 +1,8 @@
 const bcrypt = require("bcryptjs")
 const CONFIG = require('../../config/db');
 const jwt = require('jsonwebtoken');
+const treatmentPackage = require("../models/treatmentPackage");
+const accountingList = require("../models/accountingList");
 require('dotenv').config()
 
 exports.encryptPassword = async (givenPassword) => {
@@ -76,4 +78,22 @@ exports.loopThroughTreatment = (treatmentList) => {
         response.push(data)
      })
      return response;
+}
+
+exports.createAccountList = async(req,res) => {
+   let packageId = await treatmentPackage.find({})
+   packageId.map(async(p)=>{
+      const accResult = await accountingList.create({
+         name: p.name + 'income',
+         subHeader: p.name + 'income',
+         relatedType: "6467310959a9bc811d97e9c9", //Profit and Loss
+         relatedHeader: "646731e059a9bc811d97eab9",//Revenue
+         })
+      await treatmentPackage.findByIdAndUpdate(p._id,{relatedAccount:accResult._id})   
+   })
+  
+   res.status(200).send({
+      success: true,
+      package: packageId
+   })
 }

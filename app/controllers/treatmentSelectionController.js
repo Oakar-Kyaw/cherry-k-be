@@ -12,6 +12,7 @@ const Treatment = require('../models/treatment');
 const Debt = require('../models/debt');
 const { ObjectId } = require('mongodb');
 const moment = require('moment-timezone');
+const TreatmentPackages = require("../models/treatmentPackage");
 
 exports.listMultiTreatmentSelections = async (req, res) => {
     let { keyword, role, limit, skip } = req.query;
@@ -167,6 +168,7 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
     let { selections, relatedPatient, totalAmount, totalDiscount, totalPaidAmount, treatmentReturn, refundAmount, newTreatmentVoucherCode, date, type, refundVoucherId,  multiTreatment, paidAmount, relatedBank, relatedCash, relatedAppointment, bankType, paymentType, remark, relatedDiscount, relatedDoctor, paymentMethod, treatmentPackage, relatedBranch } = req.body
     let tvcCreate = false;
     let TSArray = []
+    let getAccountingAcccount
     let attachID;
     let response = {
         message: 'Treatment Selection create success',
@@ -200,6 +202,7 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
         let parsedMulti = JSON.parse(multiTreatment)
         // if (treatmentVoucherResult) { data = { ...data, relatedTreatmentVoucher: treatmentVoucherResult._id } }
         for (const i of parsedMulti) {
+            console.log("parseMult",i)
             data.multiTreatment = parsedMulti
             data.relatedTreatment = i.item_id
             data.totalAmount = i.price
@@ -209,14 +212,18 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
             data.bankType = bankType
             data.paymentMethod = paymentMethod
             //related account for each treatments
-            const getAccountingAcccount = await Treatment.findOne({ _id: i.item_id })
+            //search treatmentPackage if include treatment package
+            getAccountingAcccount = await Treatment.findOne({ _id: i.item_id })
+            if(!getAccountingAcccount){
+                getAccountingAcccount = await TreatmentPackages.findOne({_id: i.item_id})
+            }
             if (getAccountingAcccount.relatedAccount) {
                 const sellingPrice = getAccountingAcccount.sellingPrice
                 const transaction = await Transaction.create({
                     "amount": req.body.totalPaidAmount,
                     "date": Date.now(),
                     "remark": remark,
-                    relatedAccounting: getAccountingAcccount.relatedAccount,
+                    "relatedAccounting": getAccountingAcccount.relatedAccount,
                     "type": "Credit",
                     "createdBy": createdBy
                 })

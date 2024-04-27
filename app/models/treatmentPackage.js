@@ -15,6 +15,10 @@ const treatmentPackageSchema = Schema({
     description: {
         type: String
     },
+    relatedAccount: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'AccountingLists'
+      },
     relatedTreatment: [
         {
             type: mongoose.Schema.Types.ObjectId,

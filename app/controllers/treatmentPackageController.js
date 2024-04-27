@@ -7,11 +7,11 @@ exports.createTreatmentPackage = async (req,res) => {
       let { name } = req.body;
       let data = req.body
       const accResult = await Accounting.create({
-      name: name + 'income',
-      subHeader: name + 'income',
-      relatedType: "6467310959a9bc811d97e9c9", //Profit and Loss
-      relatedHeader: "646731e059a9bc811d97eab9",//Revenue
-    })
+        name: name + 'income',
+        subHeader: name + 'income',
+        relatedType: "6467310959a9bc811d97e9c9", //Profit and Loss
+        relatedHeader: "646731e059a9bc811d97eab9",//Revenue
+        })
        data = { ...data, relatedAccount: accResult._id }
        let result = await TreatmentPackage.create(data)
        res.status(200).send({

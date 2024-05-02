@@ -196,6 +196,12 @@ let TreatmentSchema = new Schema({
   ThingangyunEstimateTotalPrice: {
     type: Number
   },
+  HlaingTharYarSellingPrice: {
+    type: Number
+  },
+  HlaingTharYarEstimateTotalPrice: {
+    type: Number
+  },
   // for promotion with point
   startPromotionPointDate: {
     type: Date

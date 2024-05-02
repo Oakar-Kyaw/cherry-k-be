@@ -76,7 +76,7 @@ let PatientSchema = new Schema({
   },
   relatedPackageSelection: {
     type: [mongoose.Schema.Types.ObjectId],
-    ref: 'PackageSelections'
+    ref: 'TreatmentPackageSelections'
   },
   relatedDentalTreatmentPackage: [{
     type: mongoose.Schema.Types.ObjectId,

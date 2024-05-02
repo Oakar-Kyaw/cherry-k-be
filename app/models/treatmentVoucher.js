@@ -107,6 +107,10 @@ let TreatmentVoucherSchema = new Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'TreatmentSelections'
     }],
+    relatedTreatmentPackageSelection:  [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'TreatmentPackageSelections'
+    }],
     relatedDentalTreatmentSelection: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: "DentalTreatmentSelections"

@@ -146,14 +146,8 @@ exports.getPatient = async (req, res) => {
     })
     .populate({
       path: 'relatedPackageSelection',
-      model: 'PackageSelections',
       populate: {
-        path: 'relatedPackage',
-        model: 'Packages',
-        populate: {
-          path: 'relatedTreatments',
-          model: 'Treatments'
-        }
+        path: 'relatedTreatmentPackage'
       }
     })
     

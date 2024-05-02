@@ -91,6 +91,12 @@ const treatmentPackageSchema = Schema({
     ThingangyunEstimateTotalPrice: {
         type: Number
     },
+    HlaingTharYarSellingPrice: {
+        type: Number
+    },
+    HlaingTharYarEstimateTotalPrice: {
+        type: Number
+    },
     relatedBranch: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Branches"

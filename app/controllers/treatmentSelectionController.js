@@ -13,6 +13,7 @@ const Debt = require('../models/debt');
 const { ObjectId } = require('mongodb');
 const moment = require('moment-timezone');
 const TreatmentPackages = require("../models/treatmentPackage");
+const treatmentPackageSelections = require('../models/treatmentPackageSelection');
 
 exports.listMultiTreatmentSelections = async (req, res) => {
     let { keyword, role, limit, skip } = req.query;
@@ -168,13 +169,14 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
     let { selections, relatedPatient, totalAmount, totalDiscount, totalPaidAmount, treatmentReturn, refundAmount, newTreatmentVoucherCode, date, type, refundVoucherId,  multiTreatment, paidAmount, relatedBank, relatedCash, relatedAppointment, bankType, paymentType, remark, relatedDiscount, relatedDoctor, paymentMethod, treatmentPackage, relatedBranch } = req.body
     let tvcCreate = false;
     let TSArray = []
+    let TSPackageArray = []
     let getAccountingAcccount
+    let getPackageAccountingAccount
     let attachID;
     let response = {
         message: 'Treatment Selection create success',
         success: true
     } 
-    let treatmentPackageArray =[]
     try {
        
         if (files.payment) {
@@ -200,7 +202,9 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
         //Adding TSMulti type
         tvcCreate = true;
         let parsedMulti = JSON.parse(multiTreatment)
-        // if (treatmentVoucherResult) { data = { ...data, relatedTreatmentVoucher: treatmentVoucherResult._id } }
+        let parsedPackage = JSON.parse(treatmentPackage)
+        console.log("Package is ",parsedMulti, parsedPackage)
+        // // if (treatmentVoucherResult) { data = { ...data, relatedTreatmentVoucher: treatmentVoucherResult._id } }
         for (const i of parsedMulti) {
             console.log("parseMult",i)
             data.multiTreatment = parsedMulti
@@ -214,9 +218,6 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
             //related account for each treatments
             //search treatmentPackage if include treatment package
             getAccountingAcccount = await Treatment.findOne({ _id: i.item_id })
-            if(!getAccountingAcccount){
-                getAccountingAcccount = await TreatmentPackages.findOne({_id: i.item_id})
-            }
             if (getAccountingAcccount.relatedAccount) {
                 const sellingPrice = getAccountingAcccount.sellingPrice
                 const transaction = await Transaction.create({
@@ -232,6 +233,35 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
 
             let result = await TreatmentSelection.create(data)
             TSArray.push(result._id)
+        }
+        for (const i of parsedPackage) {
+            console.log("parseMult Package",i)
+            data.multiTreatmentPackage = parsedPackage
+            data.relatedTreatmentPackage = i.item_id
+            data.totalAmount = i.price
+            data.discount = i.discountAmount
+            data.relatedCash = relatedCash
+            data.relatedBank = relatedBank
+            data.bankType = bankType
+            data.paymentMethod = paymentMethod
+            //related account for each treatments
+            //search treatmentPackage if include treatment package
+            getPackageAccountingAccount = await TreatmentPackages.findOne({_id: i.item_id})
+            if (getPackageAccountingAccount.relatedAccount) {
+                const sellingPrice = getPackageAccountingAccount.sellingPrice
+                const transaction = await Transaction.create({
+                    "amount": req.body.totalPaidAmount,
+                    "date": Date.now(),
+                    "remark": remark,
+                    "relatedAccounting": getPackageAccountingAccount.relatedAccount,
+                    "type": "Credit",
+                    "createdBy": createdBy
+                })
+                const amtUpdate = await Accounting.findOneAndUpdate({ _id: getPackageAccountingAccount.relatedAccount }, { $inc: { amount: req.body.totalPaidAmount } })
+            }
+
+            let result = await treatmentPackageSelections.create(data)
+            TSPackageArray.push(result._id)
         }
         if (req.body.secondAmount) {
             var fsecAmtTransResult = await Transaction.create({
@@ -257,6 +287,7 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
                 "secondAccount": req.body.secondAccount,
                 "isDouble": req.body.isDouble,
                 "relatedTreatmentSelection": TSArray,
+                "relatedTreatmentPackageSelection": TSPackageArray,
                 "deposit": req.body.deposit,
                 "relatedBranch": req.body.relatedBranch,
                 "purchaseType": req.body.purchaseType,
@@ -292,22 +323,23 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
                 dataTVC = { ...dataTVC, code: "TVC-" + today.split('T')[0].replace(/-/g, '') + "-" + increment, seq: increment }
             }
            
-            if(treatmentPackage && treatmentPackage.length != 0 ){
-                  let dataTVCTreatmentPackageArray = []
-                  treatmentPackage = JSON.parse(treatmentPackage)
-                  treatmentPackage.map(treatment=> {
-                    dataTVCTreatmentPackageArray.push({item_id: treatment.item_id, qty: treatment.qty})
-                    treatmentPackageArray.push(treatment.item_id)
-                  })
-                  dataTVC["relatedTreatmentPackage"] = dataTVCTreatmentPackageArray
-            }  
+            // if(treatmentPackage && treatmentPackage.length != 0 ){
+            //       let dataTVCTreatmentPackageArray = []
+            //       treatmentPackage = JSON.parse(treatmentPackage)
+            //       treatmentPackage.map(treatment=> {
+            //         dataTVCTreatmentPackageArray.push({item_id: treatment.item_id, qty: treatment.qty})
+            //         treatmentPackageArray.push(treatment.item_id)
+            //       })
+                
+            // }
+            dataTVC["relatedTreatmentPackageSelection"] = TSPackageArray
             var treatmentVoucherResult = await TreatmentVoucher.create(dataTVC)
         }
         if (treatmentVoucherResult) {
             var populatedTV = await TreatmentVoucher.find({ _id: treatmentVoucherResult._id }).populate('relatedDiscount multiTreatment.item_id').populate({path: "relatedTreatmentPackage",populate: { path: "item_id"}})
         }
         
-        var updatePatient = await Patient.findOneAndUpdate({ _id: relatedPatient }, { $addToSet: { relatedTreatmentSelection: TSArray }, $push: { relatedTreatmentPackage: { $each: treatmentPackageArray }}, $inc: { conditionAmount: req.body.totalAmount, conditionPurchaseFreq: 1, conditionPackageQty: 1 } })
+        var updatePatient = await Patient.findOneAndUpdate({ _id: relatedPatient }, { $addToSet: { relatedTreatmentSelection: TSArray }, $push: { relatedPackageSelection: { $each: TSPackageArray }}, $inc: { conditionAmount: req.body.totalAmount, conditionPurchaseFreq: 1, conditionPackageQty: 1 } })
         if (req.body.balance > 0) {
             const debtCreate = await Debt.create({
                 "balance": req.body.balance,

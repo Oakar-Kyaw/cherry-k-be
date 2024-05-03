@@ -109,6 +109,7 @@ exports.appointmentGenerate = async (req, res) => {
     const dataconfigs = [];
   
     let { totalAmount, relatedPatient, relatedDoctor, originalDate, relatedBranch, treatmentTimes, inBetweenDuration, relatedPackageSelection, relatedTreatment, phone } = req.body
+    console.log("req.body",req.body)
     if (originalDate === undefined) return res.status(500).send({ error: true, message: 'Original Date is required' })
     const appointmentConfig = {
         relatedPatient: relatedPatient,
@@ -119,6 +120,7 @@ exports.appointmentGenerate = async (req, res) => {
         relatedPackageSelection: relatedPackageSelection,
         relatedTreatment: relatedTreatment,
     };
+    
     const numTreatments = treatmentTimes;
     for (let i = 0; i < numTreatments; i++) {
         const date = new Date(appointmentConfig.originalDate);
@@ -126,6 +128,7 @@ exports.appointmentGenerate = async (req, res) => {
         const config = { ...appointmentConfig, originalDate: date };
         dataconfigs.push(config);
     }
+    
     const appointmentResult = await Appointment.insertMany(dataconfigs)
     appointmentResult.map(function (element, index) {
         relatedAppointments.push(element._id)

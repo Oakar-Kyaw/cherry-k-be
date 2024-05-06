@@ -139,7 +139,7 @@ exports.appointmentGenerate = async (req, res) => {
         const perAppointmentPrices =  (totalAmount / treatmentTimes).toFixed(2);
         const deferRevenues = totalAmount ;
         console.log("reached ",JSON.stringify(perAppointmentPrices), JSON.stringify(deferRevenues) )
-        
+        console.log("relatedTreatmentSelction",req.body.relatedTreatmentSelection,relatedAppointments)
         const treatmentSelectionUpdate = await TreatmentSelection.findOneAndUpdate({ _id: req.body.relatedTreatmentSelection }, { $push: { relatedAppointments: relatedAppointments }  },// perAppointmentPrices, deferRevenues, 
                                     { new: true });
         

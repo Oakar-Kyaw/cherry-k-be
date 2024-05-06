@@ -281,7 +281,8 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
                 })
                 const amtUpdate = await Accounting.findOneAndUpdate({ _id: getPackageAccountingAccount.relatedAccount }, { $inc: { amount: req.body.totalPaidAmount } })
             }
-
+            data.relatedTreatmentSelection = TSArray
+            console.log("data realed treatmentselection is ", data, TSArray)
             let result = await treatmentPackageSelections.create(data)
             TSPackageArray.push(result._id)
         }

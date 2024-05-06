@@ -215,6 +215,7 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
             data.relatedBank = relatedBank
             data.bankType = bankType
             data.paymentMethod = paymentMethod
+            data.categories = "Standalone"
             //related account for each treatments
             //search treatmentPackage if include treatment package
             getAccountingAcccount = await Treatment.findOne({ _id: i.item_id })
@@ -246,7 +247,28 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
             data.paymentMethod = paymentMethod
             //related account for each treatments
             //search treatmentPackage if include treatment package
-            getPackageAccountingAccount = await TreatmentPackages.findOne({_id: i.item_id})
+            getPackageAccountingAccount = await TreatmentPackages.findOne({_id: i.item_id}).populate({
+                path: "relatedTreatment"
+            })
+            if(getPackageAccountingAccount.relatedTreatment){
+                //loop through treatment from package
+                for(const treatment of getPackageAccountingAccount.relatedTreatment){
+                    console.log("length", getPackageAccountingAccount.relatedTreatment.length, i.price, data )
+                    let treatmentData = {...data, createdBy: createdBy, tsType: 'TSMulti', relatedBranch: data.relatedBranch}
+                    treatmentData.multiTreatment = []
+                    treatmentData.relatedTreatment = treatment._id
+                    treatmentData.totalAmount = ( i.price / getPackageAccountingAccount.relatedTreatment.length)
+                    treatmentData.discount = i.discountAmount
+                    treatmentData.relatedCash = relatedCash
+                    treatmentData.relatedBank = relatedBank
+                    treatmentData.bankType = bankType
+                    treatmentData.paymentMethod = paymentMethod
+                    treatmentData.categories = "Package"
+                    console.log("treatmentData",treatmentData)
+                    let result = await TreatmentSelection.create(treatmentData)
+                    TSArray.push(result._id)
+                }
+            }
             if (getPackageAccountingAccount.relatedAccount) {
                 const sellingPrice = getPackageAccountingAccount.sellingPrice
                 const transaction = await Transaction.create({

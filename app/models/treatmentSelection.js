@@ -13,6 +13,10 @@ let TreatmentSelectionSchema = new Schema({
     type: String,
     enum: ['Paid', 'Partial']
   },
+  categories: {
+    type: String,
+    enum: ["Package","Standalone"]
+  },
   paidAmount: {
     type: Number,
   },

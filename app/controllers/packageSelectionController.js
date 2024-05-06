@@ -11,6 +11,7 @@ const AdvanceRecords = require('../models/advanceRecord');
 const Package = require('../models/treatment');
 const TreatmentSelection = require('../models/treatmentSelection');
 const Debt = require('../models/debt');
+const treatmentPackageSelections = require('../models/treatmentPackageSelection');
 
 exports.listAllPackageSelections = async (req, res) => {
     let { keyword, role, limit, skip } = req.query;

@@ -85,6 +85,10 @@ let TreatmentPackageSelectionSchema = new Schema({
     type: String,
     enum: ['Normal', 'POS', 'Pay']
   },
+  relatedTreatmentSelection: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'TreatmentSelections'
+  }],
   relatedTreatmentPackage: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'TreatmentPackages'

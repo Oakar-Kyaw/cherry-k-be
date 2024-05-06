@@ -3,24 +3,24 @@ const AccessoryItemRecord = require('../models/accessoryItemRecord');
 const moment = require("moment-timezone")
 
 exports.listAllAccessoryItemRecordes = async (req, res) => {
-  let { keyword, role, limit, skip } = req.query;
+  let { keyword, role, limit, skip, relatedBranch } = req.query;
   let count = 0;
   let page = 0;
   try {
     limit = +limit <= 100 ? +limit : 10; //limit
     skip = +skip || 0;
-    let query = {},
+    let query = { isDeleted: false },
       regexKeyword;
     role ? (query['role'] = role.toUpperCase()) : '';
     keyword && /\w/.test(keyword)
       ? (regexKeyword = new RegExp(keyword, 'i'))
       : '';
     regexKeyword ? (query['name'] = regexKeyword) : '';
+    relatedBranch ? query["relatedBranch"] = relatedBranch : ""
     let result = await AccessoryItemRecord.find(query).populate('accessoryItems.item_id relatedBranch')
     count = await AccessoryItemRecord.find(query).count();
     const division = count / limit;
     page = Math.ceil(division);
-
     res.status(200).send({
       success: true,
       count: count,

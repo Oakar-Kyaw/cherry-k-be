@@ -225,7 +225,7 @@ exports.payTheDebts = async(req,res) => {
                     relatedPatient: relatedPatient
                 }
                 let repay = await Repayment.create(data)
-                await TreatmentVoucher.findByIdAndUpdate(relatedTreatmentVoucher, {$inc: {balance: balance}, $push: {relatedRepay: repay._id}})
+                await TreatmentVoucher.findByIdAndUpdate(relatedTreatmentVoucher, {$inc: {balance: -balance}, $push: {relatedRepay: repay._id}})
                 await Debt.findByIdAndUpdate(req.params.id, { isPaid: true, $inc: {balance: -balance}, $push:{ relatedRepay: repay._id } })
             }
             res.status(200).send({

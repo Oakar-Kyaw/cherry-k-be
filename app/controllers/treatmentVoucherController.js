@@ -536,9 +536,11 @@ exports.getTreatmentVoucher = async (req, res) => {
                             }
                         }).populate({
                             path: "relatedTreatmentPackageSelection",
-                            populate: {
+                            populate: [{
                                 path: "relatedTreatmentSelection"
-                            }
+                            },{
+                                path: "relatedTreatmentPackage"
+                            }]
                         })
     if (!result)
         return res.status(500).json({ error: true, message: 'No Record Found' });

@@ -69,15 +69,14 @@ exports.getDebt = async (req, res) => {
             populate : {
                 path: "relatedBranch"
             }
-        .populate({
+        }).populate({
             path: "relatedRepay",
             populate: [{
                 path: "relatedBank"
             },{
-                path: "relatedCash"
+                path:"relatedCash"
             }
         ]
-        })
         });
     // Filter out the relatedPatient if it doesn't match the relatedBranch
         relatedBranch ?  relatedBranchFilterResult = results.filter(result => result.relatedPatient && result.relatedPatient.relatedBranch.name === relatedBranch)

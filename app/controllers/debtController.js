@@ -202,7 +202,7 @@ exports.payTheDebts = async(req,res) => {
                     relatedPatient: relatedPatient
                 }
                 let repay = await Repayment.create(data)
-                await TreatmentVoucher.findByIdAndUpdate(relatedTreatmentVoucher, {$inc: {balance: balance}, $push: {relatedRepay: repay._id}})
+                await TreatmentVoucher.findByIdAndUpdate(relatedTreatmentVoucher, {$inc: {balance: -balance}, $push: {relatedRepay: repay._id}})
                 await Debt.findByIdAndUpdate(req.params.id, {$inc: {balance: -balance}, $push:{ relatedRepay: repay._id }})
             }
             else if(subtractDebt < 0) {

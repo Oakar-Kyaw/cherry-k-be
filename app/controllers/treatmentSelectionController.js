@@ -332,7 +332,8 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
                 "totalAmount": totalAmount,
                 "totalPaidAmount": totalPaidAmount,
                 "tsType": "TSMulti",
-                "createdAt": req.body.createdAt
+                "createdAt": req.body.createdAt,
+                "balance": req.body.balance
             }
             dataTVC.multiTreatment = parsedMulti
             let today = new Date().toISOString()

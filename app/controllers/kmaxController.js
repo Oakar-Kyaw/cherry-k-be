@@ -731,7 +731,7 @@ exports.KmaxVoucherFilter = async (req, res) => {
       })
     let bankResult = await KmaxVoucher.find({...query,Refund: false})
       .populate(
-        'relatedPatient relatedCash createdBy'
+        'relatedPatient relatedCash relatedBank createdBy'
       ).populate({
         path:"secondAccount",
         model:"AccountingLists",
@@ -862,7 +862,7 @@ exports.KmaxVoucherFilter = async (req, res) => {
        :  response.data = { ...response.data, CashList: allCashResult, CashNames: CashNames, CashTotal: CashTotal}}
     //filter solid beauty
     const BankNames = bankResult.reduce(
-      (result, { relatedBank, paidAmount, secondAccount, secondAmount}) => {
+      (result, { relatedBank, paidAmount, secondAccount, secondAmount }) => {
         if(secondAccount && secondAccount.relatedHeader.name == "Cash In Hand"){
           let {name} = secondAccount;
           secondCashName.push({cashname:name, amount:secondAmount})
@@ -883,7 +883,6 @@ exports.KmaxVoucherFilter = async (req, res) => {
       (total, sale) => total + (sale.paidAmount || 0),
       0
     )
-    
     let secondBank = secondBankCashAmount.reduce((result, nextresult) => {
       const equalBankName = result.find(t => t.bankname === nextresult.bankname);
 

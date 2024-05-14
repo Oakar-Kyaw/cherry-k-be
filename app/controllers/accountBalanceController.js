@@ -435,7 +435,6 @@ exports.knasGetOpeningAndClosingWithExactDate = async (req, res) => {
         let queryMedicineTotal = {
             Refund: false,
             isDeleted:false,
-            tsType:"MS" ,
             relatedCash:{ $exists:true },
             relatedBranch: relatedBranch ,
             createdAt: { $gte: startDate, $lt: endDate },

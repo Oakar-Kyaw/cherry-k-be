@@ -5,7 +5,7 @@ const Transaction = require('../models/transaction');
 const RepayRecord = require('../models/repayRecord');
 
 exports.listAllRepayments = async (req, res) => {
-  let { keyword, role, limit, skip, relatedDebt, relatedPatient } = req.query;
+  let { keyword, role, limit, skip, relatedDebt, relatedPatient, relatedBranch } = req.query;
   let count = 0;
   let page = 0;
   try {
@@ -16,6 +16,7 @@ exports.listAllRepayments = async (req, res) => {
     role ? (query['role'] = role.toUpperCase()) : '';
     relatedDebt ? query["relatedDebt"] = relatedDebt : ""
     relatedPatient ? query["relatedPatient"] = relatedPatient : ""
+    relatedBranch ? query["relatedBranch"] = relatedBranch : ""
     keyword && /\w/.test(keyword)
       ? (regexKeyword = new RegExp(keyword, 'i'))
       : '';

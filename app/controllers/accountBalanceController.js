@@ -99,69 +99,50 @@ exports.accountBalanceTransfer = async (req, res) => {
         const startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), today.getHours(), today.getMinutes(), today.getSeconds(), today.getMilliseconds()); // Set start date to the beginning of the day
         const endDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + 1, startDate.getHours(), startDate.getMinutes(), startDate.getSeconds(), startDate.getMilliseconds()); // Set end date to the beginning of the next day
          console.log("this is day",startDate,endDate) 
-        // let query = { isDeleted:false, relatedBranch: relatedBranch, type:"Closing", date:{ $gte:new Date(startDate), $lt: new Date(endDate)}}
-        // let queryAccountBalance = await AccountBalance.findOne(query)
-        // if(!queryAccountBalance){
-        const transfered = await AccountingList.findOneAndUpdate({ _id: transferAcc }, { $inc: { amount: transferAmount } }, { new: true })
-        const transferList = await Transfer.create({
-            remark: remark,
-            amount: transferAmount,
-            fromAcc: closingAcc,
-            toAcc: transferAcc,
-            date: date
-        })
-       
-        // if (closingAmount != undefined && closingAmount >= 0 && Today >= givenTime ) {
-        //     console.log("this iis closing")
-        const closing = await AccountBalance.create({
-                type: 'Closing',
+        let query = { isDeleted:false, transferAmount: {$gt: 0},relatedBranch: relatedBranch, type:"Closing", date:{ $gte:new Date(startDate), $lt: new Date(endDate)}}
+        let queryAccountBalance = await AccountBalance.find(query)
+        console.log("qruy",queryAccountBalance)
+        if(queryAccountBalance.length != 0) res.status(400).send({success: false, message: "Already Transfered"})
+        else{
+            const transfered = await AccountingList.findOneAndUpdate({ _id: transferAcc }, { $inc: { amount: transferAmount } }, { new: true })
+            const transferList = await Transfer.create({
+                remark: remark,
+                amount: transferAmount,
+                fromAcc: closingAcc,
+                toAcc: transferAcc,
+                date: date
+            })
+            const closing = await AccountBalance.create({
+                    type: 'Closing',
+                    amount: closingAmount,
+                    relatedBranch: relatedBranch,
+                    remark: remark,
+                    relatedAccounting: closingAcc,
+                    date: startDate,
+                    createdAt: Date.now(),
+                    transferAmount: transferAmount
+                })
+                const opening = await AccountBalance.create({
+                type:"Opening",
                 amount: closingAmount,
                 relatedBranch: relatedBranch,
                 remark: remark,
                 relatedAccounting: closingAcc,
-                date: startDate,
-                createdAt: Date.now(),
-                transferAmount: transferAmount
-            })
-            const opening = await AccountBalance.create({
-               type:"Opening",
-               amount: closingAmount,
-               relatedBranch: relatedBranch,
-               remark: remark,
-               relatedAccounting: closingAcc,
-               date: endDate,
-               createdAt: Date.now()
-            })
+                date: endDate,
+                createdAt: Date.now()
+                })
 
-            return res.status(200).send({
-                success: true, data: {
-                    transferResult: transfered,
-                    closingResult: closing,
-                    openingResult : opening,
-                    transferList: transferList
-                }
-            })
-        // }
-    //     else if( givenTime > Today ){
-    //         return res.status(500).send({
-    //             error: true, 
-    //             message: "Can't create the date which is greater than today"
-    //         })
-    //     }
-    //     else if(closingAmount == undefined || closingAmount == null || closingAmount < 0 ){
-    //             return res.status(500).send({
-    //                 error: true, 
-    //                 message: "Please Input Valid Transfer Amount"
-    //             })
-    //     }
-    //    }
-    //     else {
-    //         return res.status(500).send({
-    //             error: true, 
-    //             message: "Already Transfered Amount for Today"
-    //         })
-        // } 
- } catch (error) {
+                return res.status(200).send({
+                    success: true, data: {
+                        transferResult: transfered,
+                        closingResult: closing,
+                        openingResult : opening,
+                        transferList: transferList
+                    }
+                })
+        }
+    }
+    catch (error) {
         console.log(error)
     }
 }

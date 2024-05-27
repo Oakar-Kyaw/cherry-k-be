@@ -356,7 +356,7 @@ exports.createSingleMedicineSale = async (req, res) => {
 
         if (req.body.relatedBank) {
             var amountUpdate = await Accounting.findOneAndUpdate(
-                { _id: req.body.relatedBankAccount },
+                { _id: req.body.relatedBank },
                 { $inc: { amount: data.msPaidAmount } }
             )
         } else if (req.body.relatedCash) {

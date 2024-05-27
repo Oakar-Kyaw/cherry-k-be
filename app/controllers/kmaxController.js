@@ -322,7 +322,7 @@ exports.createKmaxVoucher = async (req, res, next) => {
 
    //first transaction
   
-   if (req.body.relatedBankAccount) {
+   if (req.body.relatedBank) {
      var amountUpdate = await Accounting.findOneAndUpdate(
        { _id: req.body.relatedBank },
        { $inc: { amount: data.payAmount } }
@@ -446,9 +446,9 @@ exports.createKmaxVoucherTransaction = async (req, res, next) => {
       },
       { new: true }
     )
-    if (req.body.relatedBankAccount) {
+    if (req.body.relatedBank) {
       var amountUpdate = await Accounting.findOneAndUpdate(
-        { _id: req.body.relatedBankAccount },
+        { _id: req.body.relatedBank },
         { $inc: { amount: req.body.amount } }
       )
     } else if (req.body.relatedCash) {

@@ -4,12 +4,12 @@ const packageSelection = require("../controllers/packageSelectionController");
 const { catchError } = require("../lib/errorHandler");
 const verifyToken = require('../lib/verifyToken');
 const treatment = require("../models/treatment");
-const upload = require('../lib/fieldUploader').upload;
+const upload = require('../lib/fieldUploader');
 
 module.exports = (app) => {
 
     app.route('/api/package-selection')
-        .post(verifyToken, upload, catchError(packageSelection.createPackageSelection))
+        .post(verifyToken, upload.array("package",5), catchError(packageSelection.createPackageSelection))
         .put(verifyToken, catchError(packageSelection.updatePackageSelection))
 
     app.route('/api/package-selection/:id')
@@ -21,7 +21,7 @@ module.exports = (app) => {
 
     app.route('/api/package-selections/transaction').post(verifyToken, catchError(packageSelection.createTreatmentTransaction))
     app.route('/api/package-selections/treatment/:id').get(verifyToken, catchError(packageSelection.getTreatementSelectionByTreatmentID))
-    app.route('/api/package-selections/payment').put(verifyToken, upload, catchError(packageSelection.treatmentPayment))
+    app.route('/api/package-selections/payment').put(verifyToken, upload.array("package",5), catchError(packageSelection.treatmentPayment))
     app.route('/api/package-selections/filter').post(verifyToken, catchError(packageSelection.getRelatedPackageSelections))
     app.route('/api/package-selections/search').post(verifyToken, catchError(packageSelection.searchPackageSelections))
     app.route('/api/package-selections/code').get(verifyToken, catchError(packageSelection.createPackageSelectionCode))

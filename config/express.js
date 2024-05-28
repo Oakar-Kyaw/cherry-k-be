@@ -1,3 +1,4 @@
+const fs = require("fs")
 const express = require("express"),
   router = express.Router(),
   glob = require("glob"),
@@ -11,7 +12,9 @@ const express = require("express"),
 
   const path = require("path"),
   rootPath = path.normalize(__dirname + "/..");
-
+const uploadsURI = [
+    "./uploads/cherry-k/blog" 
+  ]
 module.exports = function (app, config) {
   app.disable("x-powered-by");
   app.use(logger("dev"));
@@ -34,6 +37,25 @@ module.exports = function (app, config) {
       preflightContinue: false,
     })
   );
+  uploadsURI.map(url => {
+    fs.access(url,err =>{
+     //to check if given directory
+     if(err){
+       //if current directory doesn't exist then create it
+       fs.mkdir(url, { recursive: true }, error => {
+           if(error){
+               console.log(error)
+           }else { 
+               console.log("New Directory created successfully !!"); 
+             } 
+       })
+      }
+       else {
+           console.log("Given directory already exists")
+       }
+   })
+})
+  app.use("/uploads",express.static(path.join(process.cwd() + "/uploads")))
   const routes = glob.sync(config.root + '/app/routes/*.js');
   routes.forEach(function(route) {
     require(route)(app);

@@ -3,13 +3,13 @@
 const procedureHistory = require("../controllers/procedureHistoryController");
 const { catchError } = require("../lib/errorHandler");
 const verifyToken = require('../lib/verifyToken');
-const upload = require('../lib/fieldUploader').upload;
+const upload = require('../lib/fieldUploader');
 
 module.exports = (app) => {
 
     app.route('/api/procedure-history')
-        .post(upload, catchError(procedureHistory.createProcedureHistory))
-        .put(upload, verifyToken, catchError(procedureHistory.updateProcedureHistory))
+        .post(upload.array("procedurehistory",5), catchError(procedureHistory.createProcedureHistory))
+        .put(upload.array("procedurehistory",5), verifyToken, catchError(procedureHistory.updateProcedureHistory))
 
     app.route('/api/procedure-history/:id')
         .get(verifyToken, catchError(procedureHistory.getProcedureHistory))
@@ -17,7 +17,7 @@ module.exports = (app) => {
         .post(verifyToken, catchError(procedureHistory.activateProcedureHistory))
 
     app.route('/api/procedure-history-upload')
-        .post(upload, verifyToken, catchError(procedureHistory.uploadImage))
+        .post(upload.array("procedurehistory",5), verifyToken, catchError(procedureHistory.uploadImage))
 
     app.route('/api/procedure-histories').get(verifyToken, catchError(procedureHistory.listAllProcedureHistorys))
 

@@ -3,13 +3,13 @@
 const patient = require("../controllers/patientController");
 const { catchError } = require("../lib/errorHandler");
 const verifyToken = require("../lib/verifyToken");
-const upload = require('../lib/fieldUploader').upload;
+const upload = require('../lib/fieldUploader');
 
 module.exports = (app) => {
 // verifyToken,
     app.route('/api/patient')
-        .post( upload, catchError(patient.createPatient))
-        .put(verifyToken, upload, catchError(patient.updatePatient))
+        .post( upload.array("patient",5), catchError(patient.createPatient))
+        .put(verifyToken, upload.array("patient",5), catchError(patient.updatePatient))
 
     app.route('/api/patient/:id')
         .get(verifyToken, catchError(patient.getPatient))

@@ -3,13 +3,13 @@
 const dentalTreatmentHistory = require("../controllers/dentalTreatmentHistoryController");
 const { catchError } = require("../lib/errorHandler");
 const verifyToken = require('../lib/verifyToken');
-const upload = require('../lib/fieldUploader').upload;
+const upload = require('../lib/fieldUploader');
 
 module.exports = (app) => {
 
     app.route('/api/dental-treatment-history')
-        .post(upload,verifyToken,catchError(dentalTreatmentHistory.createDentalTreatmentHistory))
-        .put(upload ,verifyToken,catchError(dentalTreatmentHistory.updateDentalTreatmentHistory))
+        .post(upload.array("dental",5),verifyToken,catchError(dentalTreatmentHistory.createDentalTreatmentHistory))
+        .put(upload.array("dental",5) ,verifyToken,catchError(dentalTreatmentHistory.updateDentalTreatmentHistory))
         
     app.route('/api/dental-treatment-history/:id')
         .get( verifyToken,catchError(dentalTreatmentHistory.getDentalTreatmentHistory))

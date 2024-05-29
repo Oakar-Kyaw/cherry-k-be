@@ -38,7 +38,7 @@ exports.listAllBlog = async (req, res) => {
 
 exports.createBlog = async (req, res, next) => {
   let { name, datas } = req.body;
-  let parseData = datas
+  let parseData = JSON.parse(datas)
   let imageArray = []
   let data = {}
   try {

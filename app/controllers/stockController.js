@@ -8,7 +8,8 @@ const Log = require('../models/log');
 const RecievedRecords = require('../models/recievedRecord');
 const StockRequest = require('../models/stockRequest');
 const { relative } = require('path');
-const moment = require("moment")
+const moment = require("moment");
+const stockEditTransactionModel = require('../models/stockEditTransactionModel');
 
 exports.listAllStocks = async (req, res) => {
     let query = req.mongoQuery
@@ -257,10 +258,26 @@ exports.createStock = async (req, res, next) => {
 
 exports.updateStock = async (req, res, next) => {
     try {
-        req.body.editTime = moment().format('MMMM Do YYYY, h:mm:ss a')
+        req.body.editTime = moment().tz('Asia/Yangon').format('MMMM Do YYYY, h:mm:ss a')
         req.body.editPerson = req.credentials.id
         req.body.editEmail =  req.credentials.email
         const getResult = await Stock.find({ _id: req.body.id })
+        await stockEditTransactionModel.create({
+            relatedBranch: getResult[0].relatedBranch,
+            relatedEditUser: req.body.editPerson,
+            relatedGeneralItems: getResult[0].relatedGeneralItems || null,
+            relatedProcedureItems: getResult[0].relatedProcedureItems || null,
+            relatedMedicineItems: getResult[0].relatedMedicineItems || null,
+            relatedAccessoryItems: getResult[0].relatedAccessoryItems || null,
+            relatedMachine: getResult[0].relatedMachine || null,
+            editQty: req.body.currentQty,
+            editTotalUnit: req.body.totalQty,
+            currentQty: getResult[0].currentQty,
+            totalUnit: getResult[0].totalUnit,
+            editTime: req.body.editTime,
+            editEmail: req.body.editEmail,
+            editPerson: req.body.editPerson       
+        })
         console.log("id is ", req.body.id)
         const result = await Stock.findOneAndUpdate(
             { _id: req.body.id },

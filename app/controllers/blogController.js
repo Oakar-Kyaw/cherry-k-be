@@ -38,10 +38,12 @@ exports.listAllBlog = async (req, res) => {
 
 exports.createBlog = async (req, res, next) => {
   let { name, datas } = req.body;
-  let parseData = JSON.parse(datas)
+  console.log(req.body)
+  
   let imageArray = []
   let data = {}
   try {
+    let parseData = JSON.parse(datas)
     var blogData = await blog.create({name: name})
     if(req.files){
         req.files.forEach(async (file)=>{

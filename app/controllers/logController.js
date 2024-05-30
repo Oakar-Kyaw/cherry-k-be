@@ -236,9 +236,9 @@ exports.createUsage = async (req, res) => {
           } else if (e.stock >= e.actual) {
             let totalUnit = e.stock - e.actual;
             const result = await ProcedureItem.find({ _id: e.item_id });
-            const from = result[0].fromUnit;
-            const to = result[0].toUnit;
-            const currentQty = (from * totalUnit) / to;
+            const from = Number(result[0].fromUnit);
+            const to = Number(result[0].toUnit);
+            const currentQty = Number(from * totalUnit) / to;
             try {
               const result = await Stock.findOneAndUpdate(
                 { relatedProcedureItems: e.item_id, relatedBranch: relatedBranch },

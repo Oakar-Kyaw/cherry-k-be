@@ -14,6 +14,7 @@ module.exports = (app) => {
         .delete(catchError(blog.deleteBlog)) 
         .put(upload.array("blog",5), catchError(blog.updateBlog))
         .post(upload.array("blog",5), catchError(blog.addDescription))
+        .get(catchError(blog.getBlogById))
 
     app.route('/api/blog-update/:id')
         .put(upload.array("blog",5), catchError(blog.updateDescription))

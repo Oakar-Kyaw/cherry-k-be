@@ -45,7 +45,8 @@ exports.createBlog = async (req, res, next) => {
   try {
     let parseData = JSON.parse(datas)
     var blogData = await blog.create({name: name})
-    if(req.files){
+    if (req.files) {
+      console.log(req.files,'files')
         req.files.forEach(async (file)=>{
             const nomalizePath = path.join(file.path)
             const pathes = nomalizePath.split("uploads")[1]

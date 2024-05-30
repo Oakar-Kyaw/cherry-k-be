@@ -106,6 +106,20 @@ exports.updateBlog = async (req, res, next) => {
   }
 };
 
+exports.getBlogById = async (req, res, next) => {
+  try {
+    let result = await blog.findById(req.params.id).populate("relatedDescription")
+    res.status(200).send({
+        success: true,
+        message: "Detail Blog By Id",
+        data: result
+
+    })
+  } catch (error) {
+    return res.status(500).send({ "error": true, "message": error.message })
+  }
+};
+
 exports.addDescription = async (req, res, next) => {
     try {
       let imageArray = []

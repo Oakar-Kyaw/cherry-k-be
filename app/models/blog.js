@@ -9,6 +9,10 @@ let BlogSchema = new Schema({
   name: {
     type: String
   },
+  type: {
+    type: String,
+    enum:['face','body','dental']
+  },
   isDeleted: {
     type: Boolean,
     default: false
@@ -20,5 +24,4 @@ let BlogSchema = new Schema({
 });
 
 module.exports = mongoose.model('Blogs', BlogSchema);
-
 //Author: Oakar Kyaw

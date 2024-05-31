@@ -19,6 +19,7 @@ exports.listAllBlog = async (req, res) => {
           return {
             _id: document._id,
             name: document.name,
+            type:document.type,
             isDeleted: document.isDeleted,
             relatedDescription: filteredRelatedDescription,
             __v: document.__v

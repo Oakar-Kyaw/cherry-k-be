@@ -9,6 +9,10 @@ let BlogSchema = new Schema({
   name: {
     type: String
   },
+  type: {
+    type: String,
+    enum:['face','body','dental']
+  },
   isDeleted: {
     type: Boolean,
     default: false

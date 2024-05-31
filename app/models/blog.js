@@ -24,5 +24,4 @@ let BlogSchema = new Schema({
 });
 
 module.exports = mongoose.model('Blogs', BlogSchema);
-
 //Author: Oakar Kyaw

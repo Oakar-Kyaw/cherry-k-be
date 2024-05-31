@@ -37,14 +37,14 @@ exports.listAllBlog = async (req, res) => {
 };
 
 exports.createBlog = async (req, res, next) => {
-  let { name, datas } = req.body;
+  let { name, datas,type } = req.body;
   console.log(req.body)
   
   let imageArray = []
   let data = {}
   try {
     let parseData = JSON.parse(datas)
-    var blogData = await blog.create({name: name})
+    var blogData = await blog.create({name: name,type:type})
     if (req.files) {
       console.log(req.files,'files')
         req.files.forEach(async (file)=>{
@@ -81,7 +81,8 @@ exports.updateDescription = async (req,res,next) => {
             await description.findByIdAndUpdate(req.params.id,{imageUrl: pathes})
          })
         }
-        let result = await description.findByIdAndUpdate(req.params.id,{...req.body},{new: true})
+      let result = await description.findByIdAndUpdate(req.params.id, { ...req.body }, { new: true })
+      console.log(result,'res upd')
         return res.status(200).send({
             success: true,
             message: "Updated Description Successfully",

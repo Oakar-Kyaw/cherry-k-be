@@ -2,7 +2,8 @@ const multer = require("multer")
 const path = require("path")
 //to upload store engine
 const storage = multer.diskStorage({
- destination: function (req, file, cb){
+   destination: function (req, file, cb) {
+      console.log("file is ", file)
     const filePath = path.join(process.cwd() + "/uploads"+"/cherry-k/"+file.fieldname)
     cb(null, filePath)
  },

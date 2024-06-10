@@ -19,6 +19,7 @@ exports.listAllBlog = async (req, res) => {
           return {
             _id: document._id,
             name: document.name,
+            type:document.type,
             isDeleted: document.isDeleted,
             relatedDescription: filteredRelatedDescription,
             __v: document.__v
@@ -37,15 +38,16 @@ exports.listAllBlog = async (req, res) => {
 };
 
 exports.createBlog = async (req, res, next) => {
-  let { name, datas } = req.body;
+  let { name, datas,type } = req.body;
   console.log(req.body)
   
   let imageArray = []
   let data = {}
   try {
     let parseData = JSON.parse(datas)
-    var blogData = await blog.create({name: name})
-    if(req.files){
+    var blogData = await blog.create({name: name,type:type})
+    if (req.files) {
+      console.log(req.files,'files')
         req.files.forEach(async (file)=>{
             const nomalizePath = path.join(file.path)
             const pathes = nomalizePath.split("uploads")[1]
@@ -80,7 +82,8 @@ exports.updateDescription = async (req,res,next) => {
             await description.findByIdAndUpdate(req.params.id,{imageUrl: pathes})
          })
         }
-        let result = await description.findByIdAndUpdate(req.params.id,{...req.body},{new: true})
+      let result = await description.findByIdAndUpdate(req.params.id, { ...req.body }, { new: true })
+      console.log(result,'res upd')
         return res.status(200).send({
             success: true,
             message: "Updated Description Successfully",

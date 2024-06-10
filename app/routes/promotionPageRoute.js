@@ -7,6 +7,6 @@ const verifyToken = require('../lib/verifyToken');
 
 module.exports = (app) => {
     let promotionPage = new promotionPageController()
-    app.route('/api/promotion-pages').post(verifyToken, upload.single("promotions"), catchError(promotionPage.create)).get(verifyToken, catchError(promotionPage.read))
-    app.route('/api/promotion-page/:id').get(verifyToken, catchError(promotionPage.readById)).put(verifyToken, upload.single("promotions"), catchError(promotionPage.update)).delete(verifyToken, catchError(promotionPage.delete))
+    app.route('/api/promotion-pages').post( upload.single("promotions"), catchError(promotionPage.create)).get(catchError(promotionPage.read))
+    app.route('/api/promotion-page/:id').get(catchError(promotionPage.readById)).put(upload.single("promotions"), catchError(promotionPage.update)).delete(catchError(promotionPage.delete))
 };

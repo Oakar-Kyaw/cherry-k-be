@@ -32,4 +32,6 @@ module.exports = (app) => {
     app.route('/api/treatment-vouchers/treatment-selection/:id').get(verifyToken, catchError(treatmentVoucher.getTreatmentVoucherWithTreatmentID))
     app.route('/api/treatment-vouchers/filter')
         .get(verifyToken, catchError(treatmentVoucher.filterTreatmentVoucher))
+    app.route("/api/treatment-vouchers/data/medicine/excel")
+        .get(catchError(treatmentVoucher.createSpecificItemExcelForTreatmentVoucher))
 };

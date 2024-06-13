@@ -1011,3 +1011,43 @@ exports.TreatmentVoucherFilter = async (req, res) => {
         return res.status(500).send({ error: true, message: error.message })
     }
 }
+
+exports.createSpecificItemExcelForTreatmentVoucher = async (req, res) => {
+    try{
+        let query = { isDeleted: false, Refund: false }
+        let { startDate, endDate, relatedBranch, createdBy, tsType } = req.query
+        let medicineData = []
+        let treatmentData = []
+        startDate && endDate ? query.createdAt = { $gte: new Date(startDate), $lte: new Date(endDate)} :
+        startDate ? query.createdAt = { $gte: new Date(startDate), $lte: new Date(startDate)} :
+        endDate ? query.createdAt = { $gte: new Date(endDate), $lte: new Date(endDate)} : ""
+        relatedBranch? query.relatedBranch = relatedBranch : ""
+        createdBy? query.createdBy = createdBy : ""
+        tsType? query.tsType = tsType : ""
+        const result = await TreatmentVoucher.find(query).populate('medicineItems.item_id multiTreatment.item_id relatedTreatment secondAccount relatedBranch relatedDoctor relatedBank relatedCash relatedPatient relatedTreatmentSelection relatedAccounting payment createdBy relatedRepay')
+        result?.forEach(data=>{
+         if(data.tsType === "MS"){
+            if(data.medicineItems?.length != 0){
+                let { $__, $isNew, _doc} = data
+                let { medicineItems, ...datas} = _doc
+                medicineItems.forEach(medicineItem=>{
+                    medicineData.push({...datas, item: medicineItem})
+                })
+            } 
+         }
+         if (data.tsType === "TSMulti"){
+            if(data.multiTreatment?.length != 0){
+                let { $__, $isNew, _doc} = data
+                let { multiTreatment, ...datas} = _doc
+                multiTreatment.forEach(treatmentItem=>{
+                    treatmentData.push({...datas, item: treatmentItem})
+                })
+            } 
+         }
+        })
+        res.status(200).send({success: true, medicine: medicineData, treatment: treatmentData})
+        
+    }catch (error) {
+        return res.status(500).send({ error: true, message: error.message })
+    }
+}

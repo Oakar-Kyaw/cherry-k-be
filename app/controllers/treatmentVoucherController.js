@@ -1027,7 +1027,7 @@ exports.createSpecificItemExcelForTreatmentVoucher = async (req, res) => {
         const result = await TreatmentVoucher.find(query).populate('medicineItems.item_id multiTreatment.item_id relatedTreatment secondAccount relatedBranch relatedDoctor relatedBank relatedCash relatedPatient relatedTreatmentSelection relatedAccounting payment createdBy relatedRepay')
         result.map(data=>{
          if(data.tsType === "MS"){
-            if(data.medicineItems?.length != 0){
+            if(data.medicineItems.length != 0){
                 let { $__, $isNew, _doc} = data
                 let { medicineItems, ...datas} = _doc
                 medicineItems.map(medicineItem=>{
@@ -1036,7 +1036,7 @@ exports.createSpecificItemExcelForTreatmentVoucher = async (req, res) => {
             } 
          }
          if (data.tsType === "TSMulti"){
-            if(data.multiTreatment?.length != 0){
+            if(data.multiTreatment.length != 0){
                 let { $__, $isNew, _doc} = data
                 let { multiTreatment, ...datas} = _doc
                 multiTreatment.map(treatmentItem=>{

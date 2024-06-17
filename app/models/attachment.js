@@ -22,7 +22,16 @@ let AttachmentSchema = new Schema({
     relatedBranch: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Branches'
-      },
+    },
+    type: {
+        type: String,
+        enum: ["default", "banner"],
+        default: "default"
+    },
+    isDeleted: {
+        type: Boolean,
+        default: false
+    }
 
 });
 

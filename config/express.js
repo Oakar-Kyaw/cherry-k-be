@@ -12,7 +12,7 @@ const fs = require("fs")
 
     const path = require("path"),
         rootPath = path.normalize(__dirname + "/..");
-    const uploadsURI = ["./uploads/cherry-k/blog", "./uploads/cherry-k/promotions"]
+    const uploadsURI = ["./uploads/cherry-k/blog", "./uploads/cherry-k/promotions", "./uploads/cherry-k/banners"]
     module.exports = function (app, config) {
         app.disable("x-powered-by");
         app.use(logger("dev"));

@@ -4,6 +4,108 @@ const AccountingList = require('../models/accountingList');
 const blog = require('../models/blog');
 const path = require("path");
 const description = require('../models/description');
+const attachment = require('../models/attachment');
+
+exports.listAllBannerPhotos = async (req,res) => {
+  try{
+    let result = await attachment.find({type: "banner", isDeleted: false})
+    res.status(200).send({
+      success: true,
+      data: result
+    })
+  }catch(err){
+    return res.status(500).send({ error: true, message: err.message })
+  }
+}
+
+exports.uploadBannerPhotos = async (req,res) => {
+  try{
+    let data = {}
+    if(req.files){
+      for (let file of req.files) {
+        data["type"] = "banner"
+        const nomalizePath = path.join(file.path)
+        const pathes = nomalizePath.split("uploads")[1]
+        data["imgUrl"] = pathes
+        const result = await attachment.create(data)
+      }
+      res.status(200).send({
+        success: true,
+        message: "Upload Banner Photos Successfully"
+      })
+    }
+  }catch(err){
+    return res.status(500).send({ error: true, message: err.message })
+  }
+}
+
+exports.uploadBannerPhotos = async (req,res) => {
+  try{
+    let data = {}
+    if(req.files){
+      for (let file of req.files) {
+        data["type"] = "banner"
+        const nomalizePath = path.join(file.path)
+        const pathes = nomalizePath.split("uploads")[1]
+        data["imgUrl"] = pathes
+        const result = await attachment.create(data)
+      }
+      res.status(200).send({
+        success: true,
+        message: "Upload Banner Photos Successfully"
+      })
+    }
+  }catch(err){
+    return res.status(500).send({ error: true, message: err.message })
+  }
+}
+
+exports.editBannerPhotos = async (req,res) => {
+  try{
+    let data = {}
+    if(req.file){
+        const nomalizePath = path.join(req.file.path)
+        const filePath = nomalizePath.split("uploads")[1]
+        data["imgUrl"] = filePath
+    }
+      const result = await attachment.findByIdAndUpdate(req.params.id,data, {new: true})
+      res.status(200).send({
+        success: true,
+        message: "Edit Banner Photo Successfully",
+        data: result
+      })
+  }catch(err){
+    return res.status(500).send({ error: true, message: err.message })
+  }
+}
+
+exports.bannerPhotoById = async (req,res) => {
+  try{
+      const result = await attachment.findById(req.params.id)
+      res.status(200).send({
+        success: true,
+        message: "This is list By Id",
+        data: result
+      })
+  }catch(err){
+    return res.status(500).send({ error: true, message: err.message })
+  }
+}
+
+
+exports.deleteBannerPhoto = async (req,res) => {
+  try{
+      const result = await attachment.findByIdAndUpdate(req.params.id,{isDeleted:true}, {new: true})
+      res.status(200).send({
+        success: true,
+        message: "Delete Banner Photo Successfully",
+        data: result
+      })
+  }catch(err){
+    return res.status(500).send({ error: true, message: err.message })
+  }
+}
+
 
 exports.listAllBlog = async (req, res) => {
   let count = 0;

@@ -22,4 +22,8 @@ module.exports = (app) => {
 
 
     app.route('/api/blogs').get(catchError(blog.listAllBlog))
+
+    //banner photos for cherry-k website
+    app.route('/api/banner-photos').get(catchError(blog.listAllBannerPhotos)).post(upload.array("banners",5),catchError(blog.uploadBannerPhotos))
+    app.route('/api/banner-photo/:id').get(catchError(blog.bannerPhotoById)).put(upload.single("banners"), blog.editBannerPhotos).delete(catchError(blog.deleteBannerPhoto))
 };

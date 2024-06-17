@@ -261,6 +261,18 @@ exports.createSingleMedicineSale = async (req, res) => {
         let objID = ''
         let {remark, relatedBank, relatedCash, medicineItems, relatedBranch } = req.body;
         let createdBy = req.credentials.id;
+        let day = new Date().toISOString()
+        let today = day.split("T")
+        const latestDocument = await TreatmentVoucher.find({isDeleted: false, tsType: "MS", relatedBranch: relatedBranch}).sort({ _id: -1 }).limit(1).exec();
+        if (latestDocument.length === 0 ) {
+            req.body["code"] =  "MVC-"+ today[0].replace(/-/g,"") + "-1"  // if seq is undefined set initial patientID and seq
+            req.body["seq"] = 1
+        }
+        if (latestDocument.length > 0 && latestDocument[0].seq) {
+            const increment = latestDocument[0].seq + 1
+            req.body["code"] =  "MVC-"+ today[0].replace(/-/g,"") + "-" + increment  // if seq is undefined set initial patientID and seq
+            req.body["seq"] = increment 
+        }
         if (medicineItems !== undefined) {
             for (const e of medicineItems) {
                 console.log("medicine is ",e)

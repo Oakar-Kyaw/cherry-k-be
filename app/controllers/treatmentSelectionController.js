@@ -178,7 +178,19 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
         success: true
     } 
     try {
-       
+        let day = new Date().toISOString()
+        let today = day.split("T")
+        console.log("today",today,  today[0].replace(/-/g,""))
+        const latestDocument = await TreatmentVoucher.find({isDeleted: false, tsType: "TSMulti", relatedBranch: relatedBranch}).sort({ _id: -1 }).limit(1).exec();
+        if (latestDocument.length === 0 ) {
+            req.body["VoucherCode"] =  "TVC-"+ today[0].replace(/-/g,"") + "-1"  // if seq is undefined set initial patientID and seq
+            req.body["seq"] = 1
+        }
+        if (latestDocument.length > 0 && latestDocument[0].seq) {
+            const increment = latestDocument[0].seq + 1
+            req.body["VoucherCode"] =  "TVC-"+ today[0].replace(/-/g,"") + "-" + increment  // if seq is undefined set initial patientID and seq
+            req.body["seq"] = increment 
+        }
         if (files.payment) {
             for (const element of files.payment) {
                 let imgPath = element.path.split('cherry-k')[1];
@@ -336,16 +348,16 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
                 "balance": req.body.balance
             }
             dataTVC.multiTreatment = parsedMulti
-            let today = new Date().toISOString()
-            const latestDocument = await TreatmentVoucher.find({}, { seq: 1 }).sort({ _id: -1 }).limit(1).exec();
-            if (latestDocument.length === 0){
+            // let today = new Date().toISOString()
+            // const latestDocument = await TreatmentVoucher.find({}, { seq: 1 }).sort({ _id: -1 }).limit(1).exec();
+            // if (latestDocument.length === 0){
             
-              dataTVC = { ...dataTVC, seq: 1, code: "TVC-" + today.split('T')[0].replace(/-/g, '') + "-1" } // if seq is undefined set initial patientID and seq  
-            } 
-            if (latestDocument.length > 0) {
-                const increment = latestDocument[0].seq + 1
-                dataTVC = { ...dataTVC, code: "TVC-" + today.split('T')[0].replace(/-/g, '') + "-" + increment, seq: increment }
-            }
+            //   dataTVC = { ...dataTVC, seq: 1, code: "TVC-" + today.split('T')[0].replace(/-/g, '') + "-1" } // if seq is undefined set initial patientID and seq  
+            // } 
+            // if (latestDocument.length > 0) {
+            //     const increment = latestDocument[0].seq + 1
+            //     dataTVC = { ...dataTVC, code: "TVC-" + today.split('T')[0].replace(/-/g, '') + "-" + increment, seq: increment }
+            // }
            
             // if(treatmentPackage && treatmentPackage.length != 0 ){
             //       let dataTVCTreatmentPackageArray = []

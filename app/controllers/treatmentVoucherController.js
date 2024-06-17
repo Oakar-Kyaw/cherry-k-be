@@ -263,7 +263,7 @@ exports.createSingleMedicineSale = async (req, res) => {
         let createdBy = req.credentials.id;
         let day = new Date().toISOString()
         let today = day.split("T")
-        const latestDocument = await TreatmentVoucher.find({isDeleted: false, tsType: "MS", relatedBranch: relatedBranch}).sort({ _id: -1 }).limit(1).exec();
+        const latestDocument = await TreatmentVoucher.find({isDeleted: false, tsType: "MS", Refund: false , relatedBranch: relatedBranch}).sort({ _id: -1 }).limit(1).exec();
         if (latestDocument.length === 0 ) {
             req.body["code"] =  "MVC-"+ today[0].replace(/-/g,"") + "-1"  // if seq is undefined set initial patientID and seq
             req.body["seq"] = 1

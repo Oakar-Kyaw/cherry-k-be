@@ -181,14 +181,14 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
         let day = new Date().toISOString()
         let today = day.split("T")
         console.log("today",today,  today[0].replace(/-/g,""))
-        const latestDocument = await TreatmentVoucher.find({isDeleted: false, tsType: "TSMulti", relatedBranch: relatedBranch}).sort({ _id: -1 }).limit(1).exec();
+        const latestDocument = await TreatmentVoucher.find({isDeleted: false, tsType: "TSMulti", Refund: false , relatedBranch: relatedBranch}).sort({ _id: -1 }).limit(1).exec();
         if (latestDocument.length === 0 ) {
-            req.body["VoucherCode"] =  "TVC-"+ today[0].replace(/-/g,"") + "-1"  // if seq is undefined set initial patientID and seq
+            req.body["code"] =  "TVC-"+ today[0].replace(/-/g,"") + "-1"  // if seq is undefined set initial patientID and seq
             req.body["seq"] = 1
         }
         if (latestDocument.length > 0 && latestDocument[0].seq) {
             const increment = latestDocument[0].seq + 1
-            req.body["VoucherCode"] =  "TVC-"+ today[0].replace(/-/g,"") + "-" + increment  // if seq is undefined set initial patientID and seq
+            req.body["code"] =  "TVC-"+ today[0].replace(/-/g,"") + "-" + increment  // if seq is undefined set initial patientID and seq
             req.body["seq"] = increment 
         }
         if (files.payment) {
@@ -204,6 +204,9 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
                 attachID = attachResult._id.toString()
             }
         }
+        console.log(req.body)
+        // return
+
         console.log(attachID)
         const patientUpdate = await Patient.findOneAndUpdate(
             { _id: relatedPatient },
@@ -318,6 +321,8 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
         if (tvcCreate === true) {
             //--> treatment voucher create
             let dataTVC = {
+                "code": req.body.code,
+                "seq": req.body.seq,
                 "secondAmount": req.body.secondAmount,
                 "secondAccount": req.body.secondAccount,
                 "isDouble": req.body.isDouble,

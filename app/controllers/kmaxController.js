@@ -900,14 +900,6 @@ exports.KmaxVoucherFilter = async (req, res) => {
     }
     income ? response.data = { ...response.data, firstBankNames:firstBankName, firstCashNames:firstCashName, secondBankNames:secondBank, secondCashNames:secondCashName, BankTotal: BankTotal }  
     : response.data = { ...response.data, BankList: allBankResult, firstBankNames:firstBankName, firstCashNames:firstCashName, secondBankNames:secondBank, secondCashNames:secondCashName, BankTotal: BankTotal }  
-    
-    console.log("start",startDate, endDate)
-    const debtList = await Debt.find({knasRelatedTreatmentVoucher: { $exists: true }, isPaid: false, isDeleted:false, createdAt: {$gte: new Date(startDate), $lte: new Date(endDate)}})
-    const responseDebtList = debtList.length != 0 ? debtList.reduce((acc, {balance})=> acc + ( balance || 0),0) : 0
-    response.data = {
-     ...response.data,
-      TotalDebtAmount: responseDebtList
-    }
     // income ?
     //   response.data = {
     //   ...response.data,

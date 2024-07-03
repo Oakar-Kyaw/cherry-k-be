@@ -3,6 +3,8 @@ const TreatmentVoucher = require('../models/treatmentVoucher');
 const Transaction = require('../models/transaction');
 const Accounting = require('../models/accountingList');
 const Patient = require('../models/patient');
+const Repay = require("../models/repayment")
+const moment = require("moment-timezone")
 const Stock = require('../models/stock');
 const Log = require('../models/log');
 const Debt = require('../models/debt');
@@ -1015,7 +1017,37 @@ exports.TreatmentVoucherFilter = async (req, res) => {
         }
         income ? response.data = { ...response.data, firstBankNames:firstBankName, firstCashNames:firstCashName, secondBankNames:secondBank, secondCashNames:secondCashName, BankTotal: BankTotal }  
         : response.data = { ...response.data, BankList: allBankResult, firstBankNames:firstBankName, firstCashNames:firstCashName, secondBankNames:secondBank, secondCashNames:secondCashName, BankTotal: BankTotal }  
-        
+        // repay amount in branch
+        const {
+            relatedBank,
+            createdAt,
+            ...queryRepay
+            } = query
+            delete(queryRepay.createdBy)
+            if (startDate && endDate)
+                queryRepay.repaymentDate = {
+                     $gte: moment.tz("Asia/Yangon").format(startDate),
+                    $lte: moment.tz("Asia/Yangon").format(endDate)
+                }
+            const repay = await Repay.find(queryRepay)
+            const totalRepay = repay.reduce((acc, repayment) => {
+            if (repayment.relatedCash) {
+                acc.cashTotal = (acc.cashTotal || 0) + (repayment.repaymentAmount || 0)
+                return acc
+            } else if (repayment.relatedBank) {
+                acc.bankTotal = (acc.bankTotal || 0) + (repayment.repaymentAmount || 0)
+                return acc
+            } else {
+                return acc
+            }
+            }, {
+            cashTotal: 0,
+            bankTotal: 0
+            })
+            response.data = {
+            ... response.data,
+            repay: totalRepay
+            }
             //console.log("next second amount  ",secondBankCashAmount)
         console.log("respaonse ",BankNames)
         return res.status(200).send(response);

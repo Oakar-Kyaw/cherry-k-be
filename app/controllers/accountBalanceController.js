@@ -7,7 +7,8 @@ const TreatmentVoucher = require('../models/treatmentVoucher');
 const AccountingList = require('../models/accountingList');
 const Transfer = require('../models/transfer');
 const kmaxVoucher = require('../models/kmaxVoucher');
-const moment = require("moment")
+const { totalRepayFunction } = require('../lib/repayTotalFunction');
+const moment = require("moment-timezone");
 
 exports.listAllAccountBalances = async (req, res) => {
     let { keyword, role, limit, skip } = req.query;
@@ -378,6 +379,8 @@ exports.getOpeningAndClosingWithExactDate = async (req, res) => {
             return 0;
         }
         )
+        //Repay
+        const totalRepay = await  totalRepayFunction({ relatedBranch: relatedBranch, repaymentDate: { $gte: moment.tz("Asia/Yangon").format(startDate.toISOString()), $lt: moment.tz("Asia/Yangon").format(endDate.toISOString()) }})
         console.log('Final Data',({transferBalances: type === "Opening" ? transferBalance: 0 }))
         return res.status(200).send({ success: true, 
                                       openingTotal: openingTotal, 
@@ -390,9 +393,10 @@ exports.getOpeningAndClosingWithExactDate = async (req, res) => {
                                       TVSecondCashTotal: type === "Opening" ? TVSecondCashTotal : 0,
                                       incomeTotal: type === "Opening" ? incomeTotal : 0, 
                                       transferBalances: type === "Closing" ? transferBalance: 0 ,
-                                      total: type === "Opening" ? (medicineSaleFirstCashTotal + medicineSaleSecondCashTotal + TVFirstCashTotal + TVSecondCashTotal + combinedSaleFristCashTotal + combinedSaleSecondCashTotal + incomeTotal + openingTotal) : 0 , 
-                                      closingCash: type === "Opening" ? (medicineSaleFirstCashTotal + medicineSaleSecondCashTotal + TVFirstCashTotal + TVSecondCashTotal + combinedSaleFristCashTotal + combinedSaleSecondCashTotal + incomeTotal + openingTotal) - ( expenseTotal + transferBalance) : 0,
-                                      }
+                                      total: type === "Opening" ? (medicineSaleFirstCashTotal + medicineSaleSecondCashTotal + TVFirstCashTotal + TVSecondCashTotal + combinedSaleFristCashTotal + combinedSaleSecondCashTotal + incomeTotal + openingTotal+ totalRepay.cashTotal + totalRepay.bankTotal) : 0 , 
+                                      closingCash: type === "Opening" ? (medicineSaleFirstCashTotal + medicineSaleSecondCashTotal + TVFirstCashTotal + TVSecondCashTotal + combinedSaleFristCashTotal + combinedSaleSecondCashTotal + incomeTotal + openingTotal + totalRepay.cashTotal + totalRepay.bankTotal) - ( expenseTotal + transferBalance) : 0,
+                                      totalRepay: totalRepay
+                                    }
                                       )
     } catch (error) {
         console.log(error)

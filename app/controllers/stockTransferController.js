@@ -487,3 +487,44 @@ exports.filterStockTransfer = async (req, res, next) => {
     return res.status(500).send({ error: true, message: err.message })
   }
 }
+
+exports.fixStockTransfer = async(req,res)=>{
+   StockTransfer.find({}).populate("medicineLists.item_id").then(function(items){
+    items.forEach(function(stock){
+      stock.totalPrice = 0
+      const MedicineListArray = stock.medicineLists
+      const procedureMedicineArray = stock.procedureMedicine
+      const procedureAccessory = stock.procedureAccessory
+      const generalItem = stock.generalItems
+      if(MedicineListArray && MedicineListArray.length != 0){
+        MedicineListArray.forEach(item=>{
+            item.purchasePrice = parseInt(item.purchasePrice || item.item_id.purchasePrice || 0)
+            item.totalPrice = ( parseInt(item.purchasePrice || item.item_id.purchasePrice || 0) || 0 ) * (parseInt(item.transferQty || 0) || 0 )
+            stock.totalPrice += item.totalPrice
+         })
+      }
+      if(procedureMedicineArray && procedureMedicineArray.length != 0){
+        procedureMedicineArray.forEach(item=>{
+            item.purchasePrice = parseInt(item.purchasePrice || item.item_id.purchasePrice || 0)
+            item.totalPrice = ( parseInt(item.purchasePrice || item.item_id.purchasePrice || 0) || 0 ) * (parseInt(item.transferQty || 0) || 0 )
+            stock.totalPrice += item.totalPrice
+         })
+      }
+      if(procedureAccessory && procedureAccessory.length != 0){
+        procedureAccessory.forEach(item=>{
+            item.purchasePrice = parseInt(item.purchasePrice || item.item_id.purchasePrice || 0)
+            item.totalPrice = ( parseInt(item.purchasePrice || item.item_id.purchasePrice || 0) || 0 ) * (parseInt(item.transferQty || 0) || 0 )
+            stock.totalPrice += item.totalPrice
+         })
+      }
+      if(generalItem && generalItem.length != 0){
+        generalItem.forEach(item=>{
+            item.purchasePrice = parseInt(item.purchasePrice || item.item_id.purchasePrice || 0)
+            item.totalPrice = ( parseInt(item.purchasePrice || item.item_id.purchasePrice || 0) || 0 ) * (parseInt(item.transferQty || 0) || 0 )
+            stock.totalPrice += item.totalPrice
+         })
+      }
+      stock.save()
+   })})
+   res.send({"success": true})
+}

@@ -18,4 +18,5 @@ module.exports = (app) => {
     app.route('/api/stock-transfers').get(verifyToken, catchError(stockTransfer.listAllStockRequests))
     app.route('/api/stock-transfers/code').get(verifyToken, catchError(stockTransfer.generateCode))
     app.route('/api/stock-transfers/filter').get(verifyToken, catchError(stockTransfer.filterStockTransfer))
+    app.route('/api/stock-transfers/fix').post(catchError(stockTransfer.fixStockTransfer))
 };

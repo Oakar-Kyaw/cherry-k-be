@@ -11,6 +11,7 @@ const Debt = require('../models/debt');
 const accountingList = require('../models/accountingList');
 const TreatmentSelection = require('../models/treatmentSelection');
 const Appointment = require('../models/appointment');
+const { totalRepayFunction } = require('../lib/repayTotalFunction');
 
 exports.combineMedicineSale = async (req, res) => {
     let data = req.body;
@@ -1029,21 +1030,7 @@ exports.TreatmentVoucherFilter = async (req, res) => {
                      $gte: moment.tz("Asia/Yangon").format(startDate),
                     $lte: moment.tz("Asia/Yangon").format(endDate)
                 }
-            const repay = await Repay.find(queryRepay)
-            const totalRepay = repay.reduce((acc, repayment) => {
-            if (repayment.relatedCash) {
-                acc.cashTotal = (acc.cashTotal || 0) + (repayment.repaymentAmount || 0)
-                return acc
-            } else if (repayment.relatedBank) {
-                acc.bankTotal = (acc.bankTotal || 0) + (repayment.repaymentAmount || 0)
-                return acc
-            } else {
-                return acc
-            }
-            }, {
-            cashTotal: 0,
-            bankTotal: 0
-            })
+            const totalRepay = await totalRepayFunction(queryRepay)
             response.data = {
             ... response.data,
             repay: totalRepay

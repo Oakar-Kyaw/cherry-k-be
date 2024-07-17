@@ -483,6 +483,8 @@ exports.knasGetOpeningAndClosingWithExactDate = async (req, res) => {
             return 0;
         }
         )
+         //Repay
+         const totalRepay = await  totalRepayFunction({ relatedBranch: relatedBranch, repaymentDate: { $gte: moment.tz("Asia/Yangon").format(startDate.toISOString()), $lt: moment.tz("Asia/Yangon").format(endDate.toISOString()) }})
         // console.log('Final Data',({transferBalances: type === "Opening" ? transferBalance: 0 }))
         return res.status(200).send({ success: true, 
                                       openingTotal: openingTotal, 
@@ -492,7 +494,8 @@ exports.knasGetOpeningAndClosingWithExactDate = async (req, res) => {
                                       incomeTotal: type === "Opening" ? incomeTotal : 0, 
                                       transferBalances: type === "Closing" ? transferBalance: 0 ,
                                       total: type === "Opening" ? medicineSaleFirstCashTotal + medicineSaleSecondCashTotal + incomeTotal + openingTotal : 0, 
-                                      closingCash: type === "Opening" ?  (medicineSaleFirstCashTotal + medicineSaleSecondCashTotal + incomeTotal + openingTotal) - expenseTotal : 0
+                                      closingCash: type === "Opening" ?  (medicineSaleFirstCashTotal + medicineSaleSecondCashTotal + incomeTotal + openingTotal) - expenseTotal : 0,
+                                      totalRepay: totalRepay
                                       }
                                       )
     } catch (error) {

@@ -2,6 +2,7 @@
 const Log = require('../models/log');
 const ProcedureItem = require('../models/procedureItem');
 const AccessoryItem = require('../models/accessoryItem');
+const GeneralItem = require("../models/generalItem")
 const Machine = require('../models/fixedAsset');
 const Usage = require('../models/usage');
 const Stock = require('../models/stock')
@@ -215,14 +216,16 @@ exports.getUsage = async (req, res) => {
 
 
 exports.createUsage = async (req, res) => {
-  let { relatedTreatmentSelection, relatedAppointment, procedureMedicine, procedureAccessory, machine } = req.body;
+  let { relatedTreatmentSelection, relatedAppointment, procedureMedicine, procedureAccessory, generalItem, machine } = req.body;
   let { relatedBranch } = req.body;
   let machineError = []
   let procedureItemsError = []
   let accessoryItemsError = []
+  let generalItemsError = []
   let machineFinished = []
   let procedureItemsFinished = []
   let accessoryItemsFinished = []
+  let generalItemsFinished = []
   let createdBy = req.credentials.id
   try {
     if (relatedBranch === undefined) return res.status(404).send({ error: true, message: 'Branch ID is required' })
@@ -231,13 +234,14 @@ exports.createUsage = async (req, res) => {
     if (appResult[0].relatedUsage === undefined) {
       if (procedureMedicine !== undefined) {
         for (const e of procedureMedicine) {
-          if (e.stock < e.actual) {
+          const stock = await Stock.findOne({ relatedProcedureItems: e.item_id, relatedBranch: relatedBranch})
+          if (Number(stock.totalUnit) < Number(e.actual)) {
             procedureItemsError.push(e);
-          } else if (e.stock >= e.actual) {
-            let totalUnit = e.stock - e.actual;
-            const result = await ProcedureItem.find({ _id: e.item_id });
-            const from = Number(result[0].fromUnit);
-            const to = Number(result[0].toUnit);
+          } else if (Number(stock.totalUnit) >= Number(e.actual)) {
+            let totalUnit = Number(stock.totalUnit) - Number(e.actual);
+            const result = await ProcedureItem.findOne({ _id: e.item_id });
+            const from = Number(result.fromUnit);
+            const to = Number(result.toUnit);
             const currentQty = Number(from * totalUnit) / to;
             try {
               const result = await Stock.findOneAndUpdate(
@@ -253,7 +257,7 @@ exports.createUsage = async (req, res) => {
               "relatedTreatmentSelection": relatedTreatmentSelection,
               "relatedAppointment": relatedAppointment,
               "relatedProcedureItems": e.item_id,
-              "currentQty": e.stock,
+              "currentQty": stock.totalUnit,
               "actualQty": e.actual,
               "finalQty": totalUnit,
               "relatedBranch": relatedBranch,
@@ -266,13 +270,14 @@ exports.createUsage = async (req, res) => {
       //procedureAccessory
       if (procedureAccessory !== undefined) {
         for (const e of procedureAccessory) {
-          if (e.stock < e.actual) {
+          const stock = await Stock.findOne({ relatedAccessoryItems: e.item_id, relatedBranch: relatedBranch})
+          if (Number(stock.totalUnit) < Number(e.actual)) {
             accessoryItemsError.push(e)
-          } else if (e.stock >= e.actual) {
-            let totalUnit = e.stock - e.actual
-            const result = await AccessoryItem.find({ _id: e.item_id });
-            const from = result[0].fromUnit
-            const to = result[0].toUnit
+          } else if (Number(stock.totalUnit) >= Number(e.actual)) {
+            let totalUnit =  Number(stock.totalUnit) - Number(e.actual)
+            const result = await AccessoryItem.findOne({ _id: e.item_id });
+            const from = Number(result.fromUnit);
+            const to = Number(result.toUnit);
             const currentQty = (from * totalUnit) / to
             try {
               accessoryItemsFinished.push(e)
@@ -289,7 +294,44 @@ exports.createUsage = async (req, res) => {
               "relatedTreatmentSelection": relatedTreatmentSelection,
               "relatedAppointment": relatedAppointment,
               "relatedAccessoryItems": e.item_id,
-              "currentQty": e.stock,
+              "currentQty": stock.totalUnit,
+              "actualQty": e.actual,
+              "finalQty": totalUnit,
+              "type": "Usage",
+              "relatedBranch": relatedBranch,
+              "createdBy": createdBy
+            })
+          }
+        }
+      }
+       //generalItem
+       if (generalItem !== undefined) {
+        for (const e of generalItem) {
+          const stock = await Stock.findOne({ relatedGeneralItems: e.item_id, relatedBranch: relatedBranch})
+          if (Number(stock.totalUnit) < Number(e.actual)) {
+            generalItemsError.push(e)
+          } else if (Number(stock.totalUnit) >= Number(e.actual)) {
+            let totalUnit =  Number(stock.totalUnit) - Number(e.actual)
+            const result = await GeneralItem.findOne({ _id: e.item_id });
+            const from = Number(result.fromUnit);
+            const to = Number(result.toUnit);
+            const currentQty = (from * totalUnit) / to
+            try {
+              generalItemsFinished.push(e)
+              const result = await Stock.findOneAndUpdate(
+                { relatedGeneralItems: e.item_id, relatedBranch: relatedBranch },
+                { totalUnit: totalUnit, currentQty: currentQty },
+                { new: true },
+              )
+
+            } catch (error) {
+              generalItemsError.push(e)
+            }
+            const logResult = await Log.create({
+              "relatedTreatmentSelection": relatedTreatmentSelection,
+              "relatedAppointment": relatedAppointment,
+              "relatedGeneralItems": e.item_id,
+              "currentQty": stock.totalUnit,
               "actualQty": e.actual,
               "finalQty": totalUnit,
               "type": "Usage",

@@ -1,7 +1,7 @@
 "use strict";
 
 const treatmentVoucher = require("../controllers/treatmentVoucherController");
-const { exportExcel } = require("../excelTest/excelOutput");
+// const { exportExcel } = require("../excelTest/excelOutput");
 const { catchError } = require("../lib/errorHandler");
 const verifyToken = require('../lib/verifyToken');
 

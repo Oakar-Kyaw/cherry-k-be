@@ -7,6 +7,7 @@ const Stock = require("../models/stock");
 const MedicineItem = require("../models/medicineItem");
 const AccessoryItem = require("../models/accessoryItem");
 const ProcedureItem = require("../models/procedureItem");
+const cacheHelper = require('../helper/cacheHelper');
 
 //loopItems function 
 const loopItems = (length,fn)=>{
@@ -39,6 +40,7 @@ exports.listAllRefundVoucher = async (req, res, next) => {
 //create refund voucher 
 exports.createRefundVoucher = async( req, res, next) =>{
   try{
+    cacheHelper.clearAll()
     //let { code, amount, date, refundAccount, refundVoucherId, remark, type, selections } = req.body;
     let { kMax,  cashBackAmount, date, refundAccount, refundVoucherId, remark, type, selections, newTreatmentVoucherId, relatedMedicineItems, relatedAccessoryItems, relatedProcedureItems, relatedBranch } = req.body;
     //let data = {voucherCode : code, refundAccount: refundAccount,refundVoucherId: refundVoucherId, refundDate: date, reason: remark, refundType: type, cashBackAmount: amount};

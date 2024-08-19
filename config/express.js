@@ -1,5 +1,6 @@
-const fs = require("fs")
-    const express = require("express"),
+// const { rateLimit } = require('express-rate-limit')
+const fs = require("fs");
+const express = require("express"),
         router = express.Router(),
         glob = require("glob"),
         logger = require("morgan"),
@@ -13,6 +14,15 @@ const fs = require("fs")
     const path = require("path"),
         rootPath = path.normalize(__dirname + "/..");
     const uploadsURI = ["./uploads/cherry-k/blog", "./uploads/cherry-k/promotions", "./uploads/cherry-k/banners"]
+    // const limiter = rateLimit({
+    //     windowMs: 2 * 60 * 1000, // 60 seconds
+    //     limit: 1, // Limit each IP to 100 requests per `window` (here, per 15 minutes)
+    //     standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+    //     legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+    //     message: async (req, res) => {
+    //         res.status(429).send({ success: false, message: 'You can only create vouchers within 1 minutes.'})
+    //     },
+    // }) 
     module.exports = function (app, config) {
         app.disable("x-powered-by");
         app.use(logger("dev"));
@@ -21,6 +31,8 @@ const fs = require("fs")
         app.use(cookieParser());
         app.use(compress());
         app.use(methodOverride());
+        // app.use("/api/treatment-selections/multi",limiter);
+        // app.use("/api/treatment-vouchers/ms/single",limiter);
         app.use(cors({
             allowedHeaders: [
                 "Origin",

@@ -235,6 +235,7 @@ exports.createUsage = async (req, res) => {
       if (procedureMedicine !== undefined) {
         for (const e of procedureMedicine) {
           const stock = await Stock.findOne({ relatedProcedureItems: e.item_id, relatedBranch: relatedBranch})
+          console.log("procedure medicine stock", stock)
           if (Number(stock.totalUnit) < Number(e.actual)) {
             procedureItemsError.push(e);
           } else if (Number(stock.totalUnit) >= Number(e.actual)) {
@@ -243,6 +244,7 @@ exports.createUsage = async (req, res) => {
             const from = Number(result.fromUnit);
             const to = Number(result.toUnit);
             const currentQty = Number(from * totalUnit) / to;
+            console.log("cedcure", totalUnit, result, from, to, currentQty); 
             try {
               const result = await Stock.findOneAndUpdate(
                 { relatedProcedureItems: e.item_id, relatedBranch: relatedBranch },
@@ -271,6 +273,7 @@ exports.createUsage = async (req, res) => {
       if (procedureAccessory !== undefined) {
         for (const e of procedureAccessory) {
           const stock = await Stock.findOne({ relatedAccessoryItems: e.item_id, relatedBranch: relatedBranch})
+          console.log("accessory stock", stock)
           if (Number(stock.totalUnit) < Number(e.actual)) {
             accessoryItemsError.push(e)
           } else if (Number(stock.totalUnit) >= Number(e.actual)) {
@@ -279,6 +282,7 @@ exports.createUsage = async (req, res) => {
             const from = Number(result.fromUnit);
             const to = Number(result.toUnit);
             const currentQty = (from * totalUnit) / to
+            console.log("cedcure", totalUnit, result, from, to, currentQty); 
             try {
               accessoryItemsFinished.push(e)
               const result = await Stock.findOneAndUpdate(

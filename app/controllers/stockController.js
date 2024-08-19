@@ -280,7 +280,7 @@ exports.updateStock = async (req, res, next) => {
         })
         console.log("id is ", req.body.id)
         const result = await Stock.findOneAndUpdate(
-            { _id: req.body.id },
+            { _id: req.body.id, relatedBranch:  req.body.relatedBranch },
             req.body,
             { new: true },
         ).populate('relatedBranch relatedProcedureItems relatedMedicineItems relatedAccessoryItems relatedMachine relatedGeneralItems')

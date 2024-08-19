@@ -12,6 +12,8 @@ const accountingList = require('../models/accountingList');
 const TreatmentSelection = require('../models/treatmentSelection');
 const Appointment = require('../models/appointment');
 const { totalRepayFunction } = require('../lib/repayTotalFunction');
+const cacheHelper = require('../helper/cacheHelper');
+const { checkDuplicateVoucher } = require('../helper/checkDuplicateVoucherHelper');
 
 exports.combineMedicineSale = async (req, res) => {
     let data = req.body;
@@ -260,10 +262,14 @@ exports.combineMedicineSale = async (req, res) => {
 
 exports.createSingleMedicineSale = async (req, res) => {
     try {
+        //clear cache of voucher list
+        cacheHelper.clearAll()
         let data = req.body;
         let objID = ''
-        let {remark, relatedBank, relatedCash, medicineItems, relatedBranch } = req.body;
+        let {remark, relatedBank, relatedCash, medicineItems, relatedBranch, tsType, msTotalAmount, relatedPatient, createdAt  } = req.body;
         let createdBy = req.credentials.id;
+        let checkDuplicate = await checkDuplicateVoucher({ tsType: tsType, msTotalAmount: msTotalAmount, relatedPatient: relatedPatient, createdAt: createdAt, relatedBranch: relatedBranch } )
+        if(checkDuplicate) return res.status(403).send({success: false, message: "Duplicate Vouchers"})
         let day = new Date().toISOString()
         let today = day.split("T")
         const latestDocument = await TreatmentVoucher.find({isDeleted: false, tsType: "MS", Refund: false , relatedBranch: relatedBranch}).sort({ _id: -1 }).limit(1).exec();
@@ -819,6 +825,11 @@ exports.TreatmentVoucherFilter = async (req, res) => {
         if (purchaseType) query.purchaseType = purchaseType
         if (relatedDoctor) query.relatedDoctor = relatedDoctor
         if (relatedBranch) query.relatedBranch = relatedBranch
+        const cacheKey = JSON.stringify(query);
+        const getCaches = cacheHelper.get(cacheKey)
+        if(getCaches){
+            return res.status(200).send(getCaches)
+        } 
         let bankResult = await TreatmentVoucher.find({...query,Refund: false}).populate('medicineItems.item_id multiTreatment.item_id relatedTreatment relatedBranch relatedDoctor relatedBank relatedCash relatedPatient relatedTreatmentSelection relatedAccounting payment createdBy newTreatmentVoucherId relatedRepay').populate({
             path: 'relatedTreatmentSelection',
             model: 'TreatmentSelections',
@@ -969,7 +980,6 @@ exports.TreatmentVoucherFilter = async (req, res) => {
                 secondBankCashAmount.push({bankname:bankName,amount:secondAmount})                
             } 
             if (relatedBank) {
-                console.log("paymont ",paidAmount,msPaidAmount,totalPaidAmount,tsType)
                 const { name } = relatedBank;
                 result[name] = (result[name] || 0) + (paidAmount || 0) + (msPaidAmount || 0) + (totalPaidAmount || 0) + (psPaidAmount || 0);
             } return result;
@@ -1036,7 +1046,7 @@ exports.TreatmentVoucherFilter = async (req, res) => {
             repay: totalRepay
             }
             //console.log("next second amount  ",secondBankCashAmount)
-        console.log("respaonse ",BankNames)
+        cacheHelper.set(cacheKey, response)
         return res.status(200).send(response);
      } catch (error) {
         return res.status(500).send({ error: true, message: error.message })

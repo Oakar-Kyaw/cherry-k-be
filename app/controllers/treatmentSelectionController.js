@@ -14,6 +14,8 @@ const { ObjectId } = require('mongodb');
 const moment = require('moment-timezone');
 const TreatmentPackages = require("../models/treatmentPackage");
 const treatmentPackageSelections = require('../models/treatmentPackageSelection');
+const cacheHelper = require('../helper/cacheHelper');
+const { checkDuplicateVoucher } = require('../helper/checkDuplicateVoucherHelper');
 
 exports.listMultiTreatmentSelections = async (req, res) => {
     let { keyword, role, limit, skip } = req.query;
@@ -166,7 +168,7 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
     let files = req.files
     let data = req.body
     let createdBy = req.credentials.id
-    let { selections, relatedPatient, totalAmount, totalDiscount, totalPaidAmount, treatmentReturn, refundAmount, newTreatmentVoucherCode, date, type, refundVoucherId,  multiTreatment, paidAmount, relatedBank, relatedCash, relatedAppointment, bankType, paymentType, remark, relatedDiscount, relatedDoctor, paymentMethod, treatmentPackage, relatedBranch } = req.body
+    let { selections, relatedPatient, totalAmount, totalDiscount, totalPaidAmount, treatmentReturn, refundAmount, newTreatmentVoucherCode, date, type, refundVoucherId,  multiTreatment, paidAmount, relatedBank, relatedCash, relatedAppointment, bankType, paymentType, remark, relatedDiscount, relatedDoctor, paymentMethod, treatmentPackage, relatedBranch, createdAt, tsType } = req.body
     let tvcCreate = false;
     let TSArray = []
     let TSPackageArray = []
@@ -178,6 +180,10 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
         success: true
     } 
     try {
+        //clear cach of voucher list
+        cacheHelper.clearAll()
+        let checkDuplicate = await checkDuplicateVoucher({ tsType: tsType, totalAmount: totalAmount, relatedPatient: relatedPatient, createdAt: createdAt, relatedBranch: relatedBranch, relatedDoctor: relatedDoctor } )
+        if(checkDuplicate) return res.status(403).send({success: false, message: "Duplicate Vouchers"})
         let day = new Date().toISOString()
         let today = day.split("T")
         console.log("today",today,  today[0].replace(/-/g,""))

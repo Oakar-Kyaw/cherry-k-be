@@ -5,7 +5,6 @@ const Physical = require('../models/physicalExamination')
 const History = require('../models/history')
 const { encryptPassword, comparePassword } = require('../lib/generalFunction')
 
-
 function formatDateAndTime (dateString) {
   // format mongodb ISO 8601 date format into two readable var {date, time}.
   const date = new Date(dateString)

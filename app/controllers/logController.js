@@ -71,12 +71,28 @@ exports.filterLogs = async (req, res, next) => {
       query.$or.push(...[{ relatedProcedureItems: id }, { relatedAccessoryItems: id }, { relatedMachine: id }])
     }
     if (Object.keys(query).length === 0) return res.status(404).send({ error: true, message: 'Please Specify A Query To Use This Function' })
-    const result = await Log.find(query).populate('createdBy relatedStock relatedMedicineItems relatedAppointment relatedProcedureItems relatedAccessoryItems relatedMachine relatedBranch')
+    const result = await Log.find(query).populate('createdBy relatedMedicineItems relatedAppointment relatedProcedureItems relatedAccessoryItems relatedMachine relatedBranch')
                              .populate({
                               path:"relatedTreatmentSelection",
                               populate:{
                                 path: "relatedTreatment"
                               }
+                             }).populate({
+                              path:"relatedStock",
+                              populate:[
+                                {
+                                  path:"relatedMedicineItems" 
+                                },
+                                {
+                                  path:"relatedAccessoryItems" 
+                                },
+                                {
+                                  path:"relatedProcedureItems" 
+                                },
+                                {
+                                  path:"relatedGeneralItems" 
+                                }
+                              ]
                              })
                              .limit(limit)
                              .skip(skip);

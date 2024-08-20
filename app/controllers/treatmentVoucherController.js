@@ -285,13 +285,13 @@ exports.createSingleMedicineSale = async (req, res) => {
         if (medicineItems !== undefined) {
             for (const e of medicineItems) {
                 console.log("medicine is ",e)
-                if (e.stock < e.qty) return res.status(500).send({ error: true, message: 'RequestedQty Cannot Be Greater Than StockQty!' })
-                const result = await Stock.find({ relatedMedicineItems: e.item_id, relatedBranch: req.body.relatedBranch }).populate("relatedMedicineItems")
-                if (result.length <= 0) return res.status(500).send({ error: true, message: 'Medicine Item Not Found!' })
+                const result = await Stock.findOne({ relatedMedicineItems: e.item_id, relatedBranch: req.body.relatedBranch }).populate("relatedMedicineItems")
+                if (!result) return res.status(500).send({ success: false, message: 'Medicine Item Not Found!' })
+                if (Number(result.totalUnit) < Number(e.qty)) return res.status(500).send({ success: false, message: 'RequestedQty Cannot Be Greater Than StockQty!' })
                 console.log("reusl",result)
-                let totalUnit = e.stock - e.qty
-                const from = Number(result[0].fromUnit)
-                const to = Number(result[0].toUnit)
+                let totalUnit = Number(result.totalUnit) - Number(e.qty)
+                const from = Number(result.fromUnit)
+                const to = Number(result.toUnit)
                 console.log("to is ",to)
                 const currentQty = (from * totalUnit) / to
                 console.log(totalUnit,currentQty)

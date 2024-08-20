@@ -232,7 +232,7 @@ exports.createUsage = async (req, res) => {
     if (relatedBranch === undefined) return res.status(404).send({ error: true, message: 'Branch ID is required' })
     const appResult = await Appointment.find({ _id: req.body.relatedAppointment })
     let status;
-    if (appResult[0]?.relatedUsage === undefined) {
+    if (appResult[0].relatedUsage === undefined) {
       if (procedureMedicine !== undefined) {
         for (const e of procedureMedicine) {
           const stock = await Stock.findOne({ relatedProcedureItems: e.item_id, relatedBranch: relatedBranch})

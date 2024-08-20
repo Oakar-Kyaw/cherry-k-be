@@ -237,8 +237,11 @@ exports.createUsage = async (req, res) => {
   let { relatedBranch } = req.body;
   let machineError = []
   let procedureItemsError = []
+  let noProcedureItemsStock = []
   let accessoryItemsError = []
+  let noAccessoryItemsStock = []
   let generalItemsError = []
+  let noGeneralItemsStock = []
   let machineFinished = []
   let procedureItemsFinished = []
   let accessoryItemsFinished = []
@@ -252,9 +255,13 @@ exports.createUsage = async (req, res) => {
       if (procedureMedicine !== undefined) {
         for (const e of procedureMedicine) {
           const stock = await Stock.findOne({ relatedProcedureItems: e.item_id, relatedBranch: relatedBranch})
-          console.log("stock is ",stock)
-          console.log("procedure medicine stock", stock)
-          if (Number(stock.totalUnit) < Number(e.actual)) {
+          // console.log("stock is ",stock)
+          // console.log("procedure medicine stock", stock)
+          //if there is no stock in branch
+          if (!stock){
+            noProcedureItemsStock.push(e);
+          }
+          else if (Number(stock.totalUnit) < Number(e.actual)) {
             procedureItemsError.push(e);
           } else if (Number(stock.totalUnit) >= Number(e.actual)) {
             let totalUnit = Number(stock.totalUnit) - Number(e.actual);
@@ -291,9 +298,13 @@ exports.createUsage = async (req, res) => {
       if (procedureAccessory !== undefined) {
         for (const e of procedureAccessory) {
           const stock = await Stock.findOne({ relatedAccessoryItems: e.item_id, relatedBranch: relatedBranch})
-          console.log("accessory stock is ",stock)
-          console.log("accessory stock", stock)
-          if (Number(stock.totalUnit) < Number(e.actual)) {
+          // console.log("accessory stock is ",stock)
+          // console.log("accessory stock", stock)
+          //if there is no stock in branch
+          if (!stock){
+            noAccessoryItemsStock.push(e);
+          }
+          else if (Number(stock.totalUnit) < Number(e.actual)) {
             accessoryItemsError.push(e)
           } else if (Number(stock.totalUnit) >= Number(e.actual)) {
             let totalUnit =  Number(stock.totalUnit) - Number(e.actual)
@@ -331,7 +342,11 @@ exports.createUsage = async (req, res) => {
        if (generalItem !== undefined) {
         for (const e of generalItem) {
           const stock = await Stock.findOne({ relatedGeneralItems: e.item_id, relatedBranch: relatedBranch})
-          if (Number(stock.totalUnit) < Number(e.actual)) {
+          //if there is no stock in branch
+          if (!stock){
+            noGeneralItemsStock.push(e);
+          }
+          else if (Number(stock.totalUnit) < Number(e.actual)) {
             generalItemsError.push(e)
           } else if (Number(stock.totalUnit) >= Number(e.actual)) {
             let totalUnit =  Number(stock.totalUnit) - Number(e.actual)
@@ -403,7 +418,7 @@ exports.createUsage = async (req, res) => {
       //usage create
       if (machineError.length > 0 || procedureItemsError.length > 0 || accessoryItemsError.length > 0) status = 'In Progress'
       if (machineError.length === 0 && procedureItemsError.length === 0 && accessoryItemsError.length === 0) status = 'Finished'
-      req.body = { ...req.body, machineError: machineError, usageStatus: status, procedureItemsError: procedureItemsError, accessoryItemsError: accessoryItemsError, procedureAccessory: accessoryItemsFinished, procedureMedicine: procedureItemsFinished, machine: machineFinished }
+      req.body = { ...req.body, machineError: machineError, usageStatus: status, procedureItemsError: procedureItemsError, accessoryItemsError: accessoryItemsError, generalItemsError: generalItemsError, noProcedureItemsStock: noProcedureItemsStock, noAccessoryItemsStock: noAccessoryItemsStock, noGeneralItemsStock: noGeneralItemsStock, procedureAccessory: accessoryItemsFinished, procedureMedicine: procedureItemsFinished, generalItem: generalItemsFinished, machine: machineFinished }
       var usageResult = await Usage.create(req.body);
       var appointmentUpdate = await Appointment.findOneAndUpdate(
         { _id: req.body.relatedAppointment },
@@ -415,11 +430,16 @@ exports.createUsage = async (req, res) => {
         usageStatus: status,
         procedureMedicine: procedureItemsFinished,
         procedureAccessory: accessoryItemsFinished,
+        generalItem: generalItemsFinished,
         machine: machineFinished,
         relatedBranch: req.mongoQuery.relatedBranch,
         machineError: machineError,
         procedureItemsError: procedureItemsError,
-        accessoryItemsError: accessoryItemsError
+        accessoryItemsError: accessoryItemsError,
+        generalItemsError: generalItemsError,
+        noProcedureItemsStock: noProcedureItemsStock,
+        noAccessoryItemsStock: noAccessoryItemsStock,
+        noGeneralItemsStock: noGeneralItemsStock
       })
     }
     else {
@@ -553,7 +573,7 @@ exports.createUsage = async (req, res) => {
           }
         }
       }
-      req.body = { ...req.body, machineError: machineError, procedureItemsError: procedureItemsError, accessoryItemsError: accessoryItemsError }
+      req.body = { ...req.body, machineError: machineError, procedureItemsError: procedureItemsError, accessoryItemsError: accessoryItemsError, generalItemsError: generalItemsError, noProcedureItemsStock: noProcedureItemsStock, noAccessoryItemsStock: noAccessoryItemsStock, noGeneralItemsStock: noGeneralItemsStock }
       if (machineError.length > 0 || procedureItemsError.length > 0 || accessoryItemsError.length > 0) status = 'In Progress'
       if (machineError.length === 0 && procedureItemsError.length === 0 && accessoryItemsError.length === 0) status = 'Finished'
       var usageUpdate = await Usage.findOneAndUpdate(
@@ -562,10 +582,15 @@ exports.createUsage = async (req, res) => {
           $push: {
             procedureAccessory: { $each: accessoryItemsFinished },
             procedureMedicine: { $each: procedureItemsFinished },
+            generalItem: { $each: generalItemsFinished },
             machine: { $each: machineFinished }
           },
           procedureItemsError: procedureItemsError,
           accessoryItemsError: accessoryItemsError,
+          generalItemsError: generalItemsError,
+          noProcedureItemsStock: noProcedureItemsStock,
+          noAccessoryItemsStock: noAccessoryItemsStock,
+          noGeneralItemsStock: noGeneralItemsStock,
           machineError: machineError,
           usageStatus: status,
           relatedBranch: req.mongoQuery.relatedBranch
@@ -577,11 +602,16 @@ exports.createUsage = async (req, res) => {
         usageStatus: status,
         procedureMedicine: procedureItemsFinished,
         procedureAccessory: accessoryItemsFinished,
+        generalItem: generalItemsFinished,
         machine: machineFinished,
         relatedBranch: req.mongoQuery.relatedBranch,
         machineError: machineError,
         procedureItemsError: procedureItemsError,
-        accessoryItemsError: accessoryItemsError
+        accessoryItemsError: accessoryItemsError,
+        generalItemsError: generalItemsError,
+        noProcedureItemsStock: noProcedureItemsStock,
+        noAccessoryItemsStock: noAccessoryItemsStock,
+        noGeneralItemsStock: noGeneralItemsStock
       })
     }
     //error handling
@@ -589,6 +619,10 @@ exports.createUsage = async (req, res) => {
     if (machineError.length > 0) response.machineError = machineError
     if (procedureItemsError.length > 0) response.procedureItemsError = procedureItemsError
     if (accessoryItemsError.length > 0) response.accessoryItemsError = accessoryItemsError
+    if (generalItemsError.length > 0) response.generalItemsError = generalItemsError
+    if (noProcedureItemsStock.length > 0) response.noProcedureItemsStock = noProcedureItemsStock
+    if (noAccessoryItemsStock.length > 0) response.noAccessoryItemsStock = noAccessoryItemsStock
+    if (noGeneralItemsStock.length > 0) response.noGeneralItemsStock = noGeneralItemsStock
     if (usageResult !== undefined) response.usageResult = usageResult
     if (usageRecordResult !== undefined) response.usageRecordResult = usageRecordResult
     if (appointmentUpdate !== undefined) response.appointmentUpdate = appointmentUpdate

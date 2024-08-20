@@ -38,6 +38,17 @@ let UsageSchema = new Schema({
     quantity: Number,
     perUsageQTY: Number
   }],
+  generalItem: [{
+    item_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'GeneralItems'
+    },
+    stock: Number,
+    actual: Number,
+    remark: String,
+    quantity: Number,
+    perUsageQTY: Number
+  }],
   machine: [{
     item_id: {
       type: mongoose.Schema.Types.ObjectId,
@@ -84,6 +95,50 @@ let UsageSchema = new Schema({
     item_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'AccessoryItems'
+    },
+    stock: Number,
+    actual: Number,
+    remark: String,
+    quantity: Number,
+    perUsageQTY: Number
+  }],
+  noProcedureItemsStock: [{
+    item_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'ProcedureItems'
+    },
+    stock: Number,
+    actual: Number,
+    remark: String,
+    quantity: Number,
+    perUsageQTY: Number
+  }],
+  noAccessoryItemsStock: [{
+    item_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'AccessoryItems'
+    },
+    stock: Number,
+    actual: Number,
+    remark: String,
+    quantity: Number,
+    perUsageQTY: Number
+  }],
+  generalItemsError: [{
+    item_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'GeneralItems'
+    },
+    stock: Number,
+    actual: Number,
+    remark: String,
+    quantity: Number,
+    perUsageQTY: Number
+  }],
+  noGeneralItemsStock: [{
+    item_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'GeneralItems'
     },
     stock: Number,
     actual: Number,

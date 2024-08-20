@@ -71,7 +71,7 @@ exports.filterLogs = async (req, res, next) => {
       query.$or.push(...[{ relatedProcedureItems: id }, { relatedAccessoryItems: id }, { relatedMachine: id }])
     }
     if (Object.keys(query).length === 0) return res.status(404).send({ error: true, message: 'Please Specify A Query To Use This Function' })
-    const result = await Log.find(query).populate('createdBy relatedMedicineItems relatedAppointment relatedProcedureItems relatedAccessoryItems relatedMachine relatedBranch')
+    const result = await Log.find(query).populate('createdBy relatedStock relatedMedicineItems relatedAppointment relatedProcedureItems relatedAccessoryItems relatedMachine relatedBranch')
                              .populate({
                               path:"relatedTreatmentSelection",
                               populate:{
@@ -215,6 +215,7 @@ exports.getUsage = async (req, res) => {
 }
 
 
+
 exports.createUsage = async (req, res) => {
   let { relatedTreatmentSelection, relatedAppointment, procedureMedicine, procedureAccessory, generalItem, machine } = req.body;
   let { relatedBranch } = req.body;
@@ -231,10 +232,11 @@ exports.createUsage = async (req, res) => {
     if (relatedBranch === undefined) return res.status(404).send({ error: true, message: 'Branch ID is required' })
     const appResult = await Appointment.find({ _id: req.body.relatedAppointment })
     let status;
-    if (appResult[0].relatedUsage === undefined) {
+    if (appResult[0]?.relatedUsage === undefined) {
       if (procedureMedicine !== undefined) {
         for (const e of procedureMedicine) {
           const stock = await Stock.findOne({ relatedProcedureItems: e.item_id, relatedBranch: relatedBranch})
+          console.log("stock is ",stock)
           console.log("procedure medicine stock", stock)
           if (Number(stock.totalUnit) < Number(e.actual)) {
             procedureItemsError.push(e);
@@ -273,6 +275,7 @@ exports.createUsage = async (req, res) => {
       if (procedureAccessory !== undefined) {
         for (const e of procedureAccessory) {
           const stock = await Stock.findOne({ relatedAccessoryItems: e.item_id, relatedBranch: relatedBranch})
+          console.log("accessory stock is ",stock)
           console.log("accessory stock", stock)
           if (Number(stock.totalUnit) < Number(e.actual)) {
             accessoryItemsError.push(e)

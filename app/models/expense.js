@@ -20,6 +20,9 @@ let ExpenseSchema = new Schema({
     date: {
         type: Date,
     },
+    debitVoucherNumber: {
+        type: String
+    },
     remark: {
         type: String,
     },

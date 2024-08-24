@@ -9,9 +9,9 @@ const config = {
     },
     //db: 'mongodb://127.0.0.1:3221', 
     //test url database
-    // db: "mongodb+srv://pyaephyokwintech:5NhJPFwcnWwhBh97@cluster0.r1la8.mongodb.net/Cherry-k-test",
+    db: "mongodb+srv://pyaephyokwintech:5NhJPFwcnWwhBh97@cluster0.r1la8.mongodb.net/Cherry-k-test",
     //production database
-    db: 'mongodb+srv://projectDev-01:O9YGEyPQvKyA3Q48@kwintechinstances.usgwoxy.mongodb.net/Cherry-k?retryWrites=true&w=majority', 
+    // db: 'mongodb+srv://projectDev-01:O9YGEyPQvKyA3Q48@kwintechinstances.usgwoxy.mongodb.net/Cherry-k?retryWrites=true&w=majority', 
     uploadsURI: ['./uploads/cherry-k/img', './uploads/cherry-k/history', './uploads/cherry-k/phistory', './uploads/cherry-k/consent', './uploads/cherry-k/payment'],
     dbName: 'Cherry-k',
     maxLoginAttempts: 5,
@@ -29,9 +29,9 @@ const config = {
     //db: 'mongodb://127.0.0.1:3221', 
     //db: 'mongodb+srv://dbuser:P7qBNveg8bVO1d2z@cluster0.85ozwwv.mongodb.net/cherry-k?retryWrites=true&w=majority',
     //test url database
-    // db: "mongodb+srv://pyaephyokwintech:5NhJPFwcnWwhBh97@cluster0.r1la8.mongodb.net/Cherry-k-test",
+    db: "mongodb+srv://pyaephyokwintech:5NhJPFwcnWwhBh97@cluster0.r1la8.mongodb.net/Cherry-k-test",
     //production database
-    db: 'mongodb+srv://projectDev-01:O9YGEyPQvKyA3Q48@kwintechinstances.usgwoxy.mongodb.net/Cherry-k?retryWrites=true&w=majority',
+    // db: 'mongodb+srv://projectDev-01:O9YGEyPQvKyA3Q48@kwintechinstances.usgwoxy.mongodb.net/Cherry-k?retryWrites=true&w=majority',
     uploadsURI: ['./uploads/cherry-k/img', './uploads/cherry-k/history', './uploads/cherry-k/phistory', './uploads/cherry-k/consent', './uploads/cherry-k/payment'],
     dbName: 'Cherry-k',
     maxLoginAttempts: 5,

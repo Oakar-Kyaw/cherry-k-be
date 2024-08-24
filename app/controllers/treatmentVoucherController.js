@@ -1071,8 +1071,18 @@ exports.createSpecificItemExcelForTreatmentVoucher = async (req, res) => {
             if(data.medicineItems.length != 0){
                 let { $__, $isNew, _doc} = data
                 let { medicineItems, ...datas} = _doc
-                medicineItems.map(medicineItem=>{
-                    medicineData.push({...datas, item: medicineItem})
+                medicineItems.map((medicineItem,index)=>{
+                    //only add data to first data
+                    if(index === 0){
+                      medicineData.push({...datas, item: medicineItem})  
+                    }else{
+                      datas.msTotalAmount = 0
+                      datas.msPaidAmount = 0
+                      datas.msTotalDiscountAmount = 0
+                      datas.msGrandTotal = 0
+                      datas.msBalance = 0
+                      medicineData.push({...datas, item: medicineItem}) 
+                    }  
                 })
             } 
          }
@@ -1080,8 +1090,17 @@ exports.createSpecificItemExcelForTreatmentVoucher = async (req, res) => {
             if(data.multiTreatment.length != 0){
                 let { $__, $isNew, _doc} = data
                 let { multiTreatment, ...datas} = _doc
-                multiTreatment.map(treatmentItem=>{
-                    treatmentData.push({...datas, item: treatmentItem})
+                multiTreatment.map((treatmentItem,index)=>{
+                    //only add data to first data
+                    if(index === 0){
+                        treatmentData.push({...datas, item: treatmentItem})
+                    }else{
+                        datas.totalAmount = 0
+                        datas.totalPaidAmount = 0
+                        datas.totalDiscount = 0
+                        datas.balance = 0
+                        treatmentData.push({...datas, item: treatmentItem})
+                    }
                 })
             } 
          }

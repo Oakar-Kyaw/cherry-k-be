@@ -1078,12 +1078,12 @@ exports.createSpecificItemExcelForTreatmentVoucher = async (req, res) => {
                     //only add data to first data
                     if(index === 0){
                       const repayData = {}
-                      if(repay.length > 0){
-                        repay.map((data,index)=>{
-                            repayData["repaymentDate"+ index + 1] = data.repaymentDate
-                            repayData["repaymentAmount"+ index + 1] = data.repaymentAmount
-                        })
-                      }
+                    //   if(repay.length > 0){
+                    //     repay.map((data,index)=>{
+                    //         repayData["repaymentDate"+ index + 1] = data.repaymentDate
+                    //         repayData["repaymentAmount"+ index + 1] = data.repaymentAmount
+                    //     })
+                    //   }
                       medicineData.push({...datas,...repayData, item: medicineItem})  
                     }else{
                       datas.msTotalAmount = 0

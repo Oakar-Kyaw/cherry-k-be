@@ -20,4 +20,7 @@ module.exports = (app) => {
         .post(verifyToken, catchError(purchase.activatePurchase))
 
     app.route('/api/purchases').get(verifyToken, catchError(purchase.listAllPurchases))
+
+    app.route("/api/purchases/excel")
+        .get(catchError(purchase.createExcelExports))
 };

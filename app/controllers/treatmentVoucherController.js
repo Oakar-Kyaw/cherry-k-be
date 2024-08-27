@@ -1067,9 +1067,11 @@ exports.createSpecificItemExcelForTreatmentVoucher = async (req, res) => {
         relatedBranch? query.relatedBranch = relatedBranch : ""
         createdBy? query.createdBy = createdBy : ""
         tsType? query.tsType = tsType : ""
-        //  const repay = await repayment.find({relatedBranch: ObjectId(relatedBranch) })
+        const repay = await repayment.find({relatedBranch: ObjectId(relatedBranch) })
         const result = await TreatmentVoucher.find(query).populate('medicineItems.item_id multiTreatment.item_id relatedTreatment secondAccount relatedBranch relatedDoctor relatedBank relatedCash relatedPatient relatedTreatmentSelection relatedAccounting payment createdBy relatedRepay')
-        result.map(async (data)=>{
+        result.map((data)=>{
+         const filterRepayByVoucherId = repay.filter((re)=> re.relatedTreatmentVoucher.toString() === data._id.toString())
+        //  console.log(filterRepayByVoucherId, "voucher")
          if(data.tsType === "MS"){
             if(data.medicineItems.length != 0){
                 let { $__, $isNew, _doc} = data
@@ -1077,14 +1079,14 @@ exports.createSpecificItemExcelForTreatmentVoucher = async (req, res) => {
                 medicineItems.map((medicineItem,index)=>{
                     //only add data to first data
                     if(index === 0){
-                      const repayData = {}
-                    //   if(repay.length > 0){
-                    //     repay.map((data,index)=>{
-                    //         repayData["repaymentDate"+ index + 1] = data.repaymentDate
-                    //         repayData["repaymentAmount"+ index + 1] = data.repaymentAmount
-                    //     })
-                    //   }
-                      medicineData.push({...datas,...repayData, item: medicineItem})  
+                      if(filterRepayByVoucherId.length > 0){
+                        filterRepayByVoucherId.map((data,index)=>{
+                            datas["repaymentDate"+ (index + 1)] = data.repaymentDate
+                            datas["repaymentAmount"+ (index + 1)] = data.repaymentAmount
+                            datas["repaymentRemaininngCredit" + (index + 1)] = data.remaningCredit
+                        })
+                      }
+                      medicineData.push({...datas, item: medicineItem})  
                     }else{
                       datas.msTotalAmount = 0
                       datas.msPaidAmount = 0
@@ -1103,15 +1105,14 @@ exports.createSpecificItemExcelForTreatmentVoucher = async (req, res) => {
                 multiTreatment.map((treatmentItem,index)=>{
                     //only add data to first data
                     if(index === 0){
-                        const repayData = {}
-                        // if(repay.length > 0){
-                        //   repay.map((data,index)=>{
-                        //       repayData["repaymentDate"+ index + 1] = data.repaymentDate
-                        //       repayData["repaymentAmount"+ index + 1] = data.repaymentAmount
-                        //   })
-                        // }
-                        // console.log("rea",repayData)
-                        treatmentData.push({...datas, ...repayData, item: treatmentItem})
+                        if(filterRepayByVoucherId.length > 0){
+                            filterRepayByVoucherId.map((data,index)=>{
+                              datas["repaymentDate"+ (index + 1)] = data.repaymentDate
+                              datas["repaymentAmount"+ (index + 1)] = data.repaymentAmount
+                              datas["repaymentRemainingCredit" + (index + 1)] = data.remaningCredit
+                          })
+                        }
+                        treatmentData.push({...datas, item: treatmentItem})
                     }else{
                         datas.totalAmount = 0
                         datas.totalPaidAmount = 0

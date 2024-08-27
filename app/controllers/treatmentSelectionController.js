@@ -182,7 +182,7 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
     try {
         //clear cach of voucher list
         cacheHelper.clearAll()
-        let checkDuplicate = await checkDuplicateVoucher({ tsType: tsType, totalAmount: totalAmount, relatedPatient: relatedPatient, createdAt: createdAt, relatedBranch: relatedBranch, relatedDoctor: relatedDoctor } )
+        let checkDuplicate = await checkDuplicateVoucher({ tsType: tsType, totalAmount: totalAmount, relatedPatient: relatedPatient, createdAt: createdAt, relatedBranch: relatedBranch, relatedDoctor: relatedDoctor, multiTreatment: multiTreatment } )
         if(checkDuplicate) return res.status(403).send({success: false, message: "Duplicate Vouchers"})
         let day = new Date().toISOString()
         let today = day.split("T")

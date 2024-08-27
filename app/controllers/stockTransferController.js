@@ -528,3 +528,48 @@ exports.fixStockTransfer = async(req,res)=>{
    })})
    res.send({"success": true})
 }
+
+exports.createExcelExport = async (req, res) => {
+  try{
+      let query = { isDeleted: false }
+      let { startDate, endDate, relatedBranch } = req.query
+      let stockTransferData = []
+      startDate && endDate ? query.createdAt = { $gte: new Date(startDate), $lt: new Date(endDate)} :
+      startDate ? query.date = { $gte: new Date(startDate), $lt: new Date(startDate)} :
+      endDate ? query.date = { $gte: new Date(endDate), $lt: new Date(endDate)} : ""
+      relatedBranch? query.relatedBranch = relatedBranch : ""
+      const result = await StockTransfer.find(query).populate('relatedBranch procedureMedicine.item_id medicineLists.item_id procedureAccessory.item_id generalItems.item_id')
+      result.map((datas)=>{
+       const { _doc, ...otherData } = datas
+       const { procedureMedicine, medicineLists, procedureAccessory, generalItems, ...other } = _doc
+       if(procedureMedicine.length > 0 ){
+         procedureMedicine.map((item,index)=>{
+            stockTransferData.push({...other, item: item})
+            other.totalPrice = 0
+         })
+       }
+       if(medicineLists.length > 0 ){
+        medicineLists.map((item,index)=>{
+           stockTransferData.push({...other, item: item})
+           other.totalPrice = 0
+        })
+      }
+      if(procedureAccessory.length > 0 ){
+        procedureAccessory.map((item,index)=>{
+           stockTransferData.push({...other, item: item})
+           other.totalPrice = 0
+        })
+      }
+      if(generalItems.length > 0 ){
+        generalItems.map((item,index)=>{
+           stockTransferData.push({...other, item: item})
+           other.totalPrice = 0
+        })
+      }
+      })
+      res.status(200).send({success: true, stockTransferData: stockTransferData})
+      
+  }catch (error) {
+      return res.status(500).send({ error: true, message: error.message })
+  }
+}

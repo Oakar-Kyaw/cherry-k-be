@@ -646,3 +646,52 @@ exports.activatePurchase = async (req, res, next) => {
         return res.status(500).send({ "error": true, "message": error.message })
     }
 };
+
+exports.createExcelExports = async (req, res) => {
+    try{
+        let query = { isDeleted: false }
+        let { startDate, endDate, relatedBranch } = req.query
+        let purchaseDatas = []
+        startDate && endDate ? query.purchaseDate = { $gte: new Date(startDate), $lt: new Date(endDate)} :
+        startDate ? query.purchaseDate = { $gte: new Date(startDate), $lt: new Date(startDate)} :
+        endDate ? query.purchaseDate = { $gte: new Date(endDate), $lt: new Date(endDate)} : ""
+        relatedBranch? query.relatedBranch = relatedBranch : ""
+        const result = await Purchase.find(query).populate('relatedBranch medicineItems.item_id procedureItems.item_id generalItems.item_id accessoryItems.item_id')
+        result.map((datas)=>{
+         const { _doc, ...otherData } = datas
+         const { accessoryItems, medicineItems, procedureItems, generalItems, ...other } = _doc
+         if(accessoryItems.length > 0 ){
+            accessoryItems.map((item,index)=>{
+              purchaseDatas.push({...other, item: item})
+              other.totalQTY = 0
+              other.totalPrice = 0
+           })
+         }
+         if(medicineItems.length > 0 ){
+          medicineItems.map((item,index)=>{
+             purchaseDatas.push({...other, item: item})
+             other.totalQTY = 0
+             other.totalPrice = 0
+          })
+        }
+        if(procedureItems.length > 0 ){
+            procedureItems.map((item,index)=>{
+             purchaseDatas.push({...other, item: item})
+             other.totalQTY = 0
+             other.totalPrice = 0
+          })
+        }
+        if(generalItems.length > 0 ){
+          generalItems.map((item,index)=>{
+             purchaseDatas.push({...other, item: item})
+             other.totalQTY = 0
+             other.totalPrice = 0
+          })
+        }
+        })
+        res.status(200).send({success: true, purchaseDatas: purchaseDatas})
+        
+    }catch (error) {
+        return res.status(500).send({ error: true, message: error.message })
+    }
+  }

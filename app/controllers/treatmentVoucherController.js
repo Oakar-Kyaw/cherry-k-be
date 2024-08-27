@@ -270,7 +270,7 @@ exports.createSingleMedicineSale = async (req, res) => {
         let objID = ''
         let {remark, relatedBank, relatedCash, medicineItems, relatedBranch, tsType, msTotalAmount, relatedPatient, createdAt  } = req.body;
         let createdBy = req.credentials.id;
-        let checkDuplicate = await checkDuplicateVoucher({ tsType: tsType, msTotalAmount: msTotalAmount, relatedPatient: relatedPatient, createdAt: createdAt, relatedBranch: relatedBranch } )
+        let checkDuplicate = await checkDuplicateVoucher({ tsType: tsType, msTotalAmount: msTotalAmount, relatedPatient: relatedPatient, createdAt: createdAt, relatedBranch: relatedBranch, medicineItems:medicineItems } )
         if(checkDuplicate) return res.status(403).send({success: false, message: "Duplicate Vouchers"})
         let day = new Date().toISOString()
         let today = day.split("T")

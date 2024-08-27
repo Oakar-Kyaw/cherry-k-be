@@ -1,19 +1,20 @@
 const treatmentVoucher = require("../models/treatmentVoucher")
-const moment = require("moment-timezone")
 const { startDateEndDateHelper } = require("./dateHelper")
+const { TreatmentVoucherFilter } = require("../controllers/treatmentVoucherController")
 
 function compareTwoArray(real, compare){
-    console.log("rela",real,compare)
     switch(real.length === compare.length){
         case true:
-             real.some(item=>{
-                console.log("item",item, !compare.includes(item))
-                if(!compare.includes(item)){
-                    console.log("this is item")
-                    return false
-                }
-                return true
+            let checkArray = false
+             compare.map(item=>{
+               const checkItemFromArray = real.includes(item)
+               if(!checkItemFromArray){
+                 return false
+               }else{
+                 checkArray = true
+               }
              })
+             return checkArray
         case false:
             return false
     }
@@ -49,16 +50,26 @@ exports.checkDuplicateVoucher = async (data) => {
         $lt: new Date(date.endDate.split("T")[0])
     } : ""
     relatedBranch ? query.relatedBranch = relatedBranch : ""
-    let voucher = await treatmentVoucher.findOne(query)
-    if(voucher) return true
-    // { 
-    //     const realItemArrayId = []
-    //     const array = tsType === "TSMulti" ? voucher.multiTreatment : voucher.medicineItems
-    //     const realItemId = array.map(arr=> realItemArrayId.push(arr.item_id.toString()))
-    //     const compareArray = tsType === "TSMulti" ?  JSON.parse(multiTreatment) : JSON.parse(medicineItems)
-    //     const compareItemId = compareArray.map(arr=> arr.item_id)
-    //     console.log( compareTwoArray(realItemArrayId, compareItemId),"c")
-    //     return compareTwoArray(realItemArrayId, compareItemId)
-    // }
+    let voucher = await treatmentVoucher.find(query)
+    if(voucher.length > 0) {  
+        let voucherExist = TreatmentVoucherFilter
+        voucher.some(v=>{
+            const realItemArrayId = []
+            const array = tsType === "TSMulti" ? v.multiTreatment : v.medicineItems
+            array.map(arr=> realItemArrayId.push(arr.item_id.toString()))
+            const compareArray = tsType === "TSMulti" ?  JSON.parse(multiTreatment) : JSON.parse(medicineItems)
+            const compareItemId = compareArray.map(arr=> arr.item_id)
+            console.log( compareTwoArray(realItemArrayId, compareItemId),"c")
+            if(compareTwoArray(realItemArrayId, compareItemId))
+             {
+                voucherExist = true
+                return true
+             }
+            else{
+                voucherExist = false
+            }
+        })
+        return voucherExist
+    }
     return false
 }

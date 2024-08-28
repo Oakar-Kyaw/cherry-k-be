@@ -13,9 +13,9 @@ const TreatmentSelection = require('../models/treatmentSelection');
 const Appointment = require('../models/appointment');
 const { totalRepayFunction } = require('../lib/repayTotalFunction');
 const cacheHelper = require('../helper/cacheHelper');
-const { checkDuplicateVoucher } = require('../helper/checkDuplicateVoucherHelper');
 const repayment = require('../models/repayment');
 const { ObjectId } = require('mongodb');
+const { checkDuplicateVoucher } = require('../helper/checkDuplicateVoucherHelper')
 
 exports.combineMedicineSale = async (req, res) => {
     let data = req.body;
@@ -270,8 +270,10 @@ exports.createSingleMedicineSale = async (req, res) => {
         let objID = ''
         let {remark, relatedBank, relatedCash, medicineItems, relatedBranch, tsType, msTotalAmount, relatedPatient, createdAt  } = req.body;
         let createdBy = req.credentials.id;
-        let checkDuplicate = await checkDuplicateVoucher({ tsType: tsType, msTotalAmount: msTotalAmount, relatedPatient: relatedPatient, createdAt: createdAt, relatedBranch: relatedBranch, medicineItems:medicineItems } )
-        if(checkDuplicate) return res.status(403).send({success: false, message: "Duplicate Vouchers"})
+        // console.log("this medi")
+        // let checkDuplicate = await checkDuplicateVoucher({ tsType: tsType, msTotalAmount: msTotalAmount, relatedPatient: relatedPatient, createdAt: createdAt, relatedBranch: relatedBranch, medicineItems: medicineItems } )
+        // console.log("d")
+        // if(checkDuplicate) return res.status(403).send({success: false, message: "Duplicate Vouchers"})
         let day = new Date().toISOString()
         let today = day.split("T")
         const latestDocument = await TreatmentVoucher.find({isDeleted: false, tsType: "MS", Refund: false , relatedBranch: relatedBranch}).sort({ _id: -1 }).limit(1).exec();

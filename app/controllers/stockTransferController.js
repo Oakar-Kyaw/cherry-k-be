@@ -534,7 +534,7 @@ exports.createExcelExport = async (req, res) => {
       let query = { isDeleted: false }
       let { startDate, endDate, relatedBranch } = req.query
       let stockTransferData = []
-      startDate && endDate ? query.createdAt = { $gte: new Date(startDate), $lt: new Date(endDate)} :
+      startDate && endDate ? query.date = { $gte: new Date(startDate), $lt: new Date(endDate)} :
       startDate ? query.date = { $gte: new Date(startDate), $lt: new Date(startDate)} :
       endDate ? query.date = { $gte: new Date(endDate), $lt: new Date(endDate)} : ""
       relatedBranch? query.relatedBranch = relatedBranch : ""

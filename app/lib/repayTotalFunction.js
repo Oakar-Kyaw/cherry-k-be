@@ -6,15 +6,17 @@ exports.totalRepayFunction = async(queryData) => {
     if (repayment.relatedCash) {
         acc.cashTotal = (acc.cashTotal || 0) + (repayment.repaymentAmount || 0)
         return acc
-    } else if (repayment.relatedBank) {
-        acc.bankTotal = (acc.bankTotal || 0) + (repayment.repaymentAmount || 0)
-        return acc
-    } else {
+    } 
+    // else if (repayment.relatedBank) {
+    //     acc.bankTotal = (acc.bankTotal || 0) + (repayment.repaymentAmount || 0)
+    //     return acc
+    // }
+    else {
         return acc
     }
     }, {
     cashTotal: 0,
-    bankTotal: 0
+    // bankTotal: 0
     })
     return totalRepay
 }

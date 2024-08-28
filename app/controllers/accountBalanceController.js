@@ -393,8 +393,8 @@ exports.getOpeningAndClosingWithExactDate = async (req, res) => {
                                       TVSecondCashTotal: type === "Opening" ? TVSecondCashTotal : 0,
                                       incomeTotal: type === "Opening" ? incomeTotal : 0, 
                                       transferBalances: type === "Closing" ? transferBalance: 0 ,
-                                      total: type === "Opening" ? (medicineSaleFirstCashTotal + medicineSaleSecondCashTotal + TVFirstCashTotal + TVSecondCashTotal + combinedSaleFristCashTotal + combinedSaleSecondCashTotal + incomeTotal + openingTotal+ totalRepay.cashTotal + totalRepay.bankTotal) : 0 , 
-                                      closingCash: type === "Opening" ? (medicineSaleFirstCashTotal + medicineSaleSecondCashTotal + TVFirstCashTotal + TVSecondCashTotal + combinedSaleFristCashTotal + combinedSaleSecondCashTotal + incomeTotal + openingTotal + totalRepay.cashTotal + totalRepay.bankTotal) - ( expenseTotal + transferBalance) : 0,
+                                      total: type === "Opening" ? (medicineSaleFirstCashTotal + medicineSaleSecondCashTotal + TVFirstCashTotal + TVSecondCashTotal + combinedSaleFristCashTotal + combinedSaleSecondCashTotal + incomeTotal + openingTotal+ totalRepay.cashTotal ) : 0 , 
+                                      closingCash: type === "Opening" ? (medicineSaleFirstCashTotal + medicineSaleSecondCashTotal + TVFirstCashTotal + TVSecondCashTotal + combinedSaleFristCashTotal + combinedSaleSecondCashTotal + incomeTotal + openingTotal + totalRepay.cashTotal ) - ( expenseTotal + transferBalance) : 0,
                                       totalRepay: totalRepay
                                     }
                                       )

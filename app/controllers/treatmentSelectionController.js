@@ -1516,7 +1516,6 @@ exports.TopTenFilter = async (req, res) => {
                 const { name, treatmentName, sellingPrice } = relatedTreatment;
                 const treatmentUnit = name;
                 const treatment = treatmentName.name;
-
                 if (result.hasOwnProperty(treatmentUnit)) {
                     result[treatmentUnit].qty++;
                 } else {
@@ -1525,9 +1524,9 @@ exports.TopTenFilter = async (req, res) => {
             } else if (multiTreatment) {
                 for (const item of multiTreatment) {
                     const { name, treatmentName, sellingPrice } = item;
-                    const treatmentUnit = name;
-                    const treatment = treatmentName.name;
-
+                    const treatmentUnit = name || "NotExisted";
+                    const treatment = treatmentName?.name || "NotExisted";
+                    console.log("tj",name,treatmentName,sellingPrice)
                     if (result.hasOwnProperty(treatmentUnit)) {
                         result[treatmentUnit].qty++;
                     } else {

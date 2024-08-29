@@ -829,27 +829,27 @@ exports.TreatmentVoucherFilter = async (req, res) => {
         if (purchaseType) query.purchaseType = purchaseType
         if (relatedDoctor) query.relatedDoctor = relatedDoctor
         if (relatedBranch) query.relatedBranch = relatedBranch
-        const cacheKey = JSON.stringify(query);
-        const getCaches = cacheHelper.get(cacheKey)
-        if(getCaches){
-            return res.status(200).send(getCaches)
-        } 
-        let bankResult = await TreatmentVoucher.find({...query,Refund: false}).populate('medicineItems.item_id multiTreatment.item_id relatedTreatment relatedBranch relatedDoctor relatedBank relatedCash relatedPatient relatedTreatmentSelection relatedAccounting payment createdBy newTreatmentVoucherId relatedRepay').populate({
+        // const cacheKey = JSON.stringify(query);
+        // const getCaches = cacheHelper.get(cacheKey)
+        // if(getCaches){
+        //     return res.status(200).send(getCaches)
+        // } 
+        let bankResult = await TreatmentVoucher.find({...query,Refund: false}).populate('medicineItems.item_id multiTreatment.item_id relatedTreatment relatedBranch relatedDoctor relatedBank relatedCash relatedPatient relatedAccounting payment createdBy newTreatmentVoucherId relatedRepay')
+        .populate({
             path: 'relatedTreatmentSelection',
-            model: 'TreatmentSelections',
-            populate: {
+            populate: [{
                 path: 'relatedAppointments',
-                model: 'Appointments',
                 populate: {
                     path: 'relatedDoctor',
                     model: 'Doctors'
-                },
-            } ,
-            populate: {
+                }
+            },
+            {
                 path: 'relatedTreatment',
                 model: 'Treatments',
-            } 
-        }).populate({
+            }]
+        })
+        .populate({
             path:"secondAccount",
             model:"AccountingLists",
             populate: {
@@ -862,22 +862,22 @@ exports.TreatmentVoucherFilter = async (req, res) => {
                 path: "item_id"
             }
         })
-        let allBankResult = await TreatmentVoucher.find(query).populate('medicineItems.item_id multiTreatment.item_id relatedTreatment relatedBranch relatedDoctor relatedBank relatedCash relatedPatient relatedTreatmentSelection relatedAccounting payment createdBy newTreatmentVoucherId relatedRepay').populate({
+        let allBankResult = await TreatmentVoucher.find(query).populate('medicineItems.item_id multiTreatment.item_id relatedTreatment relatedBranch relatedDoctor relatedBank relatedCash relatedPatient relatedAccounting payment createdBy newTreatmentVoucherId relatedRepay')
+        .populate({
             path: 'relatedTreatmentSelection',
-            model: 'TreatmentSelections',
-            populate: {
+            populate: [{
                 path: 'relatedAppointments',
-                model: 'Appointments',
                 populate: {
                     path: 'relatedDoctor',
                     model: 'Doctors'
-                },
-            } ,
-            populate: {
+                }
+            },
+            {
                 path: 'relatedTreatment',
                 model: 'Treatments',
-            } 
-        }).populate({
+            }]
+        })
+        .populate({
             path:"secondAccount",
             model:"AccountingLists",
             populate: {
@@ -894,22 +894,22 @@ exports.TreatmentVoucherFilter = async (req, res) => {
             const { relatedBank, ...query2 } = query;
             query2.relatedCash = { $exists: true };
             if (startDate && endDate) query2.createdAt = { $gte: startDate, $lte: endDate }
-            let cashResult = await TreatmentVoucher.find({...query2, Refund: false}).populate('newTreatmentVoucherId medicineItems.item_id multiTreatment.item_id relatedTreatment secondAccount relatedBranch relatedDoctor relatedBank relatedCash relatedPatient relatedTreatmentSelection relatedAccounting payment createdBy relatedRepay').populate({
+            let cashResult = await TreatmentVoucher.find({...query2, Refund: false}).populate('newTreatmentVoucherId medicineItems.item_id multiTreatment.item_id relatedTreatment secondAccount relatedBranch relatedDoctor relatedBank relatedCash relatedPatient relatedAccounting payment createdBy relatedRepay')
+            .populate({
                 path: 'relatedTreatmentSelection',
-                model: 'TreatmentSelections',
-                populate: {
+                populate: [{
                     path: 'relatedAppointments',
-                    model: 'Appointments',
                     populate: {
                         path: 'relatedDoctor',
                         model: 'Doctors'
                     }
                 },
-                populate: {
+                {
                     path: 'relatedTreatment',
                     model: 'Treatments',
-                } 
-            }).populate({
+                }]
+            })
+            .populate({
                 path:"secondAccount",
                 model:"AccountingLists",
                 populate: {
@@ -922,22 +922,22 @@ exports.TreatmentVoucherFilter = async (req, res) => {
                     path: "item_id"
                 }
             })
-            let allCashResult = await TreatmentVoucher.find(query2).populate('newTreatmentVoucherId medicineItems.item_id multiTreatment.item_id relatedTreatment secondAccount relatedBranch relatedDoctor relatedBank relatedCash relatedPatient relatedTreatmentSelection relatedAccounting payment createdBy relatedRepay').populate({
+            let allCashResult = await TreatmentVoucher.find(query2).populate('newTreatmentVoucherId medicineItems.item_id multiTreatment.item_id relatedTreatment secondAccount relatedBranch relatedDoctor relatedBank relatedCash relatedPatient relatedAccounting payment createdBy relatedRepay')
+            .populate({
                 path: 'relatedTreatmentSelection',
-                model: 'TreatmentSelections',
-                populate: {
+                populate: [{
                     path: 'relatedAppointments',
-                    model: 'Appointments',
                     populate: {
                         path: 'relatedDoctor',
                         model: 'Doctors'
                     }
                 },
-                populate: {
+                {
                     path: 'relatedTreatment',
                     model: 'Treatments',
-                } 
-            }).populate({
+                }]
+            })
+            .populate({
                 path: "relatedTreatmentPackage",
                 populate:{
                     path: "item_id"
@@ -1050,7 +1050,7 @@ exports.TreatmentVoucherFilter = async (req, res) => {
             repay: totalRepay
             }
             //console.log("next second amount  ",secondBankCashAmount)
-        cacheHelper.set(cacheKey, response)
+        // cacheHelper.set(cacheKey, response)
         return res.status(200).send(response);
      } catch (error) {
         return res.status(500).send({ error: true, message: error.message })

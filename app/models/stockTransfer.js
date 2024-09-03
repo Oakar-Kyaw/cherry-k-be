@@ -10,6 +10,7 @@ let StockTransferSchema = new Schema({
             type: mongoose.Schema.Types.ObjectId,
             ref: 'ProcedureItems'
         },
+        flag: Boolean,
         stockQty: Number,
         requestedQty: Number,
         transferQty: Number,
@@ -24,6 +25,7 @@ let StockTransferSchema = new Schema({
             type: mongoose.Schema.Types.ObjectId,
             ref: 'MedicineItems'
         },
+        flag: Boolean,
         stockQty: Number,
         requestedQty: Number,
         transferQty: Number,
@@ -37,6 +39,7 @@ let StockTransferSchema = new Schema({
             type: mongoose.Schema.Types.ObjectId,
             ref: 'AccessoryItems'
         },
+        flag: Boolean,
         stockQty: Number,
         requestedQty: Number,
         transferQty: Number,
@@ -50,6 +53,7 @@ let StockTransferSchema = new Schema({
             type: mongoose.Schema.Types.ObjectId,
             ref: 'GeneralItems'
         },
+        flag: Boolean,
         stockQty: Number,
         requestedQty: Number,
           transferQty: Number,

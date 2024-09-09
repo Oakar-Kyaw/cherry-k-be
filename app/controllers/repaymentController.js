@@ -32,9 +32,14 @@ exports.listAllRepayments = async (req, res) => {
       : "";
     regexKeyword ? (query["name"] = regexKeyword) : "";
 
-    let result = await Repayment.find(query).populate(
-      "relatedTreatmentVoucher relatedDebt relatedBank relatedCash relatedBranch relatedPatient"
-    );
+    let result = await Repayment.find(query)
+      .populate({
+        path: "relatedTreatmentVoucher",
+        model: "TreatmentVouchers",
+      })
+      .populate(
+        "relatedDebt relatedBank relatedCash relatedBranch relatedPatient"
+      );
 
     // const treatmentVoucher = result.map((item) => item.relatedTreatmentVoucher);
     // console.log(treatmentVoucher);

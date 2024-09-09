@@ -6,7 +6,7 @@ const express = require("express"),
   config = require("./config/db"),
   app = express(),
   server = require("http").Server(app),
-  port = 4000;
+  port = 9000;
 app.use(cors({ origin: "*" }));
 // app.use(express.json());
 // app.use(express.urlencoded({extended:true}));

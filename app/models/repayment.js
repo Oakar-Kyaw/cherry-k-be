@@ -49,14 +49,6 @@ let RepaymentSchema = new Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Branches",
   },
-  branchWithPrefix: {
-    type: String,
-    default: function () {
-      return this.relatedBranch
-        ? `KVC - ${this.relatedBranch.toString()}`
-        : "KVC - DefaultCode";
-    },
-  },
   relatedPatient: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Patients",
@@ -68,11 +60,6 @@ let RepaymentSchema = new Schema({
     },
   },
 });
-
-// // Create virtual field to prepand to KVC voucher code
-// RepaymentSchema.virtual("relatedBranchCode").get(function () {
-//   return this.relatedBranch ? `KVC - ${this.relatedBranch}` : null;
-// });
 
 module.exports = mongoose.model("Repayments", RepaymentSchema);
 

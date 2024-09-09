@@ -3,6 +3,8 @@ const Repayment = require("../models/repayment");
 const PatientTreatment = require("../models/patientTreatment");
 const Transaction = require("../models/transaction");
 const RepayRecord = require("../models/repayRecord");
+const treatmentVoucherModel = require("../models/treatmentVoucher");
+const repaymentModel = require("../models/repayment");
 
 exports.listAllRepayments = async (req, res) => {
   let {
@@ -29,9 +31,22 @@ exports.listAllRepayments = async (req, res) => {
       ? (regexKeyword = new RegExp(keyword, "i"))
       : "";
     regexKeyword ? (query["name"] = regexKeyword) : "";
+
     let result = await Repayment.find(query).populate(
       "relatedTreatmentVoucher relatedDebt relatedBank relatedCash relatedBranch relatedPatient"
     );
+
+    // const treatmentVoucher = result.map((item) => item.relatedTreatmentVoucher);
+    // console.log(treatmentVoucher);
+
+    const treatmentVoucher = await repaymentModel
+      .find({})
+      .populate("relatedTreatmentVoucher")
+      .where("relatedBranch")
+      .equals(relatedBranch);
+
+    console.log(treatmentVoucher);
+
     count = await Repayment.find(query).count();
     const division = count / limit;
     page = Math.ceil(division);
@@ -46,6 +61,7 @@ exports.listAllRepayments = async (req, res) => {
         total_count: count,
       },
       list: result,
+      treatmentVoucher,
     });
   } catch (e) {
     return res.status(500).send({ error: true, message: e.message });
@@ -75,11 +91,6 @@ exports.createRepayment = async (req, res, next) => {
       newBody.repaymentAmount = data.cashAmount + data.bankAmount;
     } else {
       newBody.repaymentAmount = data.repaymentAmount;
-    }
-
-    if (newBody.relatedBranch) {
-      const branchIDWithVoucherCode = newBody.relatedBranch.toString();
-      newBody.branchWithPrefix = `KVC-${branchIDWithVoucherCode}`;
     }
 
     const newRepayment = new Repayment(newBody);

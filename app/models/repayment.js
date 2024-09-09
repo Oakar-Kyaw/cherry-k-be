@@ -1,9 +1,8 @@
-'use strict';
+"use strict";
 
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 mongoose.promise = global.Promise;
 const Schema = mongoose.Schema;
-
 
 let RepaymentSchema = new Schema({
   repaymentDate: {
@@ -20,40 +19,61 @@ let RepaymentSchema = new Schema({
   },
   relatedDebt: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Debts"
+    ref: "Debts",
   },
   relatedTreatmentVoucher: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "TreatmentVouchers"
+    ref: "TreatmentVouchers",
   },
   isDeleted: {
     type: Boolean,
-    default: false
+    default: false,
   },
   relatedBank: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'AccountingLists'
+    ref: "AccountingLists",
   },
   relatedCash: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'AccountingLists'
+    ref: "AccountingLists",
+  },
+  relatedBankAmount: {
+    type: Number,
+    default: 0,
+  },
+  relatedCashAmount: {
+    type: Number,
+    default: 0,
   },
   relatedBranch: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Branches'
+    ref: "Branches",
+  },
+  branchWithPrefix: {
+    type: String,
+    default: function () {
+      return this.relatedBranch
+        ? `KVC - ${this.relatedBranch.toString()}`
+        : "KVC - DefaultCode";
+    },
   },
   relatedPatient: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Patients"
+    ref: "Patients",
   },
   expireAt: {
     type: Date,
     index: {
-      expireAfterSeconds: 1
-    }
-  }
+      expireAfterSeconds: 1,
+    },
+  },
 });
 
-module.exports = mongoose.model('Repayments', RepaymentSchema);
+// // Create virtual field to prepand to KVC voucher code
+// RepaymentSchema.virtual("relatedBranchCode").get(function () {
+//   return this.relatedBranch ? `KVC - ${this.relatedBranch}` : null;
+// });
+
+module.exports = mongoose.model("Repayments", RepaymentSchema);
 
 //Author: Kyaw Zaw Lwin

@@ -1,14 +1,13 @@
-'use strict';
+"use strict";
 
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 mongoose.promise = global.Promise;
 const Schema = mongoose.Schema;
 
-
 let VoucherSchema = new Schema({
-  Refund : {
+  Refund: {
     type: Boolean,
-    default : false
+    default: false,
   },
   voucherType: {
     type: String,
@@ -21,16 +20,18 @@ let VoucherSchema = new Schema({
   },
   relatedPatient: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Patients',
+    ref: "Patients",
   },
-  medicineSaleItems: [{
-    item_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'MedicineItems'
+  medicineSaleItems: [
+    {
+      item_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "MedicineItems",
+      },
+      quantity: Number,
+      discount: Number,
     },
-    quantity: Number,
-    discount: Number
-  }],
+  ],
   totalAmount: {
     type: Number,
   },
@@ -42,30 +43,43 @@ let VoucherSchema = new Schema({
   },
   paymentMethod: {
     type: String,
-    enum: ['Bank', 'Cash Down']
+    enum: ["Bank", "Cash Down"],
   },
   relatedAccounting: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Accounting'
+    ref: "Accounting",
+  },
+  deliveryDate: {
+    type: Date,
+    required: false,
+  },
+  deliveryPerson: {
+    type: String,
+    required: false,
   },
   remark: {
-    type: String
+    type: String,
   },
   isDeleted: {
     type: Boolean,
     required: true,
-    default: false
+    default: false,
   },
   relatedTreatment: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Treatments',
+    ref: "Treatments",
   },
   relatedBranch: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Branches'
+    ref: "Branches",
+  },
+  status: {
+    type: String,
+    enum: ["Pending", "Paid", "Canceled"],
+    default: "Pending",
   },
 });
 
-module.exports = mongoose.model('Vouchers', VoucherSchema);
+module.exports = mongoose.model("Vouchers", VoucherSchema);
 
 //Author: Kyaw Zaw Lwin

@@ -12,7 +12,7 @@ module.exports = (app) => {
 
   app
     .route("/api/voucher/:id")
-    .get(verifyToken, catchError(voucher.getVoucher))
+    .get(catchError(voucher.getVoucher))
     .delete(verifyToken, catchError(voucher.deleteVoucher))
     .post(verifyToken, catchError(voucher.activateVoucher));
 
@@ -23,9 +23,4 @@ module.exports = (app) => {
   app
     .route("/api/vouchers/validate")
     .post(verifyToken, catchError(voucher.createVoucherWithValidation));
-
-  // Add delivery date to voucher by id, only for admin
-  app
-    .route("/api/vouchers/add-delivery-date/:id")
-    .put(verifyToken, catchError(voucher.addDeliveryInfo));
 };

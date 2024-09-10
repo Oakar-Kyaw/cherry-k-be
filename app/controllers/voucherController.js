@@ -4,6 +4,7 @@ const MedicineSale = require("../models/medicineSale");
 const MedicineItems = require("../models/medicineItem");
 const MedicineItemsRecords = require("../models/medicineItemRecord");
 const { populate } = require("../models/voucher");
+const treatmentVoucher = require("../models/treatmentVoucher");
 
 exports.listAllVouchers = async (req, res) => {
   let { keyword, role, limit, skip } = req.query;
@@ -190,22 +191,6 @@ exports.activateVoucher = async (req, res, next) => {
     return res
       .status(200)
       .send({ success: true, data: { isDeleted: result.isDeleted } });
-  } catch (error) {
-    return res.status(500).send({ error: true, message: error.message });
-  }
-};
-
-exports.addDeliveryInfo = async (req, res, next) => {
-  try {
-    const { id, deliveryDate, deliveryPerson, remark } = req.body;
-
-    const result = await Voucher.findOneAndUpdate(
-      { _id: id },
-      { deliveryDate, deliveryPerson, remark },
-      { new: true }
-    );
-
-    return res.status(200).send({ success: true, data: result });
   } catch (error) {
     return res.status(500).send({ error: true, message: error.message });
   }

@@ -33,6 +33,10 @@ let RepaymentSchema = new Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "AccountingLists",
   },
+  secondRelatedBank: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "AccountingLists",
+  },
   firstRepayAmount: {
     type: Number,
     default: 0,
@@ -41,11 +45,19 @@ let RepaymentSchema = new Schema({
     type: Number,
     default: 0,
   },
+  repaymentType: {
+    type: String,
+    enum: ["full", "separate"],
+  },
   relatedCash: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "AccountingLists",
   },
   SeperateBankAmount: {
+    type: Number,
+    default: 0,
+  },
+  SecondSeperateBankAmount: {
     type: Number,
     default: 0,
   },

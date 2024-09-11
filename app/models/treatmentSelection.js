@@ -1,21 +1,20 @@
-'use strict';
+"use strict";
 
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 mongoose.promise = global.Promise;
 const Schema = mongoose.Schema;
 
-
 let TreatmentSelectionSchema = new Schema({
   code: {
-    type: String
+    type: String,
   },
   paymentMethod: {
     type: String,
-    enum: ['Paid', 'Partial']
+    enum: ["Paid", "Partial"],
   },
   categories: {
     type: String,
-    enum: ["Package","Standalone"]
+    enum: ["Package", "Standalone"],
   },
   paidAmount: {
     type: Number,
@@ -23,198 +22,202 @@ let TreatmentSelectionSchema = new Schema({
   leftOverAmount: {
     type: Number,
   },
-  Refund : {
-     type : Boolean,
-     default : false
+  Refund: {
+    type: Boolean,
+    default: false,
   },
   totalAmount: {
     type: Number,
   },
-  perAppointmentPrice:{
-    type:Number,
-    default:0
+  perAppointmentPrice: {
+    type: Number,
+    default: 0,
   },
-  actualRevenue:{
-    type:Number,
-    default:0
+  actualRevenue: {
+    type: Number,
+    default: 0,
   },
-  deferRevenue :{
-    type:Number,
-    default:0
+  deferRevenue: {
+    type: Number,
+    default: 0,
   },
   createdAt: {
     type: Date,
     default: Date.now,
   },
   updatedAt: {
-    type: Date
+    type: Date,
   },
   isDeleted: {
     type: Boolean,
     required: true,
-    default: false
+    default: false,
   },
-  combineSaleActive : {
+  combineSaleActive: {
     type: Boolean,
-    default:false
+    default: false,
   },
-  msPaidAmount : {
+  msPaidAmount: {
     type: Number,
-    default:0
+    default: 0,
   },
-  treatmentPaidAmount : {
+  treatmentPaidAmount: {
     type: Number,
-    default:0
+    default: 0,
   },
   relatedBank: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'AccountingLists'
+    ref: "AccountingLists",
   },
   relatedCash: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'AccountingLists'
+    ref: "AccountingLists",
   },
   secondAccount: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'AccountingLists'
+    ref: "AccountingLists",
   },
   secondAmount: {
     type: Number,
-    default: 0
+    default: 0,
   },
   isDouble: {
-    type: Boolean
+    type: Boolean,
   },
   bankType: {
     type: String,
-    enum: ['Normal', 'POS', 'Pay']
+    enum: ["Normal", "POS", "Pay"],
   },
-  multiTreatment: [{
-    item_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Treatments'
+  multiTreatment: [
+    {
+      item_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Treatments",
+      },
+      discountAmount: Number,
+      price: Number,
+      qty: Number,
     },
-    discountAmount: Number,
-    price: Number,
-    qty: Number
-  }],
+  ],
   relatedTreatment: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Treatments'
+    ref: "Treatments",
   },
   relatedTreatmentList: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'TreatmentLists'
+    ref: "TreatmentLists",
   },
   relatedAppointments: {
     type: [mongoose.Schema.Types.ObjectId],
-    ref: 'Appointments',
+    ref: "Appointments",
   },
   selectionStatus: {
     type: String,
-    enum: ['Ongoing', 'Done']
+    enum: ["Ongoing", "Done"],
   },
   relatedPatient: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Patients'
+    ref: "Patients",
   },
   finishedAppointments: {
     type: [mongoose.Schema.Types.ObjectId],
-    ref: 'Appointments',
+    ref: "Appointments",
   },
   remainingAppointments: {
     type: [mongoose.Schema.Types.ObjectId],
-    ref: 'Appointments',
+    ref: "Appointments",
   },
   relatedTransaction: {
     type: [mongoose.Schema.Types.ObjectId],
-    ref: 'Transactions'
+    ref: "Transactions",
   },
   inBetweenDuration: {
-    type: Number
+    type: Number,
   },
   bodyParts: {
     type: String,
-    enum: ['Face', 'Body', 'Body Injection'],
+    enum: ["Face", "Body", "Body Injection"],
   },
   treatmentTimes: {
-    type: Number
+    type: Number,
   },
   seq: {
-    type: Number
+    type: Number,
   },
   relatedTreatmentVoucher: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'TreatmentVouchers'
+    ref: "TreatmentVouchers",
   },
   relatedBranch: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Branches'
+    ref: "Branches",
   },
   paymentStatus: {
-    type: Boolean
+    type: Boolean,
   },
-  paymentMethod:{
+  paymentMethod: {
     type: String,
-    enum: [ "Partial","Paid" ]
+    enum: ["Partial", "Paid"],
   },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Users'
+    ref: "Users",
   },
   saleReturnFlag: {
     type: Boolean,
-    default: false
+    default: false,
   },
   purchaseType: {
     type: String,
-    enum: ['Normal', 'Solid Beauty']
+    enum: ["Normal", "Solid Beauty"],
   },
   remark: {
-    type: String
+    type: String,
   },
   tsType: {
     type: String,
-    enum: ['TS', 'TSMulti']
+    enum: ["TS", "TSMulti"],
   },
-  multiTreatment: [{
-    item_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Treatments'
+  multiTreatment: [
+    {
+      item_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Treatments",
+      },
+      discountAmount: Number,
+      price: Number,
+      qty: Number,
+      treatmentVoucher: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "TreatmentVouchers",
+      },
     },
-    discountAmount: Number,
-    price: Number,
-    qty: Number,
-    treatmentVoucher: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'TreatmentVouchers'
-    }
-  }],
+  ],
   editTime: {
-    type: String
+    type: String,
   },
   editPerson: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Users"
+    ref: "Users",
   },
   editEmail: {
-    type: String
+    type: String,
   },
   location: {
-    type: String
+    type: String,
   },
   deleteTime: {
-    type: String
+    type: String,
   },
   deletePerson: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Users"
+    ref: "Users",
   },
   deleteEmail: {
-    type: String
+    type: String,
   },
 });
-const patient = mongoose.model('TreatmentSelections', TreatmentSelectionSchema)
+const patient = mongoose.model("TreatmentSelections", TreatmentSelectionSchema);
 module.exports = patient;
 
 //Author: Kyaw Zaw Lwin

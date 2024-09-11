@@ -15,18 +15,23 @@ exports.listAllRepayments = async (req, res) => {
     relatedDebt,
     relatedPatient,
     relatedBranch,
+    relatedBank,
   } = req.query;
   let count = 0;
   let page = 0;
   try {
     limit = +limit <= 100 ? +limit : 20; //limit
     skip = +skip || 0;
+
     let query = { isDeleted: false },
       regexKeyword;
+
     role ? (query["role"] = role.toUpperCase()) : "";
     relatedDebt ? (query["relatedDebt"] = relatedDebt) : "";
     relatedPatient ? (query["relatedPatient"] = relatedPatient) : "";
     relatedBranch ? (query["relatedBranch"] = relatedBranch) : "";
+    relatedBank ? (query["relatedBank"] = relatedBank) : "";
+
     keyword && /\w/.test(keyword)
       ? (regexKeyword = new RegExp(keyword, "i"))
       : "";
@@ -44,14 +49,6 @@ exports.listAllRepayments = async (req, res) => {
     // const treatmentVoucher = result.map((item) => item.relatedTreatmentVoucher);
     // console.log(treatmentVoucher);
 
-    const treatmentVoucher = await repaymentModel
-      .find({})
-      .populate("relatedTreatmentVoucher")
-      .where("relatedBranch")
-      .equals(relatedBranch);
-
-    console.log(treatmentVoucher);
-
     count = await Repayment.find(query).count();
     const division = count / limit;
     page = Math.ceil(division);
@@ -66,7 +63,6 @@ exports.listAllRepayments = async (req, res) => {
         total_count: count,
       },
       list: result,
-      treatmentVoucher,
     });
   } catch (e) {
     return res.status(500).send({ error: true, message: e.message });
@@ -86,29 +82,78 @@ exports.getRepayment = async (req, res) => {
 };
 
 exports.createRepayment = async (req, res, next) => {
-  let data = req.body;
   try {
-    const newBody = { ...data };
+    let {
+      relatedBranch,
+      relatedCash,
+      relatedBank,
+      secondRepayAmount,
+      firstRepayAmount,
+      relatedPatient,
+      patientName,
+      description,
+    } = req.body;
 
-    if (data.cashAmount && data.bankAmount) {
-      newBody.relatedCashAmount = data.cashAmount;
-      newBody.relatedBankAmount = data.bankAmount;
-      newBody.repaymentAmount = data.cashAmount + data.bankAmount;
-    } else {
-      newBody.repaymentAmount = data.repaymentAmount;
+    const checkResultDoc = await Repayment.findOne({
+      relatedBranch: relatedBranch,
+      relatedCash: relatedCash,
+      relatedBank: relatedBank,
+      relatedPatient: relatedPatient,
+      patientName: patientName,
+    });
+
+    if (checkResultDoc) {
+      return res.status(400).send({ error: true, message: "Record Exist" });
     }
 
-    const newRepayment = new Repayment(newBody);
-    const result = await newRepayment.save();
+    let seperateBankAmount = 0;
+    let seperateCashAmount = 0;
+    let repaymentTotalAmount = 0;
 
-    res.status(200).send({
-      message: "Repayment create success",
-      success: true,
-      data: result,
-      patientTreatment: patientTreatmentResults,
-      fTrans: fTransUpdate,
-      sTrans: secTransResult,
+    // Add to seperateCashAmount and repaymentTotalAmount if relatedCash exists
+    if (relatedCash) {
+      if (firstRepayAmount) {
+        seperateCashAmount += firstRepayAmount;
+        repaymentTotalAmount += firstRepayAmount;
+      }
+      if (secondRepayAmount) {
+        seperateCashAmount += secondRepayAmount;
+        repaymentTotalAmount += secondRepayAmount;
+      }
+    }
+
+    // Add to seperateBankAmount and repaymentTotalAmount if relatedBank exists
+    if (relatedBank) {
+      if (firstRepayAmount) {
+        seperateBankAmount += firstRepayAmount;
+        repaymentTotalAmount += firstRepayAmount;
+      }
+      if (secondRepayAmount) {
+        seperateBankAmount += secondRepayAmount;
+        repaymentTotalAmount += secondRepayAmount;
+      }
+    }
+
+    // Avoid assigning the same balance to both cash and bank
+    if (relatedCash && relatedBank) {
+      seperateBankAmount = firstRepayAmount;
+      seperateCashAmount = secondRepayAmount;
+      repaymentTotalAmount = seperateCashAmount + seperateBankAmount;
+    }
+
+    const result = await Repayment.create({
+      relatedBranch: relatedBranch,
+      relatedCash: relatedCash,
+      relatedBank: relatedBank,
+      secondRepayAmount: secondRepayAmount,
+      firstRepayAmount: firstRepayAmount,
+      repaymentAmount: repaymentTotalAmount,
+      SeperateCashAmount: seperateCashAmount,
+      SeperateBankAmount: seperateBankAmount,
+      description: description,
     });
+
+    return res.status(200).send({ success: true, data: result });
   } catch (error) {
     return res.status(500).send({ error: true, message: error.message });
   }

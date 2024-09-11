@@ -15,7 +15,7 @@ module.exports = (app) => {
   app
     .route("/api/treatment-voucher/:id")
     .get(verifyToken, catchError(treatmentVoucher.getTreatmentVoucher))
-    .delete(verifyToken, catchError(treatmentVoucher.deleteTreatmentVoucher))
+    .delete(catchError(treatmentVoucher.deleteTreatmentVoucher))
     .post(verifyToken, catchError(treatmentVoucher.activateTreatmentVoucher));
 
   app

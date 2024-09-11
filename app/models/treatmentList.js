@@ -1,9 +1,8 @@
-'use strict';
+"use strict";
 
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 mongoose.promise = global.Promise;
 const Schema = mongoose.Schema;
-
 
 let TreatmentListSchema = new Schema({
   code: {
@@ -13,49 +12,49 @@ let TreatmentListSchema = new Schema({
     type: String,
   },
   bodyParts: {
-    type:String,
-    enum:['Face','Body','Body Injection'],
+    type: String,
+    enum: ["Face", "Body", "Body Injection"],
   },
   description: {
-    type:String,
+    type: String,
   },
   updatedAt: {
-    type: Date
+    type: Date,
   },
   isDeleted: {
-    type:Boolean,
-    required:true,
-    default:false
+    type: Boolean,
+    required: true,
+    default: false,
   },
   relatedBranch: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Branches'
+    ref: "Branches",
   },
   editTime: {
-    type: String
+    type: String,
   },
   editPerson: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Users"
+    ref: "Users",
   },
   editEmail: {
-    type: String
+    type: String,
   },
   location: {
-    type: String
+    type: String,
   },
   deleteTime: {
-    type: String
+    type: String,
   },
   deletePerson: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Users"
+    ref: "Users",
   },
   deleteEmail: {
-    type: String
+    type: String,
   },
 });
 
-module.exports = mongoose.model('TreatmentLists', TreatmentListSchema);
+module.exports = mongoose.model("TreatmentLists", TreatmentListSchema);
 
 //Author: Kyaw Zaw Lwin

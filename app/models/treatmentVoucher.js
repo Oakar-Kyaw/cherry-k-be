@@ -127,8 +127,9 @@ let TreatmentVoucherSchema = new Schema({
     type: String,
     required: false,
   },
-  remark: {
+  deliveryDescription: {
     type: String,
+    required: false,
   },
   relatedBranch: {
     type: mongoose.Schema.Types.ObjectId,
@@ -307,6 +308,10 @@ let TreatmentVoucherSchema = new Schema({
   relatedRepay: {
     type: [mongoose.Schema.Types.ObjectId],
     ref: "Repayments",
+  },
+  status: {
+    type: String,
+    enum: ["Pending", "Canceled", "Paid"],
   },
 });
 

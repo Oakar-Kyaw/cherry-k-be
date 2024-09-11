@@ -19,6 +19,10 @@ const {
   checkDuplicateVoucher,
 } = require("../helper/checkDuplicateVoucherHelper");
 const treatmentVoucher = require("../models/treatmentVoucher");
+const KmaxVoucher = require("../models/kmaxVoucher");
+const MedicineItemsModel = require("../models/medicineItem");
+const MedicineItemsRecordModel = require("../models/medicineItemRecord");
+const MedicineSalesModel = require("../models/medicineSale");
 
 exports.combineMedicineSale = async (req, res) => {
   let data = req.body;
@@ -787,7 +791,7 @@ exports.deleteTreatmentVoucher = async (req, res, next) => {
   try {
     const result = await TreatmentVoucher.findOneAndUpdate(
       { _id: req.params.id },
-      { isDeleted: true },
+      { isDeleted: true, status: "Canceled" },
       { new: true }
     );
     const transactionArr = result.relatedTransaction;
@@ -836,6 +840,46 @@ exports.deleteTreatmentVoucher = async (req, res, next) => {
           return res.status(200).send({ success: true, message: "Not Found!" });
       }
     }
+
+    //Reserving the quantity for eact item in MedicineSales and Update MedicineItems Stock
+    for (const saleItems of result.medicineItems) {
+      const medicineItemDoc = await MedicineItemsModel.findById(
+        saleItems.item_id
+      );
+
+      if (!medicineItemDoc)
+        return res
+          .status(404)
+          .send({ error: true, message: "Medicine Item Not Found!" });
+
+      medicineItemDoc.currentQuantity += saleItems.qty;
+
+      await medicineItemDoc.save();
+
+      const AfterDeleteRecord = new MedicineItemsRecordModel({
+        medicineItems: [
+          {
+            RemovedItem_id: medicineItemDoc.item_id,
+            addRemovedQtyBackToMedItems: saleItems.qty,
+            MedItemQtyAfterDelete: medicineItemDoc.currentQuantity,
+          },
+        ],
+        relatedBranch: result.relatedBranch,
+        reason: "Treatment Voucher Deleted",
+      });
+
+      await AfterDeleteRecord.save();
+    }
+
+    await MedicineSalesModel.updateMany(
+      { isDeleted: false },
+      { relatedTreatment: result.relatedTreatment },
+      { new: true }
+    );
+
+    result.isDeleted = true;
+    result.status = "Deleted";
+    await result.save();
 
     if (appointment) {
       const updateResult = await Appointment.deleteMany({ _id: appointment });
@@ -1455,18 +1499,29 @@ exports.createSpecificItemExcelForTreatmentVoucher = async (req, res) => {
 
 exports.addDeliveryInfo = async (req, res, next) => {
   try {
-    const { deliveryDate, deliveryPerson, remark } = req.body;
+    const { deliveryDate, deliveryPerson, deliveryDescription, type } =
+      req.body;
     const { id } = req.params;
-
-    const result = await treatmentVoucher.findOneAndUpdate(
-      { _id: id },
-      {
-        deliveryDate: deliveryDate,
-        deliveryPerson: deliveryPerson,
-        remark: remark,
-      },
-      { new: true }
-    );
+    let result;
+    type === "knas"
+      ? (result = await KmaxVoucher.findByIdAndUpdate(
+          id,
+          {
+            deliveryDate: deliveryDate,
+            deliveryPerson: deliveryPerson,
+            deliveryDescription: deliveryDescription,
+          },
+          { new: true }
+        ))
+      : (result = await treatmentVoucher.findByIdAndUpdate(
+          { _id: id },
+          {
+            deliveryDate: deliveryDate,
+            deliveryPerson: deliveryPerson,
+            deliveryDescription: deliveryDescription,
+          },
+          { new: true }
+        ));
 
     return res.status(200).send({
       success: true,

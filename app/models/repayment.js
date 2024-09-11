@@ -33,15 +33,23 @@ let RepaymentSchema = new Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "AccountingLists",
   },
+  firstRepayAmount: {
+    type: Number,
+    default: 0,
+  },
+  secondRepayAmount: {
+    type: Number,
+    default: 0,
+  },
   relatedCash: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "AccountingLists",
   },
-  relatedBankAmount: {
+  SeperateBankAmount: {
     type: Number,
     default: 0,
   },
-  relatedCashAmount: {
+  SeperateCashAmount: {
     type: Number,
     default: 0,
   },
@@ -52,6 +60,9 @@ let RepaymentSchema = new Schema({
   relatedPatient: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Patients",
+  },
+  patientName: {
+    type: String,
   },
   expireAt: {
     type: Date,

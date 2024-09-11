@@ -10,7 +10,7 @@ exports.listAllMedicineItems = async (req, res) => {
   let count = 0;
   let page = 0;
   try {
-    limit = +limit <= 100 ? +limit : 10; //limit
+    limit = limit ? limit : 0; //limit
     skip = +skip || 0;
     let query = req.mongoQuery,
       regexKeyword;

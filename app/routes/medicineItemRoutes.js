@@ -18,7 +18,7 @@ module.exports = (app) => {
 
   app
     .route("/api/medicine-items")
-    .get(catchError(medicineItem.listAllMedicineItems));
+    .get(verifyToken, catchError(medicineItem.listAllMedicineItems));
 
   app
     .route("/api/medicine-items/:id")

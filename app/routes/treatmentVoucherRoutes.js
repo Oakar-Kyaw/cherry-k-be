@@ -60,7 +60,10 @@ module.exports = (app) => {
   app
     .route("/api/treatment-vouchers/data/medicine/excel")
     .get(
-      catchError(treatmentVoucher.createSpecificItemExcelForTreatmentVoucher)
+      catchError(
+        verifyToken,
+        treatmentVoucher.createSpecificItemExcelForTreatmentVoucher
+      )
     );
   // app.route("/api/v1/treatment-vouchers/excels")
   //     .get(catchError(exportExcel))
@@ -68,5 +71,5 @@ module.exports = (app) => {
   // Add delivery date to voucher by id, only for admin
   app
     .route("/api/treatment-vouchers/add-delivery-date/:id")
-    .put(catchError(treatmentVoucher.addDeliveryInfo));
+    .put(verifyToken, catchError(treatmentVoucher.addDeliveryInfo));
 };

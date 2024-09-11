@@ -16,6 +16,7 @@ exports.listAllRepayments = async (req, res) => {
     relatedPatient,
     relatedBranch,
     relatedBank,
+    secondRelatedBank,
   } = req.query;
   let count = 0;
   let page = 0;
@@ -31,6 +32,7 @@ exports.listAllRepayments = async (req, res) => {
     relatedPatient ? (query["relatedPatient"] = relatedPatient) : "";
     relatedBranch ? (query["relatedBranch"] = relatedBranch) : "";
     relatedBank ? (query["relatedBank"] = relatedBank) : "";
+    secondRelatedBank ? (query["secondRelatedBank"] = secondRelatedBank) : "";
 
     keyword && /\w/.test(keyword)
       ? (regexKeyword = new RegExp(keyword, "i"))
@@ -43,7 +45,7 @@ exports.listAllRepayments = async (req, res) => {
         model: "TreatmentVouchers",
       })
       .populate(
-        "relatedDebt relatedBank relatedCash relatedBranch relatedPatient"
+        "relatedDebt relatedBank relatedCash relatedBranch relatedPatient secondRelatedBank"
       );
 
     // const treatmentVoucher = result.map((item) => item.relatedTreatmentVoucher);
@@ -87,11 +89,14 @@ exports.createRepayment = async (req, res, next) => {
       relatedBranch,
       relatedCash,
       relatedBank,
+      balance,
       secondRepayAmount,
       firstRepayAmount,
       relatedPatient,
       patientName,
       description,
+      repaymentType,
+      relatedTreatmentVoucher,
     } = req.body;
 
     const checkResultDoc = await Repayment.findOne({
@@ -103,54 +108,71 @@ exports.createRepayment = async (req, res, next) => {
     });
 
     if (checkResultDoc) {
-      return res.status(400).send({ error: true, message: "Record Exist" });
+      return res.status(400).send({ error: true, message: "Record Exists" });
     }
 
     let seperateBankAmount = 0;
     let seperateCashAmount = 0;
     let repaymentTotalAmount = 0;
+    let firstRepayTotalAmount = 0;
+    let secondRepayTotalAmount = 0;
 
-    // Add to seperateCashAmount and repaymentTotalAmount if relatedCash exists
-    if (relatedCash) {
-      if (firstRepayAmount) {
-        seperateCashAmount += firstRepayAmount;
-        repaymentTotalAmount += firstRepayAmount;
-      }
-      if (secondRepayAmount) {
-        seperateCashAmount += secondRepayAmount;
-        repaymentTotalAmount += secondRepayAmount;
-      }
-    }
+    if (balance || firstRepayAmount || secondRepayAmount) {
+      if (repaymentType === "full") {
+        repaymentTotalAmount = balance;
 
-    // Add to seperateBankAmount and repaymentTotalAmount if relatedBank exists
-    if (relatedBank) {
-      if (firstRepayAmount) {
-        seperateBankAmount += firstRepayAmount;
-        repaymentTotalAmount += firstRepayAmount;
-      }
-      if (secondRepayAmount) {
-        seperateBankAmount += secondRepayAmount;
-        repaymentTotalAmount += secondRepayAmount;
-      }
-    }
+        if (firstRepayAmount) {
+          if (relatedCash) {
+            seperateCashAmount += firstRepayAmount;
+            firstRepayTotalAmount += firstRepayAmount;
+          }
 
-    // Avoid assigning the same balance to both cash and bank
-    if (relatedCash && relatedBank) {
-      seperateBankAmount = firstRepayAmount;
-      seperateCashAmount = secondRepayAmount;
-      repaymentTotalAmount = seperateCashAmount + seperateBankAmount;
+          if (relatedBank) {
+            seperateBankAmount += firstRepayAmount;
+            firstRepayTotalAmount += firstRepayAmount;
+          }
+        }
+      } else if (repaymentType === "separate") {
+        if (firstRepayAmount) {
+          if (relatedCash) {
+            seperateCashAmount += firstRepayAmount;
+            firstRepayTotalAmount += firstRepayAmount;
+          }
+
+          if (relatedBank) {
+            seperateBankAmount += firstRepayAmount;
+            firstRepayTotalAmount += firstRepayAmount;
+          }
+        }
+
+        if (secondRepayAmount) {
+          if (relatedCash) {
+            seperateCashAmount += secondRepayAmount;
+            secondRepayTotalAmount += secondRepayAmount;
+          }
+
+          if (relatedBank) {
+            seperateBankAmount += secondRepayAmount;
+            secondRepayTotalAmount += secondRepayAmount;
+          }
+        }
+
+        repaymentTotalAmount = firstRepayTotalAmount + secondRepayTotalAmount;
+      }
     }
 
     const result = await Repayment.create({
       relatedBranch: relatedBranch,
       relatedCash: relatedCash,
       relatedBank: relatedBank,
-      secondRepayAmount: secondRepayAmount,
-      firstRepayAmount: firstRepayAmount,
+      secondRepayAmount: secondRepayTotalAmount,
+      firstRepayAmount: firstRepayTotalAmount,
       repaymentAmount: repaymentTotalAmount,
       SeperateCashAmount: seperateCashAmount,
       SeperateBankAmount: seperateBankAmount,
       description: description,
+      repaymentType: repaymentType,
+      relatedTreatmentVoucher: relatedTreatmentVoucher,
     });
 
     return res.status(200).send({ success: true, data: result });

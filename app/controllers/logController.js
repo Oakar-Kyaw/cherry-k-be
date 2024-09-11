@@ -11,11 +11,16 @@ const Appointment = require("../models/appointment");
 
 exports.listAllLog = async (req, res) => {
   try {
-    let { skip, limit } = req.query;
+    let { skip, limit, relatedStock } = req.query;
     limit ? (limit = limit) : 0;
     skip ? (skip = (skip - 1) * limit) : 0;
+
+    let dbQuery = { isDeleted: false };
+
+    relatedStock ? (dbQuery["relatedStock"] = relatedStock) : "";
+
     let count = await Log.find({ isDeleted: false }).count();
-    let result = await Log.find({ isDeleted: false })
+    let result = await Log.find(dbQuery)
       .populate(
         "createdBy relatedStock relatedTreatmentSelection relatedAppointment relatedProcedureItems relatedBranch relatedAccessoryItems relatedMachine"
       )
@@ -54,13 +59,13 @@ exports.listAllLog = async (req, res) => {
 
 exports.getFilterLogListByDay = async (req, res, next) => {
   try {
-    let { skip, limit, date } = req.query;
+    let { skip, limit, start, end } = req.query;
     limit ? (limit = limit) : 0;
     skip ? (skip = (skip - 1) * limit) : 0;
 
-    const startDay = new Date(date);
+    const startDay = new Date(start);
     startDay.setHours(0, 0, 0, 0);
-    const endDay = new Date(date);
+    const endDay = new Date(end);
     endDay.setHours(23, 59, 59, 999);
 
     const FilterByDay = {

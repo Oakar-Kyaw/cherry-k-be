@@ -7,6 +7,9 @@ const express = require("express"),
   app = express(),
   server = require("http").Server(app),
   port = 4000;
+const {
+  startChangeStreams,
+} = require("./app/controllers/treatmentVoucherIsDeletedHandler");
 app.use(cors({ origin: "*" }));
 // app.use(express.json());
 // app.use(express.urlencoded({extended:true}));
@@ -262,6 +265,9 @@ app.use(relatedBranchMiddleware);
 
 // Bring in our dependencies
 require("./config/express")(app, config);
+
+// Start listening to MongoDB Changes
+startChangeStreams();
 
 server.listen(port, () => {
   console.log("We are live on port: ", port);

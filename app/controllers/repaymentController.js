@@ -16,6 +16,8 @@ exports.listAllRepayments = async (req, res) => {
     relatedPatient,
     relatedBranch,
     relatedBank,
+    relatedCash,
+    secondRelatedCash,
     secondRelatedBank,
   } = req.query;
   let count = 0;
@@ -33,6 +35,8 @@ exports.listAllRepayments = async (req, res) => {
     relatedBranch ? (query["relatedBranch"] = relatedBranch) : "";
     relatedBank ? (query["relatedBank"] = relatedBank) : "";
     secondRelatedBank ? (query["secondRelatedBank"] = secondRelatedBank) : "";
+    relatedCash ? (query["relatedCash"] = relatedCash) : "";
+    secondRelatedCash ? (query["secondRelatedCash"] = secondRelatedCash) : "";
 
     keyword && /\w/.test(keyword)
       ? (regexKeyword = new RegExp(keyword, "i"))
@@ -45,7 +49,7 @@ exports.listAllRepayments = async (req, res) => {
         model: "TreatmentVouchers",
       })
       .populate(
-        "relatedDebt relatedBank relatedCash relatedBranch relatedPatient secondRelatedBank"
+        "relatedDebt relatedBank relatedCash relatedBranch relatedPatient secondRelatedBank secondRelatedCash"
       );
 
     // const treatmentVoucher = result.map((item) => item.relatedTreatmentVoucher);

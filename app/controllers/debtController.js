@@ -252,6 +252,7 @@ exports.payTheDebts = async (req, res) => {
       relatedBranch,
       description,
       relatedCash,
+      secondRelatedCash,
       relatedBank,
       secondRelatedBank,
       relatedPatient,
@@ -305,8 +306,11 @@ exports.payTheDebts = async (req, res) => {
         seperateBankAmount += firstRepayAmount;
       }
 
-      if (firstRepayAmount) {
-        if (relatedCash) {
+      if (
+        (firstRepayAmount && relatedCash) ||
+        (firstRepayAmount && secondRelatedCash)
+      ) {
+        if (relatedCash || secondRelatedCash) {
           seperateCashAmount += firstRepayAmount;
         }
       }
@@ -320,8 +324,11 @@ exports.payTheDebts = async (req, res) => {
         }
       }
 
-      if (secondRepayAmount) {
-        if (relatedCash) {
+      if (
+        (secondRepayAmount && relatedCash) ||
+        (secondRepayAmount && secondRelatedCash)
+      ) {
+        if (relatedCash || secondRelatedCash) {
           seperateCashAmount += secondRepayAmount;
         }
       }
@@ -340,6 +347,7 @@ exports.payTheDebts = async (req, res) => {
       relatedBank: relatedBank || null,
       secondRelatedBank: secondRelatedBank || null,
       relatedCash: relatedCash || null,
+      secondRelatedCash: secondRelatedCash || null,
       relatedPatient: relatedPatient,
       repaymentType: repaymentType,
       secondRepayAmount: secondRepayAmount,

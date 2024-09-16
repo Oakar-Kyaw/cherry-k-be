@@ -1,84 +1,87 @@
-'use strict';
+"use strict";
 
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 mongoose.promise = global.Promise;
 const Schema = mongoose.Schema;
-
 
 let StockSchema = new Schema({
   relatedBranch: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Branches'
+    ref: "Branches",
   },
   relatedGeneralItems: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'GeneralItems'
+    ref: "GeneralItems",
   },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Users'
+    ref: "Users",
   },
   relatedProcedureItems: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'ProcedureItems'
+    ref: "ProcedureItems",
   },
   relatedMedicineItems: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'MedicineItems'
+    ref: "MedicineItems",
   },
   relatedAccessoryItems: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'AccessoryItems'
+    ref: "AccessoryItems",
   },
   relatedMachine: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'FixedAssets'
+    ref: "FixedAssets",
   },
   currentQty: {
-    type: Number
+    type: Number,
   },
   fromUnit: {
-    type: Number
+    type: Number,
   },
   toUnit: {
-    type: Number
+    type: Number,
   },
   totalUnit: {
-    type: Number
+    type: Number,
   },
   reOrderQuantity: {
-    type: Number
+    type: Number,
   },
   isDeleted: {
     type: Boolean,
     required: true,
-    default: false
+    default: false,
   },
   editTime: {
-    type: String
+    type: String,
   },
   editPerson: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Users"
+    ref: "Users",
   },
   editEmail: {
-    type: String
+    type: String,
   },
   location: {
-    type: String
+    type: String,
   },
   deleteTime: {
-    type: String
+    type: String,
   },
   deletePerson: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Users"
+    ref: "Users",
   },
   deleteEmail: {
-    type: String
+    type: String,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
   },
 });
 
-module.exports = mongoose.model('Stocks', StockSchema);
+module.exports = mongoose.model("Stocks", StockSchema);
 
 //Author: Kyaw Zaw Lwin

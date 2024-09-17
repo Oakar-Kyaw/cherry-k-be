@@ -1,28 +1,20 @@
 "use strict";
 
-const generalItem = require("../models/generalItem");
-const medicineItem = require("../models/medicineItem");
-const procedureItem = require("../models/procedureItem");
 const stock = require("../models/stock");
-const stockOpeningClosingModel = require("../models/stockOpeningClosing");
 const purchaseRequestModel = require("../models/purchaseRequest");
-const purchaseSchema = require("../models/purchase");
-const transferToHoRecord = require("../models/transferToHoRecord");
-const ExcelJs = require("exceljs");
-const fs = require("fs");
-const path = require("path");
 
+// This is for branches
 exports.getStockSummaryByQty = async (req, res, next) => {
-  const { skip = 1, limit = 20, relatedBranch, date } = req.query;
+  const { skip = 1, limit = 20, relatedBranch } = req.query;
 
   let count = 0;
   let page = 0;
 
-  if (!date) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Date query parameter is required" });
-  }
+  // if (!date) {
+  //   return res
+  //     .status(400)
+  //     .json({ success: false, message: "Date query parameter is required" });
+  // }
 
   let StockModelMatch = {
     $or: [
@@ -36,12 +28,12 @@ exports.getStockSummaryByQty = async (req, res, next) => {
     isDeleted: false,
   };
 
-  // Parse the date from the query parameter
-  const specificDate = new Date(date);
+  // // Parse the date from the query parameter
+  // const specificDate = new Date(date);
 
-  // Set the start and end of the day
-  const startDate = new Date(specificDate.setUTCHours(0, 0, 0, 0));
-  const endDate = new Date(specificDate.setUTCHours(23, 59, 59, 999));
+  // // Set the start and end of the day
+  // const startDate = new Date(specificDate.setUTCHours(0, 0, 0, 0));
+  // const endDate = new Date(specificDate.setUTCHours(23, 59, 59, 999));
 
   if (relatedBranch) {
     StockModelMatch.relatedBranch = relatedBranch;
@@ -54,10 +46,7 @@ exports.getStockSummaryByQty = async (req, res, next) => {
     const stockSummary = await stock.aggregate([
       // Step 1: Initial Filter
       {
-        $match: {
-          ...StockModelMatch,
-          createdAt: { $gte: startDate, $lte: endDate },
-        },
+        $match: StockModelMatch,
       },
 
       // Step 2: Lookup related data
@@ -265,10 +254,7 @@ exports.getStockSummaryByQty = async (req, res, next) => {
       },
     ]);
 
-    const StockModelCount = await stock.countDocuments({
-      ...StockModelMatch,
-      createdAt: { $gte: startDate, $lte: endDate },
-    });
+    const StockModelCount = await stock.countDocuments(StockModelMatch);
 
     return res.status(200).json({
       success: true,
@@ -290,10 +276,11 @@ exports.getStockSummaryByQty = async (req, res, next) => {
 exports.transferToHo = async (req, res, next) => {
   const specificDate = new Date("2024-01-24");
 
-  const TransferToHoSummary = await transferToHoRecord.aggregate([
+  const summaryData = await purchaseRequestModel.aggregate([
+    // First, aggregate the PurchaseRequests
     {
       $match: {
-        date: specificDate,
+        date: specificDate, // Replace with your filter criteria
       },
     },
     {
@@ -302,6 +289,14 @@ exports.transferToHo = async (req, res, next) => {
         localField: "relatedBranch",
         foreignField: "_id",
         as: "relatedBranchData",
+      },
+    },
+    {
+      $lookup: {
+        from: "generalitems",
+        localField: "generalItems.item_id",
+        foreignField: "_id",
+        as: "generalItemsData",
       },
     },
     {
@@ -329,26 +324,31 @@ exports.transferToHo = async (req, res, next) => {
       },
     },
     {
-      $lookup: {
-        from: "generalitems",
-        localField: "generalItems.item_id",
-        foreignField: "_id",
-        as: "generalItemsData",
-      },
-    },
-    {
       $project: {
         _id: 0,
+        type: "PurchaseRequest", // Distinguishing the source of data
         relatedBranch: { $arrayElemAt: ["$relatedBranchData.name", 0] },
-        reason: 1,
-        date: 1,
+        totalQTY: 1,
+        totalPrice: 1,
+        generalItems: {
+          $map: {
+            input: "$generalItems",
+            as: "item",
+            in: {
+              name: { $arrayElemAt: ["$generalItemsData.name", 0] },
+              requestedQty: "$$item.requestedQty",
+              purchasePrice: "$$item.purchasePrice",
+            },
+          },
+        },
         medicineItems: {
           $map: {
             input: "$medicineItems",
             as: "item",
             in: {
               name: { $arrayElemAt: ["$medicineItemsData.name", 0] },
-              qty: "$$item.qty",
+              requestedQty: "$$item.requestedQty",
+              purchasePrice: "$$item.purchasePrice",
             },
           },
         },
@@ -358,7 +358,8 @@ exports.transferToHo = async (req, res, next) => {
             as: "item",
             in: {
               name: { $arrayElemAt: ["$procedureItemsData.name", 0] },
-              qty: "$$item.qty",
+              requestedQty: "$$item.requestedQty",
+              purchasePrice: "$$item.purchasePrice",
             },
           },
         },
@@ -368,20 +369,214 @@ exports.transferToHo = async (req, res, next) => {
             as: "item",
             in: {
               name: { $arrayElemAt: ["$accessoryItemsData.name", 0] },
-              qty: "$$item.qty",
+              requestedQty: "$$item.requestedQty",
+              purchasePrice: "$$item.purchasePrice",
             },
           },
         },
-        generalItems: {
-          $map: {
-            input: "$generalItems",
-            as: "item",
-            in: {
-              name: { $arrayElemAt: ["$generalItemsData.name", 0] },
-              qty: "$$item.qty",
+      },
+    },
+
+    // Use $unionWith to aggregate data from the Purchases collection
+    {
+      $unionWith: {
+        coll: "purchases",
+        pipeline: [
+          {
+            $lookup: {
+              from: "branches",
+              localField: "relatedBranch",
+              foreignField: "_id",
+              as: "relatedBranchData",
             },
           },
-        },
+          {
+            $lookup: {
+              from: "generalitems",
+              localField: "generalItems.item_id",
+              foreignField: "_id",
+              as: "generalItemsData",
+            },
+          },
+          {
+            $lookup: {
+              from: "medicineitems",
+              localField: "medicineItems.item_id",
+              foreignField: "_id",
+              as: "medicineItemsData",
+            },
+          },
+          {
+            $lookup: {
+              from: "procedureitems",
+              localField: "procedureItems.item_id",
+              foreignField: "_id",
+              as: "procedureItemsData",
+            },
+          },
+          {
+            $lookup: {
+              from: "accessoryitems",
+              localField: "accessoryItems.item_id",
+              foreignField: "_id",
+              as: "accessoryItemsData",
+            },
+          },
+          {
+            $project: {
+              _id: 0,
+              type: "Purchase", // Distinguishing the source of data
+              relatedBranch: { $arrayElemAt: ["$relatedBranchData.name", 0] },
+              totalQTY: 1,
+              totalPrice: 1,
+              generalItems: {
+                $map: {
+                  input: "$generalItems",
+                  as: "item",
+                  in: {
+                    name: { $arrayElemAt: ["$generalItemsData.name", 0] },
+                    requestedQty: "$$item.requestedQty",
+                    purchasePrice: "$$item.purchasePrice",
+                  },
+                },
+              },
+              medicineItems: {
+                $map: {
+                  input: "$medicineItems",
+                  as: "item",
+                  in: {
+                    name: { $arrayElemAt: ["$medicineItemsData.name", 0] },
+                    requestedQty: "$$item.requestedQty",
+                    purchasePrice: "$$item.purchasePrice",
+                  },
+                },
+              },
+              procedureItems: {
+                $map: {
+                  input: "$procedureItems",
+                  as: "item",
+                  in: {
+                    name: { $arrayElemAt: ["$procedureItemsData.name", 0] },
+                    requestedQty: "$$item.requestedQty",
+                    purchasePrice: "$$item.purchasePrice",
+                  },
+                },
+              },
+              accessoryItems: {
+                $map: {
+                  input: "$accessoryItems",
+                  as: "item",
+                  in: {
+                    name: { $arrayElemAt: ["$accessoryItemsData.name", 0] },
+                    requestedQty: "$$item.requestedQty",
+                    purchasePrice: "$$item.purchasePrice",
+                  },
+                },
+              },
+            },
+          },
+        ],
+      },
+    },
+
+    // Use $unionWith again to aggregate data from the StockRequest collection
+    {
+      $unionWith: {
+        coll: "stockrequests",
+        pipeline: [
+          {
+            $lookup: {
+              from: "branches",
+              localField: "relatedBranch",
+              foreignField: "_id",
+              as: "relatedBranchData",
+            },
+          },
+          {
+            $lookup: {
+              from: "generalitems",
+              localField: "generalItems.item_id",
+              foreignField: "_id",
+              as: "generalItemsData",
+            },
+          },
+          {
+            $lookup: {
+              from: "proceduremedicine",
+              localField: "procedureMedicine.item_id",
+              foreignField: "_id",
+              as: "procedureMedicineData",
+            },
+          },
+          {
+            $lookup: {
+              from: "medicinelists",
+              localField: "medicineLists.item_id",
+              foreignField: "_id",
+              as: "medicineListsData",
+            },
+          },
+          {
+            $lookup: {
+              from: "procedureaccessory",
+              localField: "procedureAccessory.item_id",
+              foreignField: "_id",
+              as: "procedureAccessoryData",
+            },
+          },
+          {
+            $project: {
+              _id: 0,
+              type: "StockRequest", // Distinguishing the source of data
+              relatedBranch: { $arrayElemAt: ["$relatedBranchData.name", 0] },
+              totalQTY: 1,
+              generalItems: {
+                $map: {
+                  input: "$generalItems",
+                  as: "item",
+                  in: {
+                    name: { $arrayElemAt: ["$generalItemsData.name", 0] },
+                    requestedQty: "$$item.requestedQty",
+                    purchasePrice: "$$item.purchasePrice",
+                  },
+                },
+              },
+              procedureMedicine: {
+                $map: {
+                  input: "$procedureMedicine",
+                  as: "item",
+                  in: {
+                    name: { $arrayElemAt: ["$procedureMedicineData.name", 0] },
+                    requestedQty: "$$item.requestedQty",
+                    purchasePrice: "$$item.purchasePrice",
+                  },
+                },
+              },
+              medicineLists: {
+                $map: {
+                  input: "$medicineLists",
+                  as: "item",
+                  in: {
+                    name: { $arrayElemAt: ["$medicineListsData.name", 0] },
+                    requestedQty: "$$item.requestedQty",
+                    purchasePrice: "$$item.purchasePrice",
+                  },
+                },
+              },
+              procedureAccessory: {
+                $map: {
+                  input: "$procedureAccessory",
+                  as: "item",
+                  in: {
+                    name: { $arrayElemAt: ["$procedureAccessoryData.name", 0] },
+                    requestedQty: "$$item.requestedQty",
+                    purchasePrice: "$$item.purchasePrice",
+                  },
+                },
+              },
+            },
+          },
+        ],
       },
     },
   ]);
@@ -474,6 +669,6 @@ exports.transferToHo = async (req, res, next) => {
     success: true,
     message: "File exported successfully",
     // filePath,
-    TransferToHoSummary,
+    summaryData,
   });
 };

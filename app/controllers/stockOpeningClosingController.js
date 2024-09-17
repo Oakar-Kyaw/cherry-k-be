@@ -2,6 +2,7 @@
 
 const stock = require("../models/stock");
 const purchaseRequestModel = require("../models/purchaseRequest");
+const { ObjectId } = require("mongodb");
 
 // This is for branches
 exports.getStockSummaryByQty = async (req, res, next) => {
@@ -9,12 +10,6 @@ exports.getStockSummaryByQty = async (req, res, next) => {
 
   let count = 0;
   let page = 0;
-
-  // if (!date) {
-  //   return res
-  //     .status(400)
-  //     .json({ success: false, message: "Date query parameter is required" });
-  // }
 
   let StockModelMatch = {
     $or: [
@@ -28,15 +23,8 @@ exports.getStockSummaryByQty = async (req, res, next) => {
     isDeleted: false,
   };
 
-  // // Parse the date from the query parameter
-  // const specificDate = new Date(date);
-
-  // // Set the start and end of the day
-  // const startDate = new Date(specificDate.setUTCHours(0, 0, 0, 0));
-  // const endDate = new Date(specificDate.setUTCHours(23, 59, 59, 999));
-
   if (relatedBranch) {
-    StockModelMatch.relatedBranch = relatedBranch;
+    StockModelMatch.relatedBranch = ObjectId(relatedBranch);
   }
 
   const pageDivision = count / limit;
@@ -74,6 +62,7 @@ exports.getStockSummaryByQty = async (req, res, next) => {
           as: "relatedMedicineItemsData",
         },
       },
+
       {
         $unwind: { path: "$relatedBranches", preserveNullAndEmptyArrays: true },
       },
@@ -149,7 +138,7 @@ exports.getStockSummaryByQty = async (req, res, next) => {
             },
             {
               $group: {
-                _id: "$_id",
+                _id: null,
                 totalSales: { $sum: "$medicineItems.quantity" },
               },
             },
@@ -172,12 +161,35 @@ exports.getStockSummaryByQty = async (req, res, next) => {
             },
             {
               $group: {
-                _id: "$_id",
+                _id: null,
                 totalTransfers: { $sum: "$medicineItems.qty" },
               },
             },
           ],
           as: "transferToHoData",
+        },
+      },
+
+      // Aggregate quantities from recieved stock
+      {
+        $lookup: {
+          from: "recievedrecords",
+          let: { itemId: "$_id" },
+          pipeline: [
+            { $unwind: "$recievedItems" },
+            {
+              $match: {
+                $expr: { $eq: ["$recievedItems.item_id", "$$itemId"] },
+              },
+            },
+            {
+              $group: {
+                _id: null,
+                totalRecieved: { $sum: "$recievedItems.recievedQty" },
+              },
+            },
+          ],
+          as: "recievedStockData",
         },
       },
 
@@ -187,9 +199,14 @@ exports.getStockSummaryByQty = async (req, res, next) => {
           usageTotal: { $sum: "$usageData.totalUsage" },
           salesTotal: { $sum: "$medicineSalesData.totalSales" },
           transfersTotal: { $sum: "$transferToHoData.totalTransfers" },
+          stockRecievedTotal: { $sum: "$recievedStockData.totalRecieved" },
+
+          // Step 6: Calculate openingStock
           openingStock: {
             $subtract: [
-              "$currentQty",
+              {
+                $add: ["$currentQty", { $ifNull: ["$stockRecievedTotal", 0] }],
+              },
               {
                 $add: [
                   { $ifNull: ["$usageTotal", 0] },
@@ -199,24 +216,16 @@ exports.getStockSummaryByQty = async (req, res, next) => {
               },
             ],
           },
+
+          // Calculate closingStock based on transactions left
           closingStock: {
             $subtract: [
+              "$openingStock",
               {
-                $subtract: [
-                  "$currentQty",
-                  {
-                    $add: [
-                      { $ifNull: ["$usageTotal", 0] },
-                      { $ifNull: ["$salesTotal", 0] },
-                      { $ifNull: ["$transfersTotal", 0] },
-                    ],
-                  },
-                ],
-              },
-              {
-                $ifNull: [
-                  "$additionalStockOutTotal", // Replace with actual total stock out if applicable
-                  0,
+                $add: [
+                  { $ifNull: ["$usageTotal", 0] },
+                  { $ifNull: ["$salesTotal", 0] },
+                  { $ifNull: ["$transfersTotal", 0] },
                 ],
               },
             ],
@@ -231,8 +240,14 @@ exports.getStockSummaryByQty = async (req, res, next) => {
           openingStock: { $first: "$openingStock" },
           closingStock: { $first: "$closingStock" },
           relatedBranches: { $first: "$relatedBranches" },
+
           relatedMedicineItemsData: { $push: "$relatedMedicineItemsData" },
           relatedProcedureItemsData: { $push: "$relatedProcedureItemsData" },
+
+          transferToHoData: { $push: "$transferToHoData" },
+          medicineSalesData: { $push: "$medicineSalesData" },
+          recievedStockData: { $push: "$recievedStockData" },
+
           fromUnit: { $first: "$fromUnit" },
           toUnit: { $first: "$toUnit" },
           totalUnit: { $first: "$totalUnit" },
@@ -245,8 +260,14 @@ exports.getStockSummaryByQty = async (req, res, next) => {
           openingStock: { $ifNull: ["$openingStock", 0] },
           closingStock: { $ifNull: ["$closingStock", 0] },
           relatedBranches: "$relatedBranches.name",
+
           relatedMedicineItemsData: 1,
           relatedProcedureItemsData: 1,
+
+          transferToHoData: 1,
+          medicineSalesData: 1,
+          recievedStockData: 1,
+
           fromUnit: 1,
           toUnit: 1,
           totalUnit: 1,

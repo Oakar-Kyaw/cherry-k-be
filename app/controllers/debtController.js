@@ -51,6 +51,7 @@ exports.getDebt = async (req, res) => {
   let query = { isDeleted: false };
   relatedPatient ? (query.relatedPatient = relatedPatient) : "";
   let relatedBranchFilterResult;
+
   startDate && endDate
     ? (query["date"] = { $gte: new Date(startDate), $lte: new Date(endDate) })
     : startDate && !endDate
@@ -58,7 +59,8 @@ exports.getDebt = async (req, res) => {
     : endDate && !startDate
     ? (query["date"] = { $lte: new Date(endDate) })
     : "";
-  const results = await Debt.find(query)
+
+  const results = await Debt.find({ ...query, balance: { $gt: 0 } })
     .populate(
       "knasRelatedTreatmentVoucher relatedTreatmentVoucher relatedMedicineSale"
     )

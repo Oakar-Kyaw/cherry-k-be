@@ -43,7 +43,7 @@ exports.listAllRepayments = async (req, res) => {
       : "";
     regexKeyword ? (query["name"] = regexKeyword) : "";
 
-    let result = await Repayment.find(query)
+    let result = await Repayment.find({ ...query, remaningCredit: { $gt: 0 } })
       .populate({
         path: "relatedTreatmentVoucher",
         model: "TreatmentVouchers",

@@ -66,12 +66,14 @@ exports.getStockSummaryByQty = async (req, res, next) => {
       {
         $unwind: { path: "$relatedBranches", preserveNullAndEmptyArrays: true },
       },
+
       {
         $unwind: {
           path: "$relatedMedicineItemsData",
           preserveNullAndEmptyArrays: true,
         },
       },
+
       {
         $unwind: {
           path: "$relatedProcedureItemsData",
@@ -150,19 +152,30 @@ exports.getStockSummaryByQty = async (req, res, next) => {
       // Step 5: Aggregate quantities from Transfers to Head Office
       {
         $lookup: {
-          from: "transferToHos",
-          let: { itemId: "$_id" },
+          from: "transfertohos",
+          let: { branchId: "$relatedBranch" },
           pipeline: [
-            { $unwind: "$medicineItems" },
             {
               $match: {
-                $expr: { $eq: ["$medicineItems.item_id", "$$itemId"] },
+                $expr: {
+                  $eq: ["$relatedBranch", "$$branchId"],
+                },
+              },
+            },
+            { $unwind: "$medicineItems" },
+            {
+              $lookup: {
+                from: "medicineitems",
+                localField: "medicineItems.item_id",
+                foreignField: "_id",
+                as: "medicineItemsData",
               },
             },
             {
-              $group: {
-                _id: null,
-                totalTransfers: { $sum: "$medicineItems.qty" },
+              $project: {
+                _id: 0,
+                "medicineItems.qty": 1, //
+                medicineItemsData: 1, //
               },
             },
           ],
@@ -174,22 +187,46 @@ exports.getStockSummaryByQty = async (req, res, next) => {
       {
         $lookup: {
           from: "recievedrecords",
-          let: { itemId: "$_id" },
+          let: { branchId: "$relatedBranch" },
           pipeline: [
-            { $unwind: "$recievedItems" },
             {
               $match: {
-                $expr: { $eq: ["$recievedItems.item_id", "$$itemId"] },
+                $expr: {
+                  $eq: ["$relatedBranch", "$$branchId"],
+                },
               },
             },
             {
               $group: {
-                _id: null,
-                totalRecieved: { $sum: "$recievedItems.recievedQty" },
+                _id: 0,
+                totalRecieved: { $first: "$recievedQty" },
               },
             },
           ],
           as: "recievedStockData",
+        },
+      },
+
+      {
+        $lookup: {
+          from: "purchases",
+          let: { branchId: "$relatedBranch" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $eq: ["$relatedBranch", "$$branchId"],
+                },
+              },
+            },
+            {
+              $group: {
+                _id: 0,
+                totalRecieved: { $first: "$totalQTY" },
+              },
+            },
+          ],
+          as: "purchasesData",
         },
       },
 
@@ -198,38 +235,40 @@ exports.getStockSummaryByQty = async (req, res, next) => {
         $addFields: {
           usageTotal: { $sum: "$usageData.totalUsage" },
           salesTotal: { $sum: "$medicineSalesData.totalSales" },
-          transfersTotal: { $sum: "$transferToHoData.totalTransfers" },
-          stockRecievedTotal: { $sum: "$recievedStockData.totalRecieved" },
+          transfersTotal: { $sum: "$transferToHoData.medicineItems.qty" },
+          stockRecievedTotal: { $sum: "$recievedStockData.recievedQty" },
+          purchase: { $sum: "$purchasesData.totalQTY" },
+
+          closingStock: "$currentQty",
 
           // Step 6: Calculate openingStock
           openingStock: {
             $subtract: [
               {
-                $add: ["$currentQty", { $ifNull: ["$stockRecievedTotal", 0] }],
+                $add: ["$closingStock", { $ifNull: ["$transfersTotal", 0] }],
               },
               {
                 $add: [
-                  { $ifNull: ["$usageTotal", 0] },
-                  { $ifNull: ["$salesTotal", 0] },
-                  { $ifNull: ["$transfersTotal", 0] },
+                  { $ifNull: ["$purchase", 0] },
+                  { $ifNull: ["$stockRecievedTotal", 0] },
                 ],
               },
             ],
           },
 
           // Calculate closingStock based on transactions left
-          closingStock: {
-            $subtract: [
-              "$openingStock",
-              {
-                $add: [
-                  { $ifNull: ["$usageTotal", 0] },
-                  { $ifNull: ["$salesTotal", 0] },
-                  { $ifNull: ["$transfersTotal", 0] },
-                ],
-              },
-            ],
-          },
+          // closingStock: {
+          //   $subtract: [
+          //     "$currentQty",
+          //     {
+          //       $add: [
+          //         { $ifNull: ["$usageTotal", 0] },
+          //         { $ifNull: ["$salesTotal", 0] },
+          //         { $ifNull: ["$transfersTotal", 0] },
+          //       ],
+          //     },
+          //   ],
+          // },
         },
       },
 
@@ -247,6 +286,7 @@ exports.getStockSummaryByQty = async (req, res, next) => {
           transferToHoData: { $push: "$transferToHoData" },
           medicineSalesData: { $push: "$medicineSalesData" },
           recievedStockData: { $push: "$recievedStockData" },
+          purchaseStockData: { $push: "$purchasesData" },
 
           fromUnit: { $first: "$fromUnit" },
           toUnit: { $first: "$toUnit" },
@@ -267,11 +307,20 @@ exports.getStockSummaryByQty = async (req, res, next) => {
           transferToHoData: 1,
           medicineSalesData: 1,
           recievedStockData: 1,
+          purchaseStockData: 1,
 
           fromUnit: 1,
           toUnit: 1,
           totalUnit: 1,
         },
+      },
+
+      // Pagination
+      {
+        $skip: (parseInt(skip) - 1) * parseInt(limit),
+      },
+      {
+        $limit: parseInt(limit),
       },
     ]);
 

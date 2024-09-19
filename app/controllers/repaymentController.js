@@ -43,7 +43,15 @@ exports.listAllRepayments = async (req, res) => {
       : "";
     regexKeyword ? (query["name"] = regexKeyword) : "";
 
-    let result = await Repayment.find({ ...query, remaningCredit: { $gt: 0 } })
+    let RepaymentQuery = {
+      isDeleted: false,
+      repaymentAmount: { $gt: 0 },
+      relatedBranch: relatedBranch,
+    };
+
+    console.log(query);
+
+    let repaymentDocs = await Repayment.find(RepaymentQuery)
       .populate({
         path: "relatedTreatmentVoucher",
         model: "TreatmentVouchers",
@@ -55,9 +63,11 @@ exports.listAllRepayments = async (req, res) => {
     // const treatmentVoucher = result.map((item) => item.relatedTreatmentVoucher);
     // console.log(treatmentVoucher);
 
-    count = await Repayment.find(query).count();
+    count = await Repayment.find(query).countDocuments();
     const division = count / limit;
     page = Math.ceil(division);
+
+    console.log(repaymentDocs);
 
     res.status(200).send({
       success: true,
@@ -68,7 +78,7 @@ exports.listAllRepayments = async (req, res) => {
         page_count: page,
         total_count: count,
       },
-      list: result,
+      list: repaymentDocs,
     });
   } catch (e) {
     return res.status(500).send({ error: true, message: e.message });

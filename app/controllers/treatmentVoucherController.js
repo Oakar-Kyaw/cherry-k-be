@@ -1400,6 +1400,85 @@ exports.TreatmentVoucherFilter = async (req, res) => {
   }
 };
 
+exports.showAllTreatmentVouchers = async (req, res) => {
+  let { relatedBranch, page = 1, limit = 10, keyword } = req.query;
+
+  let response = {
+    success: true,
+    meta_data: {},
+    data: {},
+  };
+
+  try {
+    limit = +limit <= 100 ? +limit : 20; // Limit to 100 or default to 20
+    page = +page || 1;
+    const skip = (page - 1) * limit;
+
+    let query = { relatedBranch, isDeleted: false };
+
+    if (keyword && /\w/.test(keyword)) {
+      const regexKeyword = new RegExp(keyword, "i");
+      query["name"] = regexKeyword; // Adjust this field to match your schema
+    }
+
+    let bankResult = await TreatmentVoucher.find({ ...query, Refund: false })
+      .populate(
+        "medicineItems.item_id multiTreatment.item_id relatedTreatment relatedBranch relatedDoctor relatedBank relatedCash relatedPatient relatedAccounting payment createdBy newTreatmentVoucherId relatedRepay"
+      )
+      .populate({
+        path: "relatedTreatmentSelection",
+        populate: [
+          {
+            path: "relatedAppointments",
+            populate: {
+              path: "relatedDoctor",
+              model: "Doctors",
+            },
+          },
+          {
+            path: "relatedTreatment",
+            model: "Treatments",
+          },
+        ],
+      })
+      .populate({
+        path: "secondAccount",
+        model: "AccountingLists",
+        populate: {
+          path: "relatedHeader",
+          model: "AccountHeaders",
+        },
+      })
+      .populate({
+        path: "relatedTreatmentPackage",
+        populate: {
+          path: "item_id",
+        },
+      })
+      .skip(skip)
+      .limit(limit);
+
+    const totalDocuments = await TreatmentVoucher.countDocuments(query);
+    const totalPages = Math.ceil(totalDocuments / limit);
+
+    response.data = {
+      ...response.data,
+      bankResult,
+    };
+
+    response.meta_data = {
+      current_page: page,
+      per_page: limit,
+      page_count: totalPages,
+      total_count: totalDocuments,
+    };
+
+    return res.status(200).send(response);
+  } catch (error) {
+    return res.status(500).send({ error: true, message: error.message });
+  }
+};
+
 exports.createSpecificItemExcelForTreatmentVoucher = async (req, res) => {
   try {
     let query = { isDeleted: false, Refund: false };

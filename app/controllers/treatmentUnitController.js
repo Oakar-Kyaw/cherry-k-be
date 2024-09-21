@@ -1,22 +1,27 @@
-'use strict';
-const TreatmentUnit = require('../models/treatmentUnit')
-const moment = require('moment-timezone');
+"use strict";
+const TreatmentUnit = require("../models/treatmentUnit");
+const moment = require("moment-timezone");
 
 exports.listAllTreatmentUnits = async (req, res) => {
   let { keyword, role, limit, skip } = req.query;
+
   let count = 0;
   let page = 0;
+
   try {
     limit = +limit <= 100 ? +limit : 10; //limit
     skip = +skip || 0;
-    let query = {isDeleted:false},
+
+    let query = { isDeleted: false },
       regexKeyword;
-    role ? (query['role'] = role.toUpperCase()) : '';
+
+    role ? (query["role"] = role.toUpperCase()) : "";
     keyword && /\w/.test(keyword)
-      ? (regexKeyword = new RegExp(keyword, 'i'))
-      : '';
-    regexKeyword ? (query['name'] = regexKeyword) : '';
-    let result = await TreatmentUnit.find(query).populate('procedureMedicine');
+      ? (regexKeyword = new RegExp(keyword, "i"))
+      : "";
+
+    regexKeyword ? (query["name"] = regexKeyword) : "";
+    let result = await TreatmentUnit.find(query).populate("procedureMedicine");
     count = await TreatmentUnit.find(query).count();
     const division = count / limit;
     page = Math.ceil(division);
@@ -39,9 +44,12 @@ exports.listAllTreatmentUnits = async (req, res) => {
 };
 
 exports.getTreatmentUnit = async (req, res) => {
-  const result = await TreatmentUnit.find({ _id: req.params.id,isDeleted:false }).populate('procedureMedicine');
+  const result = await TreatmentUnit.find({
+    _id: req.params.id,
+    isDeleted: false,
+  }).populate("procedureMedicine");
   if (!result)
-    return res.status(500).json({ error: true, message: 'No Record Found' });
+    return res.status(500).json({ error: true, message: "No Record Found" });
   return res.status(200).send({ success: true, data: result });
 };
 
@@ -49,67 +57,88 @@ exports.createTreatmentUnit = async (req, res, next) => {
   let data = req.body;
   try {
     //prepare PT-ID
-    const latestDocument =await TreatmentUnit.find({},{seq:1}).sort({_id: -1}).limit(1).exec();
-    if (!latestDocument[0].seq) data= {...data, seq:'1', patientTreatmentID:"PT-001"} // if seq is undefined set initial patientID and seq
+    const latestDocument = await TreatmentUnit.find({}, { seq: 1 })
+      .sort({ _id: -1 })
+      .limit(1)
+      .exec();
+
+    if (!latestDocument[0].seq)
+      data = { ...data, seq: "1", patientTreatmentID: "PT-001" }; // if seq is undefined set initial patientID and seq
+
     if (latestDocument[0].seq) {
-      const increment = latestDocument[0].seq+1
-      data = {...data, patientTreatmentID:"PT-"+increment, seq:increment}
+      const increment = latestDocument[0].seq + 1;
+      data = { ...data, patientTreatmentID: "PT-" + increment, seq: increment };
     }
+
     const newTreatmentUnit = new TreatmentUnit(data);
     const result = await newTreatmentUnit.save();
+
     res.status(200).send({
-      message: 'TreatmentUnit create success',
+      message: "TreatmentUnit create success",
       success: true,
-      data: result
+      data: result,
     });
   } catch (error) {
-    return res.status(500).send({ "error": true, message: error.message })
+    return res.status(500).send({ error: true, message: error.message });
   }
 };
 
 exports.updateTreatmentUnit = async (req, res, next) => {
   try {
-    req.body.editTime = moment().tz('Asia/Yangon').format('MMMM Do YYYY, h:mm:ss a')
-    req.body.editPerson = req.credentials.id
-    req.body.editEmail =  req.credentials.email
+    req.body.editTime = moment()
+      .tz("Asia/Yangon")
+      .format("MMMM Do YYYY, h:mm:ss a");
+
+    req.body.editPerson = req.credentials.id;
+    req.body.editEmail = req.credentials.email;
+
     const result = await TreatmentUnit.findOneAndUpdate(
       { _id: req.body.id },
       req.body,
-      { new: true },
-    ).populate('procedureMedicine') ;
+      { new: true }
+    ).populate("procedureMedicine");
+
     return res.status(200).send({ success: true, data: result });
   } catch (error) {
-    return res.status(500).send({ "error": true, "message": error.message })
+    return res.status(500).send({ error: true, message: error.message });
   }
 };
 
 exports.deleteTreatmentUnit = async (req, res, next) => {
   try {
-    req.body.deleteTime = moment().tz('Asia/Yangon').format('MMMM Do YYYY, h:mm:ss a')
-    req.body.deletePerson = req.credentials.id
-    req.body.deleteEmail =  req.credentials.email
+    req.body.deleteTime = moment()
+      .tz("Asia/Yangon")
+      .format("MMMM Do YYYY, h:mm:ss a");
+
+    req.body.deletePerson = req.credentials.id;
+    req.body.deleteEmail = req.credentials.email;
+
     const result = await TreatmentUnit.findOneAndUpdate(
       { _id: req.params.id },
       { isDeleted: true, ...req.body },
-      { new: true },
+      { new: true }
     );
-    return res.status(200).send({ success: true, data: { isDeleted: result.isDeleted } });
-  } catch (error) {
-    return res.status(500).send({ "error": true, "message": error.message })
 
+    return res
+      .status(200)
+      .send({ success: true, data: { isDeleted: result.isDeleted } });
+  } catch (error) {
+    return res.status(500).send({ error: true, message: error.message });
   }
-}
+};
 
 exports.activateTreatmentUnit = async (req, res, next) => {
   try {
     const result = await TreatmentUnit.findOneAndUpdate(
       { _id: req.params.id },
       { isDeleted: false },
-      { new: true },
+      { new: true }
     );
-    return res.status(200).send({ success: true, data: { isDeleted: result.isDeleted } });
+
+    return res
+      .status(200)
+      .send({ success: true, data: { isDeleted: result.isDeleted } });
   } catch (error) {
-    return res.status(500).send({ "error": true, "message": error.message })
+    return res.status(500).send({ error: true, message: error.message });
   }
 };
-

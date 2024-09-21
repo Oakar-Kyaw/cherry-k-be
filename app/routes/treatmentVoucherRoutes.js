@@ -39,9 +39,15 @@ module.exports = (app) => {
   app
     .route("/api/treatment-vouchers/get-date")
     .get(verifyToken, catchError(treatmentVoucher.getwithExactDate));
+
   app
     .route("/api/treatment-vouchers/TV-Filter")
     .get(verifyToken, catchError(treatmentVoucher.TreatmentVoucherFilter));
+
+  app
+    .route("/api/v1/treatment-vouchers/list")
+    .get(catchError(treatmentVoucher.showAllTreatmentVouchers));
+
   app
     .route("/api/treatment-vouchers/ms/single")
     .post(verifyToken, catchError(treatmentVoucher.createSingleMedicineSale));

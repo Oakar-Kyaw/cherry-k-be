@@ -8,6 +8,7 @@ const Usage = require("../models/usage");
 const Stock = require("../models/stock");
 const UsageRecords = require("../models/usageRecord");
 const Appointment = require("../models/appointment");
+const removeProcedureItemsFromUsages = require("../lib/removeProcedureItemsFromUsages");
 
 exports.listAllLog = async (req, res) => {
   try {
@@ -378,6 +379,7 @@ exports.createUsage = async (req, res) => {
   let accessoryItemsFinished = [];
   let generalItemsFinished = [];
   let createdBy = req.credentials.id;
+
   try {
     if (relatedBranch === undefined)
       return res
@@ -386,6 +388,7 @@ exports.createUsage = async (req, res) => {
     const appResult = await Appointment.find({
       _id: req.body.relatedAppointment,
     });
+
     let status;
     if (appResult[0].relatedUsage === undefined) {
       if (procedureMedicine !== undefined) {
@@ -408,6 +411,7 @@ exports.createUsage = async (req, res) => {
             const to = Number(result.toUnit);
             const currentQty = Number(from * totalUnit) / to;
             console.log("cedcure", totalUnit, result, from, to, currentQty);
+
             try {
               const result = await Stock.findOneAndUpdate(
                 {
@@ -420,6 +424,7 @@ exports.createUsage = async (req, res) => {
             } catch (error) {
               procedureItemsError.push(e);
             }
+
             procedureItemsFinished.push(e);
             const logResult = await Log.create({
               relatedTreatmentSelection: relatedTreatmentSelection,
@@ -435,6 +440,7 @@ exports.createUsage = async (req, res) => {
           }
         }
       }
+
       //procedureAccessory
       if (procedureAccessory !== undefined) {
         for (const e of procedureAccessory) {
@@ -563,6 +569,7 @@ exports.createUsage = async (req, res) => {
           }
         }
       }
+
       //usage create
       if (
         machineError.length > 0 ||
@@ -570,12 +577,16 @@ exports.createUsage = async (req, res) => {
         accessoryItemsError.length > 0
       )
         status = "In Progress";
+
       if (
         machineError.length === 0 &&
         procedureItemsError.length === 0 &&
         accessoryItemsError.length === 0
-      )
+      ) {
         status = "Finished";
+        removeProcedureItemsFromUsages(relatedBranch);
+      }
+
       req.body = {
         ...req.body,
         machineError: machineError,

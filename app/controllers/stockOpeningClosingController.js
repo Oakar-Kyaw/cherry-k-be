@@ -8,8 +8,8 @@ const { ObjectId } = require("mongodb");
 exports.getStockSummaryByQty = async (req, res, next) => {
   const { skip = 1, limit = 20, relatedBranch } = req.query;
 
-  let count = 0;
-  let page = 0;
+  const parsedSkip = parseInt(skip) - 1; // Convert to zero-based index
+  const parsedLimit = parseInt(limit);
 
   let StockModelMatch = {
     $or: [
@@ -23,12 +23,11 @@ exports.getStockSummaryByQty = async (req, res, next) => {
     isDeleted: false,
   };
 
+  const StockModelCount = await stock.countDocuments(StockModelMatch);
+
   if (relatedBranch) {
     StockModelMatch.relatedBranch = ObjectId(relatedBranch);
   }
-
-  const pageDivision = count / limit;
-  page = Math.ceil(pageDivision);
 
   try {
     const stockSummary = await stock.aggregate([
@@ -316,24 +315,21 @@ exports.getStockSummaryByQty = async (req, res, next) => {
       },
 
       // Pagination
-      {
-        $skip: (parseInt(skip) - 1) * parseInt(limit),
-      },
-      {
-        $limit: parseInt(limit),
-      },
+      { $skip: parsedSkip * parsedLimit },
+      { $limit: parsedLimit },
     ]);
 
-    const StockModelCount = await stock.countDocuments(StockModelMatch);
+    const totalPages = Math.ceil(StockModelCount / parsedLimit);
+    const currentPage = parsedSkip + 1;
 
     return res.status(200).json({
       success: true,
       StockCounts: StockModelCount,
       _metadata: {
-        current_page: skip / limit + 1,
+        current_page: currentPage,
         per_page: limit,
-        page_count: page,
-        total_count: count,
+        page_count: totalPages,
+        total_count: StockModelCount,
       },
       existsStockSchema: stockSummary,
       // existsPurchaseRequestSchema: PurchaseSummary,

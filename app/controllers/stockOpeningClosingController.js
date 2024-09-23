@@ -30,294 +30,304 @@ exports.getStockSummaryByQty = async (req, res, next) => {
   }
 
   try {
-    const stockSummary = await stock.aggregate([
-      // Step 1: Initial Filter
-      {
-        $match: StockModelMatch,
-      },
-
-      // Step 2: Lookup related data
-      {
-        $lookup: {
-          from: "branches",
-          localField: "relatedBranch",
-          foreignField: "_id",
-          as: "relatedBranches",
+    const stockSummary = await stock
+      .aggregate([
+        // Step 1: Initial Filter
+        {
+          $match: StockModelMatch,
         },
-      },
-      {
-        $lookup: {
-          from: "procedureitems",
-          localField: "relatedProcedureItems",
-          foreignField: "_id",
-          as: "relatedProcedureItemsData",
+
+        // Step 2: Lookup related data
+        {
+          $lookup: {
+            from: "branches",
+            localField: "relatedBranch",
+            foreignField: "_id",
+            as: "relatedBranches",
+          },
         },
-      },
-      {
-        $lookup: {
-          from: "medicineitems",
-          localField: "relatedMedicineItems",
-          foreignField: "_id",
-          as: "relatedMedicineItemsData",
+        {
+          $lookup: {
+            from: "procedureitems",
+            localField: "relatedProcedureItems",
+            foreignField: "_id",
+            as: "relatedProcedureItemsData",
+          },
         },
-      },
-
-      {
-        $unwind: { path: "$relatedBranches", preserveNullAndEmptyArrays: true },
-      },
-
-      {
-        $unwind: {
-          path: "$relatedMedicineItemsData",
-          preserveNullAndEmptyArrays: true,
+        {
+          $lookup: {
+            from: "medicineitems",
+            localField: "relatedMedicineItems",
+            foreignField: "_id",
+            as: "relatedMedicineItemsData",
+          },
         },
-      },
 
-      {
-        $unwind: {
-          path: "$relatedProcedureItemsData",
-          preserveNullAndEmptyArrays: true,
+        {
+          $unwind: {
+            path: "$relatedBranches",
+            preserveNullAndEmptyArrays: true,
+          },
         },
-      },
 
-      // Step 3: Aggregate quantities from Usages
-      {
-        $lookup: {
-          from: "usages",
-          let: { itemId: "$_id" },
-          pipeline: [
-            { $unwind: "$procedureMedicine" },
-            { $unwind: "$procedureAccessory" },
-            { $unwind: "$generalItem" },
-            { $unwind: "$machine" },
-            { $unwind: "$procedureItemsError" },
-            { $unwind: "$accessoryItemsError" },
-            { $unwind: "$generalItemsError" },
-            { $unwind: "$noProcedureItemsStock" },
-            { $unwind: "$noAccessoryItemsStock" },
-            { $unwind: "$noGeneralItemsStock" },
-            {
-              $match: {
-                $expr: {
-                  $or: [
-                    { $eq: ["$procedureMedicine.item_id", "$$itemId"] },
-                    { $eq: ["$procedureAccessory.item_id", "$$itemId"] },
-                    { $eq: ["$generalItem.item_id", "$$itemId"] },
-                    { $eq: ["$machine.item_id", "$$itemId"] },
-                    { $eq: ["$procedureItemsError.item_id", "$$itemId"] },
-                    { $eq: ["$accessoryItemsError.item_id", "$$itemId"] },
-                    { $eq: ["$generalItemsError.item_id", "$$itemId"] },
-                    { $eq: ["$noProcedureItemsStock.item_id", "$$itemId"] },
-                    { $eq: ["$noAccessoryItemsStock.item_id", "$$itemId"] },
-                    { $eq: ["$noGeneralItemsStock.item_id", "$$itemId"] },
-                  ],
-                },
-              },
-            },
-            {
-              $group: {
-                _id: "$_id",
-                totalUsage: { $sum: "$quantity" },
-              },
-            },
-          ],
-          as: "usageData",
+        {
+          $unwind: {
+            path: "$relatedMedicineItemsData",
+            preserveNullAndEmptyArrays: true,
+          },
         },
-      },
 
-      // Step 4: Aggregate quantities from Medicine Sales
-      {
-        $lookup: {
-          from: "medicineSales",
-          let: { itemId: "$_id" },
-          pipeline: [
-            { $unwind: "$medicineItems" },
-            {
-              $match: {
-                $expr: { $eq: ["$medicineItems.item_id", "$$itemId"] },
-              },
-            },
-            {
-              $group: {
-                _id: null,
-                totalSales: { $sum: "$medicineItems.quantity" },
-              },
-            },
-          ],
-          as: "medicineSalesData",
+        {
+          $unwind: {
+            path: "$relatedProcedureItemsData",
+            preserveNullAndEmptyArrays: true,
+          },
         },
-      },
 
-      // Step 5: Aggregate quantities from Transfers to Head Office
-      {
-        $lookup: {
-          from: "transfertohos",
-          let: { branchId: "$relatedBranch" },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $eq: ["$relatedBranch", "$$branchId"],
-                },
-              },
-            },
-            { $unwind: "$medicineItems" },
-            {
-              $lookup: {
-                from: "medicineitems",
-                localField: "medicineItems.item_id",
-                foreignField: "_id",
-                as: "medicineItemsData",
-              },
-            },
-            {
-              $project: {
-                _id: 0,
-                "medicineItems.qty": 1, //
-                medicineItemsData: 1, //
-              },
-            },
-          ],
-          as: "transferToHoData",
-        },
-      },
-
-      // Aggregate quantities from recieved stock
-      {
-        $lookup: {
-          from: "recievedrecords",
-          let: { branchId: "$relatedBranch" },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $eq: ["$relatedBranch", "$$branchId"],
-                },
-              },
-            },
-            {
-              $group: {
-                _id: 0,
-                totalRecieved: { $first: "$recievedQty" },
-              },
-            },
-          ],
-          as: "recievedStockData",
-        },
-      },
-
-      {
-        $lookup: {
-          from: "purchases",
-          let: { branchId: "$relatedBranch" },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $eq: ["$relatedBranch", "$$branchId"],
-                },
-              },
-            },
-            {
-              $group: {
-                _id: 0,
-                totalRecieved: { $first: "$totalQTY" },
-              },
-            },
-          ],
-          as: "purchasesData",
-        },
-      },
-
-      // Step 6: Calculate openingStock and closingStock
-      {
-        $addFields: {
-          usageTotal: { $sum: "$usageData.totalUsage" },
-          salesTotal: { $sum: "$medicineSalesData.totalSales" },
-          transfersTotal: { $sum: "$transferToHoData.medicineItems.qty" },
-          stockRecievedTotal: { $sum: "$recievedStockData.recievedQty" },
-          purchase: { $sum: "$purchasesData.totalQTY" },
-
-          closingStock: "$currentQty",
-
-          // Step 6: Calculate openingStock
-          openingStock: {
-            $subtract: [
+        // Step 3: Aggregate quantities from Usages
+        {
+          $lookup: {
+            from: "usages",
+            let: { itemId: "$_id" },
+            pipeline: [
+              { $unwind: "$procedureMedicine" },
+              { $unwind: "$procedureAccessory" },
+              { $unwind: "$generalItem" },
+              { $unwind: "$machine" },
+              { $unwind: "$procedureItemsError" },
+              { $unwind: "$accessoryItemsError" },
+              { $unwind: "$generalItemsError" },
+              { $unwind: "$noProcedureItemsStock" },
+              { $unwind: "$noAccessoryItemsStock" },
+              { $unwind: "$noGeneralItemsStock" },
               {
-                $add: ["$closingStock", { $ifNull: ["$transfersTotal", 0] }],
+                $match: {
+                  $expr: {
+                    $or: [
+                      { $eq: ["$procedureMedicine.item_id", "$$itemId"] },
+                      { $eq: ["$procedureAccessory.item_id", "$$itemId"] },
+                      { $eq: ["$generalItem.item_id", "$$itemId"] },
+                      { $eq: ["$machine.item_id", "$$itemId"] },
+                      { $eq: ["$procedureItemsError.item_id", "$$itemId"] },
+                      { $eq: ["$accessoryItemsError.item_id", "$$itemId"] },
+                      { $eq: ["$generalItemsError.item_id", "$$itemId"] },
+                      { $eq: ["$noProcedureItemsStock.item_id", "$$itemId"] },
+                      { $eq: ["$noAccessoryItemsStock.item_id", "$$itemId"] },
+                      { $eq: ["$noGeneralItemsStock.item_id", "$$itemId"] },
+                    ],
+                  },
+                },
               },
               {
-                $add: [
-                  { $ifNull: ["$purchase", 0] },
-                  { $ifNull: ["$stockRecievedTotal", 0] },
-                ],
+                $group: {
+                  _id: "$_id",
+                  totalUsage: { $sum: "$quantity" },
+                },
               },
             ],
+            as: "usageData",
           },
-
-          // Calculate closingStock based on transactions left
-          // closingStock: {
-          //   $subtract: [
-          //     "$currentQty",
-          //     {
-          //       $add: [
-          //         { $ifNull: ["$usageTotal", 0] },
-          //         { $ifNull: ["$salesTotal", 0] },
-          //         { $ifNull: ["$transfersTotal", 0] },
-          //       ],
-          //     },
-          //   ],
-          // },
         },
-      },
 
-      // Step 7: Group and Project Final Result
-      {
-        $group: {
-          _id: "$_id",
-          openingStock: { $first: "$openingStock" },
-          closingStock: { $first: "$closingStock" },
-          relatedBranches: { $first: "$relatedBranches" },
-
-          relatedMedicineItemsData: { $push: "$relatedMedicineItemsData" },
-          relatedProcedureItemsData: { $push: "$relatedProcedureItemsData" },
-
-          transferToHoData: { $push: "$transferToHoData" },
-          medicineSalesData: { $push: "$medicineSalesData" },
-          recievedStockData: { $push: "$recievedStockData" },
-          purchaseStockData: { $push: "$purchasesData" },
-
-          fromUnit: { $first: "$fromUnit" },
-          toUnit: { $first: "$toUnit" },
-          totalUnit: { $first: "$totalUnit" },
+        // Step 4: Aggregate quantities from Medicine Sales
+        {
+          $lookup: {
+            from: "medicineSales",
+            let: { itemId: "$_id" },
+            pipeline: [
+              { $unwind: "$medicineItems" },
+              {
+                $match: {
+                  $expr: { $eq: ["$medicineItems.item_id", "$$itemId"] },
+                },
+              },
+              {
+                $group: {
+                  _id: null,
+                  totalSales: { $sum: "$medicineItems.quantity" },
+                },
+              },
+            ],
+            as: "medicineSalesData",
+          },
         },
-      },
 
-      {
-        $project: {
-          _id: 1,
-          openingStock: { $ifNull: ["$openingStock", 0] },
-          closingStock: { $ifNull: ["$closingStock", 0] },
-          relatedBranches: "$relatedBranches.name",
+        // Step 5: Aggregate quantities from Transfers to Head Office
+        {
+          $lookup: {
+            from: "stocktransfers",
+            let: { branchId: "$relatedBranch" },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $eq: ["$relatedBranch", "$$branchId"],
+                  },
+                },
+              },
 
-          relatedMedicineItemsData: 1,
-          relatedProcedureItemsData: 1,
+              { $unwind: "$medicineLists" },
 
-          transferToHoData: 1,
-          medicineSalesData: 1,
-          recievedStockData: 1,
-          purchaseStockData: 1,
+              {
+                $lookup: {
+                  from: "medicineLists",
+                  localField: "medicineLists.item_id",
+                  foreignField: "_id",
+                  as: "medicineListsData",
+                },
+              },
 
-          fromUnit: 1,
-          toUnit: 1,
-          totalUnit: 1,
+              {
+                $project: {
+                  _id: 0,
+                  "medicineLists.transferQty": 1, //
+                  medicineListsData: 1, //
+                },
+              },
+            ],
+            as: "stockTransferData",
+          },
         },
-      },
 
-      // Pagination
-      { $skip: parsedSkip * parsedLimit },
-      { $limit: parsedLimit },
-    ]);
+        // Aggregate quantities from recieved stock
+        {
+          $lookup: {
+            from: "recievedrecords",
+            let: { branchId: "$relatedBranch" },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $eq: ["$relatedBranch", "$$branchId"],
+                  },
+                },
+              },
+              {
+                $group: {
+                  _id: 0,
+                  totalRecieved: { $first: "$recievedQty" },
+                },
+              },
+            ],
+            as: "recievedStockData",
+          },
+        },
+
+        {
+          $lookup: {
+            from: "purchases",
+            let: { branchId: "$relatedBranch" },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $eq: ["$relatedBranch", "$$branchId"],
+                  },
+                },
+              },
+              {
+                $group: {
+                  _id: 0,
+                  totalRecieved: { $first: "$totalQTY" },
+                },
+              },
+            ],
+            as: "purchasesData",
+          },
+        },
+
+        // Step 6: Calculate openingStock and closingStock
+        {
+          $addFields: {
+            usageTotal: { $sum: "$usageData.totalUsage" },
+            salesTotal: { $sum: "$medicineSalesData.totalSales" },
+            transfersTotal: {
+              $sum: "$stockTransferData.medicineItems.transferQty",
+            },
+            stockRecievedTotal: { $sum: "$recievedStockData.recievedQty" },
+            purchase: { $sum: "$purchasesData.totalQTY" },
+
+            closingStock: "$currentQty",
+
+            // Step 6: Calculate openingStock
+            openingStock: {
+              $subtract: [
+                {
+                  $add: ["$closingStock", { $ifNull: ["$transfersTotal", 0] }],
+                },
+                {
+                  $add: [
+                    { $ifNull: ["$purchase", 0] },
+                    { $ifNull: ["$stockRecievedTotal", 0] },
+                  ],
+                },
+              ],
+            },
+
+            // Calculate closingStock based on transactions left
+            // closingStock: {
+            //   $subtract: [
+            //     "$currentQty",
+            //     {
+            //       $add: [
+            //         { $ifNull: ["$usageTotal", 0] },
+            //         { $ifNull: ["$salesTotal", 0] },
+            //         { $ifNull: ["$transfersTotal", 0] },
+            //       ],
+            //     },
+            //   ],
+            // },
+          },
+        },
+
+        // Step 7: Group and Project Final Result
+        {
+          $group: {
+            _id: "$_id",
+            openingStock: { $first: "$openingStock" },
+            closingStock: { $first: "$closingStock" },
+            relatedBranches: { $first: "$relatedBranches" },
+
+            relatedMedicineItemsData: { $push: "$relatedMedicineItemsData" },
+            relatedProcedureItemsData: { $push: "$relatedProcedureItemsData" },
+
+            stockTransferData: { $push: "$stockTransferData" },
+            medicineSalesData: { $push: "$medicineSalesData" },
+            recievedStockData: { $push: "$recievedStockData" },
+            purchaseStockData: { $push: "$purchasesData" },
+
+            fromUnit: { $first: "$fromUnit" },
+            toUnit: { $first: "$toUnit" },
+            totalUnit: { $first: "$totalUnit" },
+          },
+        },
+
+        {
+          $project: {
+            _id: 1,
+            openingStock: { $ifNull: ["$openingStock", 0] },
+            closingStock: { $ifNull: ["$closingStock", 0] },
+            relatedBranches: "$relatedBranches.name",
+
+            relatedMedicineItemsData: 1,
+            relatedProcedureItemsData: 1,
+
+            stockTransferData: 1,
+            medicineSalesData: 1,
+            recievedStockData: 1,
+            purchaseStockData: 1,
+
+            fromUnit: 1,
+            toUnit: 1,
+            totalUnit: 1,
+          },
+        },
+
+        // Pagination
+        { $skip: parsedSkip * parsedLimit },
+        { $limit: parsedLimit },
+      ])
+      .allowDiskUse(true);
 
     const totalPages = Math.ceil(StockModelCount / parsedLimit);
     const currentPage = parsedSkip + 1;

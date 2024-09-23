@@ -262,7 +262,6 @@ exports.getOpeningAndClosingWithExactDate = async (req, res) => {
       date.getSeconds(),
       date.getMilliseconds()
     ); // Set start date to the beginning of the day
-
     const endDate = new Date(
       date.getFullYear(),
       date.getMonth(),
@@ -323,7 +322,6 @@ exports.getOpeningAndClosingWithExactDate = async (req, res) => {
       relatedBranch: relatedBranch,
       createdAt: { $gte: startDate, $lt: endDate },
     };
-
     //createdAt: { $gte: startDate, $lt: endDate },
     //relatedCash exists by Oakar Kyaw
     const medicineSaleFirstCashTotal = await TreatmentVoucher.find(
@@ -337,7 +335,6 @@ exports.getOpeningAndClosingWithExactDate = async (req, res) => {
       }
       return 0;
     });
-
     //secondAccount cash exists
     const { relatedCash, ...query2 } = queryMedicineTotal;
     query2.secondAccount = { $exists: true };
@@ -350,23 +347,17 @@ exports.getOpeningAndClosingWithExactDate = async (req, res) => {
       })
       .then((msResult) => {
         //   return res.status(200).send({data:msResult})
-        const total = msResult.reduce(
-          (accumulator, currentValue) => {
-            if (
-              currentValue.secondAccount.relatedHeader.name === "Cash In Hand"
-            ) {
-              return accumulator + currentValue.secondAmount;
-            } else {
-              return accumulator;
-            }
-          },
-
-          0
-        );
-
+        const total = msResult.reduce((accumulator, currentValue) => {
+          if (
+            currentValue.secondAccount.relatedHeader.name === "Cash In Hand"
+          ) {
+            return accumulator + currentValue.secondAmount;
+          } else {
+            return accumulator;
+          }
+        }, 0);
         return total;
       });
-
     const expenseTotal = await Expense.find({
       isDeleted: false,
       date: { $gte: startDate, $lt: endDate },
@@ -383,12 +374,19 @@ exports.getOpeningAndClosingWithExactDate = async (req, res) => {
 
     const { tsType, ...queryTreatmentVoucher } = queryMedicineTotal;
     queryTreatmentVoucher.tsType = "TSMulti";
+
     const TVFirstCashTotal = await TreatmentVoucher.find(queryTreatmentVoucher)
       .populate("secondAccount")
       .then((result) => {
         //    console.log(result)
+        if (result) {
+          const total = result.reduce((accumulator, currentValue) => {
+            return accumulator + currentValue.totalPaidAmount;
+          }, 0);
+          return total;
+        }
+        return 0;
       });
-
     //query only cash TSMulti by second
     let queryTreatmentVoucher2 = {
       isDeleted: false,
@@ -424,6 +422,64 @@ exports.getOpeningAndClosingWithExactDate = async (req, res) => {
 
         return total;
       });
+
+    // const expenseTotal = await Expense.find({
+    //   isDeleted: false,
+    //   date: { $gte: startDate, $lt: endDate },
+    //   relatedBranch: relatedBranch,
+    // }).then((result) => {
+    //   if (result) {
+    //     const total = result.reduce((accumulator, currentValue) => {
+    //       return accumulator + currentValue.finalAmount;
+    //     }, 0);
+    //     return total;
+    //   }
+    //   return 0;
+    // });
+
+    // const { tsType, ...queryTreatmentVoucher } = queryMedicineTotal;
+    // queryTreatmentVoucher.tsType = "TSMulti";
+    // const TVFirstCashTotal = await TreatmentVoucher.find(queryTreatmentVoucher)
+    //   .populate("secondAccount")
+    //   .then((result) => {
+    //     //    console.log(result)
+    //   });
+
+    // //query only cash TSMulti by second
+    // let queryTreatmentVoucher2 = {
+    //   isDeleted: false,
+    //   createdAt: { $gte: startDate, $lt: endDate },
+    //   secondAccount: { $exists: true },
+    //   relatedBranch: relatedBranch,
+    //   tsType: "TSMulti",
+    // };
+    // const TVSecondCashTotal = await TreatmentVoucher.find(
+    //   queryTreatmentVoucher2
+    // )
+    //   .populate({
+    //     path: "secondAccount",
+    //     populate: {
+    //       path: "relatedHeader",
+    //     },
+    //   })
+    //   .then((result) => {
+    //     //   return res.status(200).send({data:result})
+    //     const total = result.reduce(
+    //       (accumulator, currentValue) => {
+    //         if (
+    //           currentValue.secondAccount.relatedHeader.name === "Cash In Hand"
+    //         ) {
+    //           return accumulator + currentValue.secondAmount;
+    //         } else {
+    //           return accumulator;
+    //         }
+    //       },
+
+    //       0
+    //     );
+
+    //     return total;
+    //   });
 
     //query first cash combined vocucher
     let queryCombineTreatmentVoucher = {

@@ -19,10 +19,7 @@ module.exports = (app) => {
 
   app
     .route("/api/account-balances/opening-closing")
-    .get(
-      verifyToken,
-      catchError(accountBalance.getOpeningAndClosingWithExactDate)
-    );
+    .get(catchError(accountBalance.getOpeningAndClosingWithExactDate));
 
   app
     .route("/api/v1/account-balances/opening-closing")

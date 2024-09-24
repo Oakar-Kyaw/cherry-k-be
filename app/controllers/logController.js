@@ -8,7 +8,6 @@ const Usage = require("../models/usage");
 const Stock = require("../models/stock");
 const UsageRecords = require("../models/usageRecord");
 const Appointment = require("../models/appointment");
-const removeProcedureItemsFromUsages = require("../lib/removeProcedureItemsFromUsages");
 
 exports.listAllLog = async (req, res) => {
   try {
@@ -584,7 +583,7 @@ exports.createUsage = async (req, res) => {
         accessoryItemsError.length === 0
       ) {
         status = "Finished";
-        removeProcedureItemsFromUsages(relatedBranch);
+        // removeProcedureItemsFromUsages(relatedBranch);
       }
 
       req.body = {

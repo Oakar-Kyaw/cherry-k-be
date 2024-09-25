@@ -46,6 +46,7 @@ exports.getStockSummaryByQty = async (req, res, next) => {
             as: "relatedBranches",
           },
         },
+
         {
           $lookup: {
             from: "procedureitems",
@@ -54,12 +55,31 @@ exports.getStockSummaryByQty = async (req, res, next) => {
             as: "relatedProcedureItemsData",
           },
         },
+
         {
           $lookup: {
             from: "medicineitems",
             localField: "relatedMedicineItems",
             foreignField: "_id",
             as: "relatedMedicineItemsData",
+          },
+        },
+
+        {
+          $project: {
+            _id: 1,
+            currentQty: 1,
+            totalUnit: 1,
+            reOrderQuantity: 1,
+            fromUnit: 1,
+            toUnit: 1,
+            relatedBranches: { $arrayElemAt: ["$relatedBranches", 0] },
+            relatedProcedureItemsData: {
+              $arrayElemAt: ["$relatedProcedureItemsData", 0],
+            },
+            relatedMedicineItemsData: {
+              $arrayElemAt: ["$relatedMedicineItemsData", 0],
+            },
           },
         },
 
@@ -156,12 +176,16 @@ exports.getStockSummaryByQty = async (req, res, next) => {
         {
           $lookup: {
             from: "stocktransfers",
-            let: { branchId: "$relatedBranch" },
+            let: { branchId: "$relatedBranch", itemId: "$_id" },
             pipeline: [
               {
                 $match: {
                   $expr: {
-                    $eq: ["$relatedBranch", "$$branchId"],
+                    $and: [
+                      { $eq: ["$relatedBranch", "$$branchId"] },
+                      { $eq: ["$isDeleted", false] },
+                      { $eq: ["$medicineLists.item_id", "$$itemId"] },
+                    ],
                   },
                 },
               },
@@ -170,18 +194,27 @@ exports.getStockSummaryByQty = async (req, res, next) => {
 
               {
                 $lookup: {
-                  from: "medicineLists",
+                  from: "medicineitems",
                   localField: "medicineLists.item_id",
                   foreignField: "_id",
-                  as: "medicineListsData",
+                  as: "medicineItemsDetails",
                 },
               },
 
               {
                 $project: {
                   _id: 0,
-                  "medicineLists.transferQty": 1, //
-                  medicineListsData: 1, //
+                  "medicineLists.transferQty": 1,
+                  medicineItemsDetails: {
+                    $arrayElemAt: ["$medicineItemsDetails", 0],
+                  },
+                },
+              },
+
+              {
+                $group: {
+                  _id: null,
+                  transferQty: { $first: "$medicineLists.transferQty" },
                 },
               },
             ],
@@ -263,20 +296,6 @@ exports.getStockSummaryByQty = async (req, res, next) => {
                 },
               ],
             },
-
-            // Calculate closingStock based on transactions left
-            // closingStock: {
-            //   $subtract: [
-            //     "$currentQty",
-            //     {
-            //       $add: [
-            //         { $ifNull: ["$usageTotal", 0] },
-            //         { $ifNull: ["$salesTotal", 0] },
-            //         { $ifNull: ["$transfersTotal", 0] },
-            //       ],
-            //     },
-            //   ],
-            // },
           },
         },
 
@@ -286,15 +305,15 @@ exports.getStockSummaryByQty = async (req, res, next) => {
             _id: "$_id",
             openingStock: { $first: "$openingStock" },
             closingStock: { $first: "$closingStock" },
-            relatedBranches: { $first: "$relatedBranches" },
+            relatedBranches: { $first: "$relatedBranches.name" },
 
-            relatedMedicineItemsData: { $push: "$relatedMedicineItemsData" },
-            relatedProcedureItemsData: { $push: "$relatedProcedureItemsData" },
+            relatedMedicineItemsData: { $first: "$relatedMedicineItemsData" },
+            relatedProcedureItemsData: { $first: "$relatedProcedureItemsData" },
 
-            stockTransferData: { $push: "$stockTransferData" },
-            medicineSalesData: { $push: "$medicineSalesData" },
-            recievedStockData: { $push: "$recievedStockData" },
-            purchaseStockData: { $push: "$purchasesData" },
+            stockTransferData: { $first: "$stockTransferData" },
+            medicineSalesData: { $first: "$medicineSalesData" },
+            recievedStockData: { $first: "$recievedStockData" },
+            purchaseStockData: { $first: "$purchasesData" },
 
             fromUnit: { $first: "$fromUnit" },
             toUnit: { $first: "$toUnit" },
@@ -307,7 +326,7 @@ exports.getStockSummaryByQty = async (req, res, next) => {
             _id: 1,
             openingStock: { $ifNull: ["$openingStock", 0] },
             closingStock: { $ifNull: ["$closingStock", 0] },
-            relatedBranches: "$relatedBranches.name",
+            relatedBranches: "$relatedBranches",
 
             relatedMedicineItemsData: 1,
             relatedProcedureItemsData: 1,

@@ -2,13 +2,17 @@ const { default: mongoose } = require("mongoose");
 const AppointmentsModel = require("../models/appointment");
 const StockModel = require("../models/stock");
 
-exports.updateStocksBasedOnUsage = async (relatedBranch) => {
+exports.updateStocksBasedOnUsage = async (
+  relatedTreatmentSelection,
+  relatedPatient,
+  appointmentId
+) => {
   try {
-    if (!relatedBranch) {
+    if (!relatedTreatmentSelection) {
       return {
-        status: 404,
+        status: 400,
         error: true,
-        message: "Branch ID is required",
+        message: "relatedTreatmentSelection is required",
       };
     }
 
@@ -16,16 +20,43 @@ exports.updateStocksBasedOnUsage = async (relatedBranch) => {
       {
         $match: {
           isDeleted: false,
-          usageStatus: "Finished",
-          relatedBranch: mongoose.Types.ObjectId(relatedBranch),
+          usageStatus: "Pending",
+          relatedPatient: mongoose.Types.ObjectId(relatedPatient),
+          relatedTreatmentSelection: mongoose.Types.ObjectId(
+            relatedTreatmentSelection
+          ),
+          _id: mongoose.Types.ObjectId(appointmentId),
         },
+      },
+
+      {
+        $unwind: "$procedureMedicine",
       },
 
       {
         $lookup: {
           from: "usages",
-          localField: "relatedUsage",
-          foreignField: "_id",
+          let: {
+            procedureMedicineItemId: "$procedureMedicine.item_id",
+          },
+          pipeline: [
+            {
+              $match: {
+                relatedTreatmentSelection: mongoose.Types.ObjectId(
+                  relatedTreatmentSelection
+                ),
+                relatedAppointment: mongoose.Types.ObjectId(appointmentId),
+                procedureMedicine: {
+                  $elemMatch: { item_id: "$procedureMedicineItemId" },
+                },
+              },
+            },
+            {
+              $project: {
+                procedureMedicine: 1,
+              },
+            },
+          ],
           as: "usagesData",
         },
       },
@@ -41,30 +72,52 @@ exports.updateStocksBasedOnUsage = async (relatedBranch) => {
       {
         $project: {
           "usagesData.procedureMedicine": 1,
+          "procedureMedicine.actual": 1,
           relatedBranch: 1,
         },
       },
     ]);
 
+    console.log("appointment docs", appointmentDocs);
+
     for (const appointment of appointmentDocs) {
-      for (const medicine of appointment.usagesData.procedureMedicine) {
-        const stock = await StockModel.findOne({
-          relatedProcedureItems: mongoose.Types.ObjectId(medicine.item_id),
-          relatedBranch: mongoose.Types.ObjectId(relatedBranch),
-        });
+      const stock = await StockModel.findOne({
+        relatedProcedureItems: mongoose.Types.ObjectId(
+          appointment.procedureMedicine.item_id
+        ),
+        relatedBranch: mongoose.Types.ObjectId(appointment.relatedBranch),
+      });
 
-        if (stock) {
-          const totalUnit = Number(stock.totalUnit) - Number(medicine.actual);
-          const currentyQty =
-            (Number(stock.currentQty) * totalUnit) / Number(stock.totalUnit);
+      if (stock) {
+        const newQuantity =
+          Number(stock.currentQty) -
+          Number(appointment.procedureMedicine.actual);
 
+        const newtotalUnit = (stock.currentQty * stock.toUnit) / stock.fromUnit;
+
+        await AppointmentsModel.findOneAndUpdate(
+          {
+            relatedUsage: appointment.relatedUsage,
+          },
+          {
+            usageStatus: "Finished",
+          }
+        );
+
+        if (newQuantity >= 0) {
           await StockModel.findOneAndUpdate(
             {
-              relatedProcedureItems: mongoose.Types.ObjectId(medicine.item_id),
-              relatedBranch: mongoose.Types.ObjectId(relatedBranch),
+              relatedProcedureItems: mongoose.Types.ObjectId(
+                appointment.procedureMedicine.item_id
+              ),
+              relatedBranch: mongoose.Types.ObjectId(appointment.relatedBranch),
             },
-            { totalUnit: totalUnit, currentQty: currentyQty },
+            { currentQty: newQuantity, totalUnit: newtotalUnit },
             { new: true }
+          );
+        } else {
+          console.warn(
+            `Insufficient stock for item_id: ${appointment.procedureMedicine.item_id}`
           );
         }
       }

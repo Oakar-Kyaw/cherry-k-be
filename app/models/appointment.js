@@ -1,49 +1,49 @@
-'use strict';
+"use strict";
 
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 mongoose.promise = global.Promise;
 const Schema = mongoose.Schema;
-const validator = require('validator');
-
+const validator = require("validator");
+const UsageModel = require("../models/usage");
 
 let AppointmentSchema = new Schema({
   relatedPatient: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Patients'
+    ref: "Patients",
   },
   phone: {
-    type: String
+    type: String,
   },
   relatedDoctor: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Doctors',
+    ref: "Doctors",
     // required: function() {
     //   return !this.relatedTherapist; // therapist is required if field2 is not provided
     // }
   },
   relatedTherapist: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Therapists',
+    ref: "Therapists",
     // required: function() {
     //   return !this.relatedDoctor; // doctor is required if field2 is not provided
     // }
   },
   relatedNurse: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Nurses'
+    ref: "Nurses",
   },
   description: {
-    type: String
+    type: String,
   },
   originalDate: {
-    type: Date
+    type: Date,
   },
   createdAt: {
     type: Date,
     default: Date.now,
   },
   updatedAt: {
-    type: Date
+    type: Date,
   },
   date: {
     type: String,
@@ -54,50 +54,76 @@ let AppointmentSchema = new Schema({
   isDeleted: {
     type: Boolean,
     required: true,
-    default: false
+    default: false,
   },
   token: {
-    type: String
+    type: String,
   },
   relatedTreatmentSelection: {
     type: [mongoose.Schema.Types.ObjectId],
-    ref: 'TreatmentSelections'
+    ref: "TreatmentSelections",
   },
   status: {
     type: Boolean,
-    default: false
+    default: false,
   },
   relatedBranch: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Branches'
+    ref: "Branches",
   },
   usageStatus: {
     type: String,
-    enum: ['Pending', 'In Progress', 'Finished'],
-    default: 'Pending'
+    enum: ["Pending", "In Progress", "Finished"],
+    default: "Pending",
   },
   relatedUsage: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Usages'
+    ref: "Usages",
   },
   isCommissioned: {
     type: Boolean,
-    default: false
+    default: false,
   },
   relatedPackageSelection: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'PackageSelections'
+    ref: "PackageSelections",
   },
   relatedTreatment: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Treatments'
+    ref: "Treatments",
   },
   isGeneral: {
     type: Boolean,
-    default: false
+    default: false,
+  },
+});
+
+const Appointment = mongoose.model("Appointments", AppointmentSchema);
+
+//Author: Kyaw Zaw Lwin
+
+AppointmentSchema.post("save", async function (doc, next) {
+  try {
+    if (!doc.relatedUsage) {
+      const usageData = {
+        relatedAppointment: doc._id,
+        relatedTreatmentSelection: doc.relatedTreatmentSelection,
+        relatedBranch: doc.relatedBranch,
+        procedureMedicine: [],
+        procedureAccessory: [],
+        generalItem: [],
+        machine: [],
+      };
+
+      const usageResult = await UsageModel.create(usageData);
+      await Appointment.findByIdAndUpdate(doc._id, {
+        relatedUsage: usageResult._id,
+      });
+    }
+    next();
+  } catch (error) {
+    next(error);
   }
 });
 
-module.exports = mongoose.model('Appointments', AppointmentSchema);
-
-//Author: Kyaw Zaw Lwin
+module.exports = Appointment;

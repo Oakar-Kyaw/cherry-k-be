@@ -11,7 +11,11 @@ module.exports = (app) => {
   app
     .route("/api/appointment")
     .post(verifyToken, catchError(appointment.createAppointment))
-    .put(verifyToken, catchError(appointment.updateAppointment));
+    .put(catchError(appointment.updateAppointment));
+
+  app
+    .route("/api/v1/appointment")
+    .put(catchError(appointment.NewUpdateAppointment));
 
   app
     .route("/api/appointment/:id")

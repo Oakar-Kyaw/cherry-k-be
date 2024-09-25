@@ -1,684 +1,778 @@
-'use strict';
-const PackageSelection = require('../models/packageSelection');
-const Appointment = require('../models/appointment');
-const Transaction = require('../models/transaction');
-const Patient = require('../models/patient');
-const TreatmentVoucher = require('../models/treatmentVoucher');
-const Repay = require('../models/repayRecord');
-const Accounting = require('../models/accountingList');
-const Attachment = require('../models/attachment');
-const AdvanceRecords = require('../models/advanceRecord');
-const Package = require('../models/treatment');
-const TreatmentSelection = require('../models/treatmentSelection');
-const Debt = require('../models/debt');
-const treatmentPackageSelections = require('../models/treatmentPackageSelection');
+"use strict";
+const PackageSelection = require("../models/packageSelection");
+const Appointment = require("../models/appointment");
+const Transaction = require("../models/transaction");
+const Patient = require("../models/patient");
+const TreatmentVoucher = require("../models/treatmentVoucher");
+const Repay = require("../models/repayRecord");
+const Accounting = require("../models/accountingList");
+const Attachment = require("../models/attachment");
+const AdvanceRecords = require("../models/advanceRecord");
+const Package = require("../models/treatment");
+const TreatmentSelection = require("../models/treatmentSelection");
+const Debt = require("../models/debt");
+const treatmentPackageSelections = require("../models/treatmentPackageSelection");
 
 exports.listAllPackageSelections = async (req, res) => {
-    let { keyword, role, limit, skip } = req.query;
-    let count = 0;
-    let page = 0;
+  let { keyword, role, limit, skip } = req.query;
+  let count = 0;
+  let page = 0;
 
-    try {
-        limit = +limit <= 100 ? +limit : 10; //limit
-        skip = +skip || 0;
-        let query = { isDeleted: false },
-            regexKeyword;
-        role ? (query['role'] = role.toUpperCase()) : '';
-        keyword && /\w/.test(keyword)
-            ? (regexKeyword = new RegExp(keyword, 'i'))
-            : '';
-        regexKeyword ? (query['name'] = regexKeyword) : '';
-        let result = await PackageSelection.find(query)
-        let count = await PackageSelection.find(query).count();
-        const division = count / limit;
-        page = Math.ceil(division);
-        res.status(200).send({
-            success: true,
-            count: count,
-            _metadata: {
-                current_page: skip / limit + 1,
-                per_page: limit,
-                page_count: page,
-                total_count: count,
-            },
-            list: result,
-        });
-    } catch (error) {
-        return res.status(500).send({ error: true, message: 'No Record Found!' });
-    }
+  try {
+    limit = +limit <= 100 ? +limit : 10; //limit
+    skip = +skip || 0;
+    let query = { isDeleted: false },
+      regexKeyword;
+    role ? (query["role"] = role.toUpperCase()) : "";
+    keyword && /\w/.test(keyword)
+      ? (regexKeyword = new RegExp(keyword, "i"))
+      : "";
+    regexKeyword ? (query["name"] = regexKeyword) : "";
+    let result = await PackageSelection.find(query);
+    let count = await PackageSelection.find(query).count();
+    const division = count / limit;
+    page = Math.ceil(division);
+    res.status(200).send({
+      success: true,
+      count: count,
+      _metadata: {
+        current_page: skip / limit + 1,
+        per_page: limit,
+        page_count: page,
+        total_count: count,
+      },
+      list: result,
+    });
+  } catch (error) {
+    return res.status(500).send({ error: true, message: "No Record Found!" });
+  }
 };
 
 exports.getAppointmentsForPackageSelection = async (req, res) => {
-    try {
-        let { relatedPackageSelection, relatedTreatment } = req.query;
-        const appointmentResult = await Appointment.find({ relatedPackageSelection: relatedPackageSelection, relatedTreatment: relatedTreatment }).populate('relatedDoctor')
-        return res.status(200).send({ success: true, data: appointmentResult })
-    } catch (error) {
-        return res.status(500).send({
-            error: true,
-            message: error.message
-        })
-    }
-}
+  try {
+    let { relatedPackageSelection, relatedTreatment } = req.query;
+    const appointmentResult = await Appointment.find({
+      relatedPackageSelection: relatedPackageSelection,
+      relatedTreatment: relatedTreatment,
+    }).populate("relatedDoctor");
+    return res.status(200).send({ success: true, data: appointmentResult });
+  } catch (error) {
+    return res.status(500).send({
+      error: true,
+      message: error.message,
+    });
+  }
+};
 
 exports.getPackageSelection = async (req, res) => {
-    let query = { isDeleted: false }
-    if (req.params.id) query._id = req.params.id
-    const result = await PackageSelection.find(query)
-    if (!result)
-        return res.status(500).json({ error: true, message: 'No Record Found' });
-    return res.status(200).send({ success: true, data: result });
+  let query = { isDeleted: false };
+  if (req.params.id) query._id = req.params.id;
+  const result = await PackageSelection.find(query);
+  if (!result)
+    return res.status(500).json({ error: true, message: "No Record Found" });
+  return res.status(200).send({ success: true, data: result });
 };
 
 exports.getTreatementSelectionByTreatmentID = async (req, res) => {
-    let query = { isDeleted: false }
-    if (req.params.id) query.relatedTreatment = req.params.id
-    const result = await PackageSelection.find(query).populate('createdBy relatedAppointments remainingAppointments relatedTransaction relatedPatient relatedTreatmentList').populate({
-        path: 'relatedTreatment',
-        model: 'Treatments',
-        populate: {
-            path: 'relatedDoctor',
-            model: 'Doctors'
-        }
-    })
-    if (!result)
-        return res.status(500).json({ error: true, message: 'No Record Found' });
-    return res.status(200).send({ success: true, data: result });
+  let query = { isDeleted: false };
+  if (req.params.id) query.relatedTreatment = req.params.id;
+  const result = await PackageSelection.find(query)
+    .populate(
+      "createdBy relatedAppointments remainingAppointments relatedTransaction relatedPatient relatedTreatmentList"
+    )
+    .populate({
+      path: "relatedTreatment",
+      model: "Treatments",
+      populate: {
+        path: "relatedDoctor",
+        model: "Doctors",
+      },
+    });
+  if (!result)
+    return res.status(500).json({ error: true, message: "No Record Found" });
+  return res.status(200).send({ success: true, data: result });
 };
 
 exports.createPackageSelectionCode = async (req, res) => {
-    let data = req.body;
-    try {
-        //prepare TS-ID
-        const latestDocument = await PackageSelection.find({}, { seq: 1 }).sort({ _id: -1 }).limit(1).exec();
-        if (latestDocument[0].seq === undefined) data = { ...data, seq: 1, code: "PS-1" } // if seq is undefined set initial patientID and seq
-        if (latestDocument[0].seq) {
-            const increment = latestDocument[0].seq + 1
-            data = { ...data, code: "PS-" + increment, seq: increment }
-        }
-        return res.status(200).send({
-            success: true,
-            data: data
-        })
-    } catch (error) {
-        return res.status(500).send({ error: true, message: error.message })
+  let data = req.body;
+  try {
+    //prepare TS-ID
+    const latestDocument = await PackageSelection.find({}, { seq: 1 })
+      .sort({ _id: -1 })
+      .limit(1)
+      .exec();
+    if (latestDocument[0].seq === undefined)
+      data = { ...data, seq: 1, code: "PS-1" }; // if seq is undefined set initial patientID and seq
+    if (latestDocument[0].seq) {
+      const increment = latestDocument[0].seq + 1;
+      data = { ...data, code: "PS-" + increment, seq: increment };
     }
-}
+    return res.status(200).send({
+      success: true,
+      data: data,
+    });
+  } catch (error) {
+    return res.status(500).send({ error: true, message: error.message });
+  }
+};
 
 exports.appointmentGenerate = async (req, res) => {
-    let relatedAppointments = []
-    const dataconfigs = [];
-  
-    let { totalAmount, relatedPatient, relatedDoctor, originalDate, relatedBranch, treatmentTimes, inBetweenDuration, relatedPackageSelection, relatedTreatment, phone } = req.body
-    console.log("req.body",req.body)
-    if (originalDate === undefined) return res.status(500).send({ error: true, message: 'Original Date is required' })
-    const appointmentConfig = {
-        relatedPatient: relatedPatient,
-        relatedDoctor: relatedDoctor,
-        originalDate: new Date(originalDate), // Convert to Date object
-        phone: phone,
-        relatedBranch: relatedBranch,
-        relatedPackageSelection: relatedPackageSelection,
-        relatedTreatment: relatedTreatment,
-    };
-    
-    const numTreatments = treatmentTimes;
-    for (let i = 0; i < numTreatments; i++) {
-        const date = new Date(appointmentConfig.originalDate);
-        date.setDate(date.getDate() + (i * inBetweenDuration)); // Add 7 days for each iteration
-        const config = { ...appointmentConfig, originalDate: date };
-        dataconfigs.push(config);
+  let relatedAppointments = [];
+  const dataconfigs = [];
+
+  let {
+    totalAmount,
+    relatedPatient,
+    relatedDoctor,
+    originalDate,
+    relatedBranch,
+    treatmentTimes,
+    inBetweenDuration,
+    relatedPackageSelection,
+    relatedTreatmentSelection,
+    relatedTreatment,
+    phone,
+  } = req.body;
+  console.log("req.body", req.body);
+  if (originalDate === undefined)
+    return res
+      .status(500)
+      .send({ error: true, message: "Original Date is required" });
+  const appointmentConfig = {
+    relatedPatient: relatedPatient,
+    relatedDoctor: relatedDoctor,
+    originalDate: new Date(originalDate), // Convert to Date object
+    phone: phone,
+    relatedBranch: relatedBranch,
+    relatedPackageSelection: relatedPackageSelection,
+    relatedTreatmentSelection: relatedTreatmentSelection,
+    relatedTreatment: relatedTreatment,
+  };
+
+  const numTreatments = treatmentTimes;
+  for (let i = 0; i < numTreatments; i++) {
+    const date = new Date(appointmentConfig.originalDate);
+    date.setDate(date.getDate() + i * inBetweenDuration); // Add 7 days for each iteration
+    const config = { ...appointmentConfig, originalDate: date };
+    dataconfigs.push(config);
+  }
+
+  const appointmentResult = await Appointment.insertMany(dataconfigs);
+  appointmentResult.map(function (element, index) {
+    relatedAppointments.push(element._id);
+  });
+
+  const dividedPrice = (totalAmount / treatmentTimes).toFixed(2);
+  const perAppointmentPrices = (totalAmount / treatmentTimes).toFixed(2);
+  const deferRevenues = totalAmount;
+  console.log(
+    "reached ",
+    JSON.stringify(perAppointmentPrices),
+    JSON.stringify(deferRevenues)
+  );
+  console.log(
+    "relatedTreatmentSelction",
+    req.body.relatedTreatmentSelection,
+    relatedAppointments
+  );
+  const treatmentSelectionUpdate = await TreatmentSelection.findOneAndUpdate(
+    { _id: req.body.relatedTreatmentSelection },
+    { $push: { relatedAppointments: relatedAppointments } }, // perAppointmentPrices, deferRevenues,
+    { new: true }
+  );
+
+  const addPerAppointmentPrice = await TreatmentSelection.findByIdAndUpdate(
+    req.body.relatedTreatmentSelection,
+    {
+      perAppointmentPrice: dividedPrice,
+      deferRevenue: deferRevenues,
     }
-    
-    const appointmentResult = await Appointment.insertMany(dataconfigs)
-    appointmentResult.map(function (element, index) {
-        relatedAppointments.push(element._id)
-    })
+  );
 
-        const dividedPrice = (totalAmount / treatmentTimes).toFixed(2);
-        const perAppointmentPrices =  (totalAmount / treatmentTimes).toFixed(2);
-        const deferRevenues = totalAmount ;
-        console.log("reached ",JSON.stringify(perAppointmentPrices), JSON.stringify(deferRevenues) )
-        console.log("relatedTreatmentSelction",req.body.relatedTreatmentSelection,relatedAppointments)
-        const treatmentSelectionUpdate = await TreatmentSelection.findOneAndUpdate({ _id: req.body.relatedTreatmentSelection }, { $push: { relatedAppointments: relatedAppointments }  },// perAppointmentPrices, deferRevenues, 
-                                    { new: true });
-        
-        const addPerAppointmentPrice = await TreatmentSelection.findByIdAndUpdate(req.body.relatedTreatmentSelection,
-                                            {
-                                                perAppointmentPrice : dividedPrice,
-                                                deferRevenue : deferRevenues
-                                            })
-        
-        //show update treatment selection
-        const updatedTreatmentSelection = await TreatmentSelection.findById(req.body.relatedTreatmentSelection);
+  //show update treatment selection
+  const updatedTreatmentSelection = await TreatmentSelection.findById(
+    req.body.relatedTreatmentSelection
+  );
 
-    const patientUpdate = await Patient.findOneAndUpdate({ _id: relatedPatient }, { relatedAppointments: relatedAppointments, $inc:{remainingAppointments: relatedAppointments,}, createdBy: req.credentials.id, relatedBranch: req.mongoQuery.relatedBranch });
-    const populatedAppointments = await Appointment.find({ _id: { $in: appointmentResult.map(item => item._id) } }).populate('relatedDoctor');
-    return res.status(200).send({ success: true, data: populatedAppointments, relatedAppointments: relatedAppointments, patientUpdate: patientUpdate ,updateTreatmentSelection : updatedTreatmentSelection})
-}
+  const patientUpdate = await Patient.findOneAndUpdate(
+    { _id: relatedPatient },
+    {
+      relatedAppointments: relatedAppointments,
+      $inc: { remainingAppointments: relatedAppointments },
+      createdBy: req.credentials.id,
+      relatedBranch: req.mongoQuery.relatedBranch,
+    }
+  );
+  const populatedAppointments = await Appointment.find({
+    _id: { $in: appointmentResult.map((item) => item._id) },
+  }).populate("relatedDoctor");
+  return res.status(200).send({
+    success: true,
+    data: populatedAppointments,
+    relatedAppointments: relatedAppointments,
+    patientUpdate: patientUpdate,
+    updateTreatmentSelection: updatedTreatmentSelection,
+  });
+};
 
 exports.createPackageSelection = async (req, res, next) => {
-    let data = req.body;
-    let relatedAppointments = []
-    let tvcCreate = false;
-    let createdBy = req.credentials.id
-    let files = req.files
-    try {
-        if (files.payment) {
-            for (const element of files.payment) {
-                let imgPath = element.path.split('cherry-k')[1];
-                const attachData = {
-                    fileName: element.originalname,
-                    imgUrl: imgPath,
-                    image: imgPath.split('\\')[2]
-                };
-                const attachResult = await Attachment.create(attachData);
-                var attachID = attachResult._id.toString()
-            }
-        }
-
-        const patientUpdate = await Patient.findOneAndUpdate(
-            { _id: req.body.relatedPatient },
-            { $inc: { conditionAmount: req.body.psPaidAmount, conditionPurchaseFreq: 1, conditionPackageQty: 1 } },
-            { new: true }
-        )
-
-        data = { ...data, relatedAppointments: relatedAppointments, remainingAppointments: relatedAppointments, createdBy: createdBy, relatedBranch: req.body.relatedBranch }
-
-
-        //first transaction 
-        if (req.body.paymentMethod === 'Paid') {
-            var fTransResult = await Transaction.create({
-                "amount": req.body.psPaidAmount,
-                "date": Date.now(),
-                "remark": null,
-                "relatedAccounting": "64a3f2e39f17ad46313dc882", //Sales (Package)
-                "type": "Credit",
-                "createdBy": createdBy
-            })
-            var amountUpdate = await Accounting.findOneAndUpdate(
-                { _id: "64a3f2e39f17ad46313dc882" },
-                { $inc: { amount: req.body.psPaidAmount } }
-            )
-            //sec transaction
-            var secTransResult = await Transaction.create({
-                "amount": req.body.psPaidAmount,
-                "date": Date.now(),
-                "remark": null,
-                "relatedBank": req.body.relatedBank,
-                "relatedCash": req.body.relatedCash,
-                "type": "Debit",
-                "relatedTransaction": fTransResult._id,
-                "createdBy": createdBy
-            });
-            var fTransUpdate = await Transaction.findOneAndUpdate(
-                { _id: fTransResult._id },
-                {
-                    relatedTransaction: secTransResult._id
-                },
-                { new: true }
-            )
-            if (req.body.relatedBank) {
-                var amountUpdate = await Accounting.findOneAndUpdate(
-                    { _id: req.body.relatedBank },
-                    { $inc: { amount: req.body.psPaidAmount } }
-                )
-            } else if (req.body.relatedCash) {
-                var amountUpdate = await Accounting.findOneAndUpdate(
-                    { _id: req.body.relatedCash },
-                    { $inc: { amount: req.body.psPaidAmount } }
-                )
-            }
-            tvcCreate = true;
-        }
-        if (fTransResult && secTransResult) { data = { ...data, relatedTransaction: [fTransResult._id, secTransResult._id] } } //adding relatedTransactions to treatmentSelection model
-        if (treatmentVoucherResult) { data = { ...data, relatedTreatmentVoucher: treatmentVoucherResult._id } }
-        const result = await PackageSelection.create(data)
-
-        // if (req.body.paymentMethod === 'Advance') {
-        //     const packageResult = await Package.find({ _id: req.body.relatedTreatment }).populate('relatedTreatments')
-        //     let advanceAmount = req.body.totalAmount - req.body.paidAmount
-
-        //     if (req.body.deferAmount > 0 && req.body.paidAmount !== 0 && req.body.cashBackAmount === 0) {
-        //         var fTransResult = await Transaction.create({
-        //             "amount": advanceAmount,
-        //             "date": Date.now(),
-        //             "remark": null,
-        //             "relatedAccounting": "6467379159a9bc811d97f4d2", //Advance received from customer
-        //             "type": "Debit",
-        //             "createdBy": createdBy
-        //         })
-        //         var amountUpdate = await Accounting.findOneAndUpdate(
-        //             { _id: "6467379159a9bc811d97f4d2" },
-        //             { $inc: { amount: -req.body.totalAmount } }
-        //         )
-        //         //sec transaction
-        //         var secTransResult = await Transaction.create({
-        //             "amount": req.body.paidAmount,
-        //             "date": Date.now(),
-        //             "remark": null,
-        //             "relatedBank": req.body.relatedBank,
-        //             "relatedCash": req.body.relatedCash,
-        //             "type": "Debit",
-        //             "relatedTransaction": fTransResult._id,
-        //             "createdBy": createdBy
-        //         });
-        //         var fTransUpdate = await Transaction.findOneAndUpdate(
-        //             { _id: fTransResult._id },
-        //             {
-        //                 relatedTransaction: secTransResult._id
-        //             },
-        //             { new: true }
-        //         )
-        //         if (req.body.relatedBank) {
-        //             var freqSecamountUpdate = await Accounting.findOneAndUpdate(
-        //                 { _id: req.body.relatedBank },
-        //                 { $inc: { amount: req.body.paidAmount } }
-        //             )
-        //         } else if (req.body.relatedCash) {
-        //             var freqSecamountUpdate = await Accounting.findOneAndUpdate(
-        //                 { _id: req.body.relatedCash },
-        //                 { $inc: { amount: req.body.paidAmount } }
-        //             )
-
-        //         }
-        //         for (let i in packageResult.relatedTreatments) {
-        //             var secTransResult2 = await Transaction.create({
-        //                 "amount": req.body.totalAmount,
-        //                 "date": Date.now(),
-        //                 "remark": null,
-        //                 "relatedAccounting": i.relatedAccount,
-        //                 "type": "Credit",
-        //                 "relatedTransaction": fTransResult._id,
-        //                 "createdBy": createdBy
-        //             });
-        //             var freqSecamountUpdate2 = await Accounting.findOneAndUpdate(
-        //                 { _id: i.relatedAccount },
-        //                 { $inc: { amount: req.body.totalAmount } }
-        //             )
-        //         }
-        //         const ARUpdate = await AdvanceRecords.findOneAndUpdate(
-        //             { _id: req.body.advanceID },
-        //             { amount: 0 },
-        //             { new: true }
-        //         )
-        //     } else if (req.body.deferAmount < 0 && req.body.paidAmount === 0 && req.body.cashBackAmount > 0) {
-
-        //         //sec transaction
-        //         for (let i in packageResult.relatedTreatments) {
-        //             var fTransResult = await Transaction.create({
-        //                 "amount": req.body.totalAmount,
-        //                 "date": Date.now(),
-        //                 "remark": null,
-        //                 "relatedAccounting": i.relatedAccount,
-        //                 "type": "Credit",
-
-        //                 "createdBy": createdBy
-        //             });
-
-        //             var amountUpdate = await Accounting.findOneAndUpdate(
-        //                 { _id: i.relatedAccount },
-        //                 { $inc: { amount: req.body.totalAmount } }
-        //             )
-        //         }
-        //         var secTransResult = await Transaction.create({
-        //             "amount": req.body.totalAmount,
-        //             "date": Date.now(),
-        //             "remark": null,
-        //             "relatedAccounting": "6467379159a9bc811d97f4d2", //Advance received from customer
-        //             "type": "Debit",
-        //             "relatedTransaction": fTransResult._id,
-        //             "createdBy": createdBy
-        //         })
-
-        //         var amountUpdate = await Accounting.findOneAndUpdate(
-        //             { _id: "6467379159a9bc811d97f4d2" },
-        //             { $inc: { amount: -req.body.totalAmount } }
-        //         )
-
-        //         var fTransUpdate = await Transaction.findOneAndUpdate(
-        //             { _id: fTransResult._id },
-        //             {
-        //                 relatedTransaction: secTransResult._id
-        //             },
-        //             { new: true }
-        //         )
-
-        //         const ARUpdate = await AdvanceRecords.findOneAndUpdate(
-        //             { _id: req.body.advanceID },
-        //             { amount: req.body.cashBackAmount },
-        //             { new: true }
-        //         )
-
-        //     } else if (req.body.deferAmount === 0 && req.boy.paidAmount === 0 && req.body.cashBackAmount === 0) {
-        //         for (let i in packageResult.relatedTreatments) {
-        //             var fTransResult = await Transaction.create({
-        //                 "amount": req.body.totalAmount,
-        //                 "date": Date.now(),
-        //                 "remark": null,
-        //                 "relatedAccounting": i.relatedAccount,
-        //                 "type": "Credit",
-
-        //                 "createdBy": createdBy
-        //             });
-
-        //             var amountUpdate = await Accounting.findOneAndUpdate(
-        //                 { _id: i.relatedAccount },
-        //                 { $inc: { amount: req.body.totalAmount } }
-        //             )
-        //         }
-        //         var secTransResult = await Transaction.create({
-        //             "amount": req.body.totalAmount,
-        //             "date": Date.now(),
-        //             "remark": null,
-        //             "relatedAccounting": "6467379159a9bc811d97f4d2", //Advance received from customer
-        //             "type": "Debit",
-        //             "relatedTransaction": fTransResult._id,
-        //             "createdBy": createdBy
-        //         })
-
-        //         var amountUpdate = await Accounting.findOneAndUpdate(
-        //             { _id: "6467379159a9bc811d97f4d2" },
-        //             { $inc: { amount: -req.body.totalAmount } }
-        //         )
-
-        //         var fTransUpdate = await Transaction.findOneAndUpdate(
-        //             { _id: fTransResult._id },
-        //             {
-        //                 relatedTransaction: secTransResult._id
-        //             },
-        //             { new: true }
-        //         )
-
-        //         const ARUpdate = await AdvanceRecords.findOneAndUpdate(
-        //             { _id: req.body.advanceID },
-        //             { amount: 0 },
-        //             { new: true }
-        //         )
-        //     }
-        //     let dataTVC = {
-        //         "relatedPackageSelection": result._id,
-        //         "relatedPackage": req.body.relatedPackage,
-        //         "relatedAppointment": req.body.relatedAppointment,
-        //         "relatedPatient": req.body.relatedPatient,
-        //         "paymentMethod": "pAdvance", //enum: ['by Appointment','Lapsum','Total','Advanced']
-        //         "amount": req.body.totalAmount,
-        //         "relatedBank": req.body.relatedBank,
-        //         "bankType": req.body.bankType,//must be bank acc from accounting accs
-        //         "paymentType": req.body.paymentType, //enum: ['Bank','Cash']
-        //         "relatedCash": req.body.relatedCash, //must be cash acc from accounting accs
-        //         "createdBy": createdBy,
-        //         "relatedBranch": req.body.relatedBranch,
-        //         "remark": req.body.remark,
-        //         "payment": attachID,
-        //         "relatedDiscount": req.body.relatedDiscount
-        //     }
-        //     let today = new Date().toISOString()
-        //     const latestDocument = await TreatmentVoucher.find({}, { seq: 1 }).sort({ _id: -1 }).limit(1).exec();
-        //     if (latestDocument.length === 0) dataTVC = { ...dataTVC, seq: 1, code: "TVC-" + today.split('T')[0].replace(/-/g, '') + "-1" } // if seq is undefined set initial patientID and seq
-        //     if (latestDocument.length > 0) {
-        //         const increment = latestDocument[0].seq + 1
-        //         dataTVC = { ...dataTVC, code: "TVC-" + today.split('T')[0].replace(/-/g, '') + "-" + increment, seq: increment }
-        //     }
-        //     var treatmentVoucherResult = await TreatmentVoucher.create(dataTVC)
-        // }
-
-        // if (req.body.paymentMethod === 'FOC') {
-        //     let dataTVC = {
-        //         "relatedPackageSelection": result._id,
-        //         "relatedPackage": req.body.relatedPackage,
-        //         "relatedAppointment": req.body.relatedAppointment,
-        //         "relatedPatient": req.body.relatedPatient,
-        //         "paymentMethod": "FOC", //enum: ['by Appointment','Lapsum','Total','Advanced']
-        //         "amount": 0,
-        //         "relatedBank": req.body.relatedBank,
-        //         "bankType": req.body.bankType,//must be bank acc from accounting accs
-        //         "paymentType": req.body.paymentType, //enum: ['Bank','Cash']
-        //         "relatedCash": req.body.relatedCash, //must be cash acc from accounting accs
-        //         "createdBy": createdBy,
-        //         "relatedBranch": req.body.relatedBranch,
-        //         "remark": req.body.remark,
-        //         "payment": attachID,
-        //         "relatedDiscount": req.body.relatedDiscount,
-        //         "relatedDoctor": req.body.relatedDoctor,
-        //         "tsType": 'PS',
-        //         "psGrandTotal": req.body.psGrandTotal,
-        //         "psBalance": req.body.psBalance,
-        //         "psPaidAmount": req.body.psPaidAmount,
-        //         "seq":req.body.seq,
-        //         "code":req.body.code
-        //     }
-        //     var treatmentVoucherResult = await TreatmentVoucher.create(dataTVC)
-        // }
-        if (req.body.paymentMethod === 'Partial') tvcCreate = true
-        if (req.body.secondAmount) {
-            var fTransResult = await Transaction.create({
-                "amount": req.body.secondAmount,
-                "relatedBranch": req.body.relatedBranch,
-                "date": Date.now(),
-                "remark": null,
-                "relatedAccounting": req.body.secondAccount,
-                "type": "Credit",
-                "createdBy": createdBy,
-                "relatedBranch": req.mongoQuery.relatedBranch
-            })
-            const amountUpdates = await Accounting.findOneAndUpdate(
-                { _id: req.body.secondAccount },
-                { $inc: { amount: req.body.secondAmount } }
-            )
-
-        }
-        if (tvcCreate === true) {
-
-            //--> treatment voucher create
-            let dataTVC = {
-                "secondAmount": req.body.secondAmount,
-                "secondAccount": req.body.secondAccount,
-                "isDouble": req.body.isDouble,
-                "relatedPackageSelection": result._id,
-                "relatedPackage": req.body.relatedPackage,
-                "relatedAppointment": req.body.relatedAppointment,
-                "relatedPatient": req.body.relatedPatient,
-                "paymentMethod": req.body.paymentMethod, //enum: ['by Appointment','Lapsum','Total','Advanced']
-                "amount": req.body.psPaidAmount,
-                "relatedBank": req.body.relatedBank,
-                "bankType": req.body.bankType,//must be bank acc from accounting accs
-                "paymentType": req.body.paymentType, //enum: ['Bank','Cash']
-                "relatedCash": req.body.relatedCash, //must be cash acc from accounting accs
-                "createdBy": createdBy,
-                "relatedBranch": req.body.relatedBranch,
-                "remark": req.body.remark,
-                "payment": attachID,
-                "relatedDiscount": req.body.relatedDiscount,
-                "relatedDoctor": req.body.relatedDoctor,
-                "tsType": 'PS',
-                "psGrandTotal": req.body.psGrandTotal,
-                "psBalance": req.body.psBalance,
-                "createdAt": req.body.createdAt,
-                "psPaidAmount": req.body.psPaidAmount
-            }
-            let today = new Date().toISOString()
-            const latestDocument = await TreatmentVoucher.find({}, { seq: 1 }).sort({ _id: -1 }).limit(1).exec();
-            if (latestDocument.length === 0) dataTVC = { ...dataTVC, seq: 1, code: "TVC-" + today.split('T')[0].replace(/-/g, '') + "-1" } // if seq is undefined set initial patientID and seq
-            if (latestDocument.length > 0) {
-                const increment = latestDocument[0].seq + 1
-                dataTVC = { ...dataTVC, code: "TVC-" + today.split('T')[0].replace(/-/g, '') + "-" + increment, seq: increment }
-            }
-            var treatmentVoucherResult = await TreatmentVoucher.create(dataTVC)
-        }
-        let advanceQuery = { $inc: { amount: -req.body.psGrandTotal } }
-        if (req.body.recievedPatient) advanceQuery.recievedPatient = req.body.recievedPatient
-        //freq Update Start
-        const advanceResult = await AdvanceRecords.findOneAndUpdate(
-            { relatedPatient: req.body.relatedPatient },
-            advanceQuery,
-            { new: true }
-        )
-        const freqUpdate = await Patient.findOneAndUpdate(
-            { _id: req.body.relatedPatient },
-            { $inc: { treatmentPackageQty: 1, totalAmount: req.body.psGrandTotal } },
-            { new: true }
-        )
-        var freqfTransResult = await Transaction.create({
-            "amount": req.body.psPaidAmount,
-            "date": Date.now(),
-            "remark": null,
-            "relatedAccounting": "64a3f2e39f17ad46313dc882", //Sales Package
-            "type": "Credit",
-            "createdBy": createdBy
-        })
-        var freqamountUpdate = await Accounting.findOneAndUpdate(
-            { _id: "64a3f2e39f17ad46313dc882" },
-            { $inc: { amount: -req.body.psPaidAmount } }
-        )
-        //sec transaction
-        var freqSecTransResult = await Transaction.create({
-            "amount": req.body.psPaidAmount,
-            "date": Date.now(),
-            "remark": null,
-            "relatedBank": req.body.relatedBank,
-            "relatedCash": req.body.relatedCash,
-            "type": "Debit",
-            "relatedTransaction": freqfTransResult._id,
-            "createdBy": createdBy
-        });
-        var freqfTransUpdate = await Transaction.findOneAndUpdate(
-            { _id: freqfTransResult._id },
-            {
-                relatedTransaction: freqSecTransResult._id
-            },
-            { new: true }
-        )
-        if (req.body.relatedBank) {
-            var freqSecamountUpdate = await Accounting.findOneAndUpdate(
-                { _id: req.body.relatedBank },
-                { $inc: { amount: req.body.psPaidAmount } }
-            )
-        } else if (req.body.relatedCash) {
-            var freqSecamountUpdate = await Accounting.findOneAndUpdate(
-                { _id: req.body.relatedCash },
-                { $inc: { amount: req.body.psPaidAmount } }
-            )
-        }
-        //Freq Update end
-        const populatedResult = await PackageSelection.find({ _id: result._id }).populate('createdBy relatedAppointments remainingAppointments relatedTransaction relatedPatient').populate({
-            path: 'relatedPackage',
-            model: 'Packages',
-            populate: {
-                path: 'relatedTreatments',
-                model: 'Treatments'
-            }
-        }).populate({
-            path: 'relatedAppointments',
-            model: 'Appointments',
-            populate: {
-                path: 'relatedDoctor',
-                model: 'Doctors'
-            }
-        })
-        const accResult = await Appointment.findOneAndUpdate(
-            { _id: req.body.appointment },
-            { $addToSet: { relatedPackageSelection: result._id } },
-            { new: true },
-        )
-        if (data.relatedPatient) {
-            const patientResult = await Patient.findOneAndUpdate(
-                { _id: req.body.relatedPatient },
-                { $addToSet: { relatedPackageSelection: result._id } },
-                { new: true }
-            )
-        }
-        if (treatmentVoucherResult) {
-            var populatedTV = await TreatmentVoucher.find({ _id: treatmentVoucherResult._id }).populate('relatedDiscount')
-        }
-        if (req.body.psBalance > 0) {
-            const debtCreate = await Debt.create({
-                "balance": req.body.psBalance,
-                "relatedPatient": data.relatedPatient,
-                "relatedTreatmentVoucher": treatmentVoucherResult._id
-            })
-            const fTransaction = new Transaction({
-                "amount": req.body.psBalance,
-                "date": Date.now(),
-                "remark": remark,
-                "relatedAccounting": "6505692e8a572e8de464c0ea", //Account Receivable from Customer
-                "type": "Debit",
-                "createdBy": createdBy
-            })
-            const fTransResult = await fTransaction.save()
-            var amountUpdate = await Accounting.findOneAndUpdate(
-                { _id: "6505692e8a572e8de464c0ea" },  //Account Receivable from Customer
-                { $inc: { amount: req.body.psBalance } }
-            )
-
-            const secTransaction = new Transaction(
-                {
-                    "amount": data.psPaidAmount,
-                    "date": Date.now(),
-                    "remark": remark,
-                    "relatedBank": relatedBank,
-                    "relatedCash": relatedCash,
-                    "type": "Debit",
-                    "relatedTransaction": fTransResult._id,
-                    "createdBy": createdBy
-                }
-            )
-            const secTransResult = await secTransaction.save();
-            var fTransUpdate = await Transaction.findOneAndUpdate(
-                { _id: fTransResult._id },
-                {
-                    relatedTransaction: secTransResult._id
-                },
-                { new: true }
-            )
-            if (relatedBank) {
-                var amountUpdate = await Accounting.findOneAndUpdate(
-                    { _id: relatedBank },
-                    { $inc: { amount: req.body.psPaidAmount } }
-                )
-            } else if (relatedCash) {
-                var amountUpdate = await Accounting.findOneAndUpdate(
-                    { _id: relatedCash },
-                    { $inc: { amount: req.body.psPaidAmount } }
-                )
-            }
-        }
-
-        let response = {
-            message: 'Treatment Selection create success',
-            success: true,
-            data: populatedResult,
-            patientFreqUpdate: freqUpdate
-            // fTransResult: fTransResult,
-            // secTransResult: secTransResult,
-            // treatmentVoucherResult:treatmentVoucherResult
-        }
-        if (populatedTV) response.treatmentVoucherResult = populatedTV
-        // if (fTransUpdate) response.fTransResult = fTransUpdate
-        // if (fTransResult) response.secTransResult = secTransResult
-        res.status(200).send(response);
-    } catch (error) {
-        console.log(error)
-        return res.status(500).send({ "error": true, message: error.message })
+  let data = req.body;
+  let relatedAppointments = [];
+  let tvcCreate = false;
+  let createdBy = req.credentials.id;
+  let files = req.files;
+  try {
+    if (files.payment) {
+      for (const element of files.payment) {
+        let imgPath = element.path.split("cherry-k")[1];
+        const attachData = {
+          fileName: element.originalname,
+          imgUrl: imgPath,
+          image: imgPath.split("\\")[2],
+        };
+        const attachResult = await Attachment.create(attachData);
+        var attachID = attachResult._id.toString();
+      }
     }
+
+    const patientUpdate = await Patient.findOneAndUpdate(
+      { _id: req.body.relatedPatient },
+      {
+        $inc: {
+          conditionAmount: req.body.psPaidAmount,
+          conditionPurchaseFreq: 1,
+          conditionPackageQty: 1,
+        },
+      },
+      { new: true }
+    );
+
+    data = {
+      ...data,
+      relatedAppointments: relatedAppointments,
+      remainingAppointments: relatedAppointments,
+      createdBy: createdBy,
+      relatedBranch: req.body.relatedBranch,
+    };
+
+    //first transaction
+    if (req.body.paymentMethod === "Paid") {
+      var fTransResult = await Transaction.create({
+        amount: req.body.psPaidAmount,
+        date: Date.now(),
+        remark: null,
+        relatedAccounting: "64a3f2e39f17ad46313dc882", //Sales (Package)
+        type: "Credit",
+        createdBy: createdBy,
+      });
+      var amountUpdate = await Accounting.findOneAndUpdate(
+        { _id: "64a3f2e39f17ad46313dc882" },
+        { $inc: { amount: req.body.psPaidAmount } }
+      );
+      //sec transaction
+      var secTransResult = await Transaction.create({
+        amount: req.body.psPaidAmount,
+        date: Date.now(),
+        remark: null,
+        relatedBank: req.body.relatedBank,
+        relatedCash: req.body.relatedCash,
+        type: "Debit",
+        relatedTransaction: fTransResult._id,
+        createdBy: createdBy,
+      });
+      var fTransUpdate = await Transaction.findOneAndUpdate(
+        { _id: fTransResult._id },
+        {
+          relatedTransaction: secTransResult._id,
+        },
+        { new: true }
+      );
+      if (req.body.relatedBank) {
+        var amountUpdate = await Accounting.findOneAndUpdate(
+          { _id: req.body.relatedBank },
+          { $inc: { amount: req.body.psPaidAmount } }
+        );
+      } else if (req.body.relatedCash) {
+        var amountUpdate = await Accounting.findOneAndUpdate(
+          { _id: req.body.relatedCash },
+          { $inc: { amount: req.body.psPaidAmount } }
+        );
+      }
+      tvcCreate = true;
+    }
+    if (fTransResult && secTransResult) {
+      data = {
+        ...data,
+        relatedTransaction: [fTransResult._id, secTransResult._id],
+      };
+    } //adding relatedTransactions to treatmentSelection model
+    if (treatmentVoucherResult) {
+      data = { ...data, relatedTreatmentVoucher: treatmentVoucherResult._id };
+    }
+    const result = await PackageSelection.create(data);
+
+    // if (req.body.paymentMethod === 'Advance') {
+    //     const packageResult = await Package.find({ _id: req.body.relatedTreatment }).populate('relatedTreatments')
+    //     let advanceAmount = req.body.totalAmount - req.body.paidAmount
+
+    //     if (req.body.deferAmount > 0 && req.body.paidAmount !== 0 && req.body.cashBackAmount === 0) {
+    //         var fTransResult = await Transaction.create({
+    //             "amount": advanceAmount,
+    //             "date": Date.now(),
+    //             "remark": null,
+    //             "relatedAccounting": "6467379159a9bc811d97f4d2", //Advance received from customer
+    //             "type": "Debit",
+    //             "createdBy": createdBy
+    //         })
+    //         var amountUpdate = await Accounting.findOneAndUpdate(
+    //             { _id: "6467379159a9bc811d97f4d2" },
+    //             { $inc: { amount: -req.body.totalAmount } }
+    //         )
+    //         //sec transaction
+    //         var secTransResult = await Transaction.create({
+    //             "amount": req.body.paidAmount,
+    //             "date": Date.now(),
+    //             "remark": null,
+    //             "relatedBank": req.body.relatedBank,
+    //             "relatedCash": req.body.relatedCash,
+    //             "type": "Debit",
+    //             "relatedTransaction": fTransResult._id,
+    //             "createdBy": createdBy
+    //         });
+    //         var fTransUpdate = await Transaction.findOneAndUpdate(
+    //             { _id: fTransResult._id },
+    //             {
+    //                 relatedTransaction: secTransResult._id
+    //             },
+    //             { new: true }
+    //         )
+    //         if (req.body.relatedBank) {
+    //             var freqSecamountUpdate = await Accounting.findOneAndUpdate(
+    //                 { _id: req.body.relatedBank },
+    //                 { $inc: { amount: req.body.paidAmount } }
+    //             )
+    //         } else if (req.body.relatedCash) {
+    //             var freqSecamountUpdate = await Accounting.findOneAndUpdate(
+    //                 { _id: req.body.relatedCash },
+    //                 { $inc: { amount: req.body.paidAmount } }
+    //             )
+
+    //         }
+    //         for (let i in packageResult.relatedTreatments) {
+    //             var secTransResult2 = await Transaction.create({
+    //                 "amount": req.body.totalAmount,
+    //                 "date": Date.now(),
+    //                 "remark": null,
+    //                 "relatedAccounting": i.relatedAccount,
+    //                 "type": "Credit",
+    //                 "relatedTransaction": fTransResult._id,
+    //                 "createdBy": createdBy
+    //             });
+    //             var freqSecamountUpdate2 = await Accounting.findOneAndUpdate(
+    //                 { _id: i.relatedAccount },
+    //                 { $inc: { amount: req.body.totalAmount } }
+    //             )
+    //         }
+    //         const ARUpdate = await AdvanceRecords.findOneAndUpdate(
+    //             { _id: req.body.advanceID },
+    //             { amount: 0 },
+    //             { new: true }
+    //         )
+    //     } else if (req.body.deferAmount < 0 && req.body.paidAmount === 0 && req.body.cashBackAmount > 0) {
+
+    //         //sec transaction
+    //         for (let i in packageResult.relatedTreatments) {
+    //             var fTransResult = await Transaction.create({
+    //                 "amount": req.body.totalAmount,
+    //                 "date": Date.now(),
+    //                 "remark": null,
+    //                 "relatedAccounting": i.relatedAccount,
+    //                 "type": "Credit",
+
+    //                 "createdBy": createdBy
+    //             });
+
+    //             var amountUpdate = await Accounting.findOneAndUpdate(
+    //                 { _id: i.relatedAccount },
+    //                 { $inc: { amount: req.body.totalAmount } }
+    //             )
+    //         }
+    //         var secTransResult = await Transaction.create({
+    //             "amount": req.body.totalAmount,
+    //             "date": Date.now(),
+    //             "remark": null,
+    //             "relatedAccounting": "6467379159a9bc811d97f4d2", //Advance received from customer
+    //             "type": "Debit",
+    //             "relatedTransaction": fTransResult._id,
+    //             "createdBy": createdBy
+    //         })
+
+    //         var amountUpdate = await Accounting.findOneAndUpdate(
+    //             { _id: "6467379159a9bc811d97f4d2" },
+    //             { $inc: { amount: -req.body.totalAmount } }
+    //         )
+
+    //         var fTransUpdate = await Transaction.findOneAndUpdate(
+    //             { _id: fTransResult._id },
+    //             {
+    //                 relatedTransaction: secTransResult._id
+    //             },
+    //             { new: true }
+    //         )
+
+    //         const ARUpdate = await AdvanceRecords.findOneAndUpdate(
+    //             { _id: req.body.advanceID },
+    //             { amount: req.body.cashBackAmount },
+    //             { new: true }
+    //         )
+
+    //     } else if (req.body.deferAmount === 0 && req.boy.paidAmount === 0 && req.body.cashBackAmount === 0) {
+    //         for (let i in packageResult.relatedTreatments) {
+    //             var fTransResult = await Transaction.create({
+    //                 "amount": req.body.totalAmount,
+    //                 "date": Date.now(),
+    //                 "remark": null,
+    //                 "relatedAccounting": i.relatedAccount,
+    //                 "type": "Credit",
+
+    //                 "createdBy": createdBy
+    //             });
+
+    //             var amountUpdate = await Accounting.findOneAndUpdate(
+    //                 { _id: i.relatedAccount },
+    //                 { $inc: { amount: req.body.totalAmount } }
+    //             )
+    //         }
+    //         var secTransResult = await Transaction.create({
+    //             "amount": req.body.totalAmount,
+    //             "date": Date.now(),
+    //             "remark": null,
+    //             "relatedAccounting": "6467379159a9bc811d97f4d2", //Advance received from customer
+    //             "type": "Debit",
+    //             "relatedTransaction": fTransResult._id,
+    //             "createdBy": createdBy
+    //         })
+
+    //         var amountUpdate = await Accounting.findOneAndUpdate(
+    //             { _id: "6467379159a9bc811d97f4d2" },
+    //             { $inc: { amount: -req.body.totalAmount } }
+    //         )
+
+    //         var fTransUpdate = await Transaction.findOneAndUpdate(
+    //             { _id: fTransResult._id },
+    //             {
+    //                 relatedTransaction: secTransResult._id
+    //             },
+    //             { new: true }
+    //         )
+
+    //         const ARUpdate = await AdvanceRecords.findOneAndUpdate(
+    //             { _id: req.body.advanceID },
+    //             { amount: 0 },
+    //             { new: true }
+    //         )
+    //     }
+    //     let dataTVC = {
+    //         "relatedPackageSelection": result._id,
+    //         "relatedPackage": req.body.relatedPackage,
+    //         "relatedAppointment": req.body.relatedAppointment,
+    //         "relatedPatient": req.body.relatedPatient,
+    //         "paymentMethod": "pAdvance", //enum: ['by Appointment','Lapsum','Total','Advanced']
+    //         "amount": req.body.totalAmount,
+    //         "relatedBank": req.body.relatedBank,
+    //         "bankType": req.body.bankType,//must be bank acc from accounting accs
+    //         "paymentType": req.body.paymentType, //enum: ['Bank','Cash']
+    //         "relatedCash": req.body.relatedCash, //must be cash acc from accounting accs
+    //         "createdBy": createdBy,
+    //         "relatedBranch": req.body.relatedBranch,
+    //         "remark": req.body.remark,
+    //         "payment": attachID,
+    //         "relatedDiscount": req.body.relatedDiscount
+    //     }
+    //     let today = new Date().toISOString()
+    //     const latestDocument = await TreatmentVoucher.find({}, { seq: 1 }).sort({ _id: -1 }).limit(1).exec();
+    //     if (latestDocument.length === 0) dataTVC = { ...dataTVC, seq: 1, code: "TVC-" + today.split('T')[0].replace(/-/g, '') + "-1" } // if seq is undefined set initial patientID and seq
+    //     if (latestDocument.length > 0) {
+    //         const increment = latestDocument[0].seq + 1
+    //         dataTVC = { ...dataTVC, code: "TVC-" + today.split('T')[0].replace(/-/g, '') + "-" + increment, seq: increment }
+    //     }
+    //     var treatmentVoucherResult = await TreatmentVoucher.create(dataTVC)
+    // }
+
+    // if (req.body.paymentMethod === 'FOC') {
+    //     let dataTVC = {
+    //         "relatedPackageSelection": result._id,
+    //         "relatedPackage": req.body.relatedPackage,
+    //         "relatedAppointment": req.body.relatedAppointment,
+    //         "relatedPatient": req.body.relatedPatient,
+    //         "paymentMethod": "FOC", //enum: ['by Appointment','Lapsum','Total','Advanced']
+    //         "amount": 0,
+    //         "relatedBank": req.body.relatedBank,
+    //         "bankType": req.body.bankType,//must be bank acc from accounting accs
+    //         "paymentType": req.body.paymentType, //enum: ['Bank','Cash']
+    //         "relatedCash": req.body.relatedCash, //must be cash acc from accounting accs
+    //         "createdBy": createdBy,
+    //         "relatedBranch": req.body.relatedBranch,
+    //         "remark": req.body.remark,
+    //         "payment": attachID,
+    //         "relatedDiscount": req.body.relatedDiscount,
+    //         "relatedDoctor": req.body.relatedDoctor,
+    //         "tsType": 'PS',
+    //         "psGrandTotal": req.body.psGrandTotal,
+    //         "psBalance": req.body.psBalance,
+    //         "psPaidAmount": req.body.psPaidAmount,
+    //         "seq":req.body.seq,
+    //         "code":req.body.code
+    //     }
+    //     var treatmentVoucherResult = await TreatmentVoucher.create(dataTVC)
+    // }
+    if (req.body.paymentMethod === "Partial") tvcCreate = true;
+    if (req.body.secondAmount) {
+      var fTransResult = await Transaction.create({
+        amount: req.body.secondAmount,
+        relatedBranch: req.body.relatedBranch,
+        date: Date.now(),
+        remark: null,
+        relatedAccounting: req.body.secondAccount,
+        type: "Credit",
+        createdBy: createdBy,
+        relatedBranch: req.mongoQuery.relatedBranch,
+      });
+      const amountUpdates = await Accounting.findOneAndUpdate(
+        { _id: req.body.secondAccount },
+        { $inc: { amount: req.body.secondAmount } }
+      );
+    }
+    if (tvcCreate === true) {
+      //--> treatment voucher create
+      let dataTVC = {
+        secondAmount: req.body.secondAmount,
+        secondAccount: req.body.secondAccount,
+        isDouble: req.body.isDouble,
+        relatedPackageSelection: result._id,
+        relatedPackage: req.body.relatedPackage,
+        relatedAppointment: req.body.relatedAppointment,
+        relatedPatient: req.body.relatedPatient,
+        paymentMethod: req.body.paymentMethod, //enum: ['by Appointment','Lapsum','Total','Advanced']
+        amount: req.body.psPaidAmount,
+        relatedBank: req.body.relatedBank,
+        bankType: req.body.bankType, //must be bank acc from accounting accs
+        paymentType: req.body.paymentType, //enum: ['Bank','Cash']
+        relatedCash: req.body.relatedCash, //must be cash acc from accounting accs
+        createdBy: createdBy,
+        relatedBranch: req.body.relatedBranch,
+        remark: req.body.remark,
+        payment: attachID,
+        relatedDiscount: req.body.relatedDiscount,
+        relatedDoctor: req.body.relatedDoctor,
+        tsType: "PS",
+        psGrandTotal: req.body.psGrandTotal,
+        psBalance: req.body.psBalance,
+        createdAt: req.body.createdAt,
+        psPaidAmount: req.body.psPaidAmount,
+      };
+      let today = new Date().toISOString();
+      const latestDocument = await TreatmentVoucher.find({}, { seq: 1 })
+        .sort({ _id: -1 })
+        .limit(1)
+        .exec();
+      if (latestDocument.length === 0)
+        dataTVC = {
+          ...dataTVC,
+          seq: 1,
+          code: "TVC-" + today.split("T")[0].replace(/-/g, "") + "-1",
+        }; // if seq is undefined set initial patientID and seq
+      if (latestDocument.length > 0) {
+        const increment = latestDocument[0].seq + 1;
+        dataTVC = {
+          ...dataTVC,
+          code:
+            "TVC-" + today.split("T")[0].replace(/-/g, "") + "-" + increment,
+          seq: increment,
+        };
+      }
+      var treatmentVoucherResult = await TreatmentVoucher.create(dataTVC);
+    }
+    let advanceQuery = { $inc: { amount: -req.body.psGrandTotal } };
+    if (req.body.recievedPatient)
+      advanceQuery.recievedPatient = req.body.recievedPatient;
+    //freq Update Start
+    const advanceResult = await AdvanceRecords.findOneAndUpdate(
+      { relatedPatient: req.body.relatedPatient },
+      advanceQuery,
+      { new: true }
+    );
+    const freqUpdate = await Patient.findOneAndUpdate(
+      { _id: req.body.relatedPatient },
+      { $inc: { treatmentPackageQty: 1, totalAmount: req.body.psGrandTotal } },
+      { new: true }
+    );
+    var freqfTransResult = await Transaction.create({
+      amount: req.body.psPaidAmount,
+      date: Date.now(),
+      remark: null,
+      relatedAccounting: "64a3f2e39f17ad46313dc882", //Sales Package
+      type: "Credit",
+      createdBy: createdBy,
+    });
+    var freqamountUpdate = await Accounting.findOneAndUpdate(
+      { _id: "64a3f2e39f17ad46313dc882" },
+      { $inc: { amount: -req.body.psPaidAmount } }
+    );
+    //sec transaction
+    var freqSecTransResult = await Transaction.create({
+      amount: req.body.psPaidAmount,
+      date: Date.now(),
+      remark: null,
+      relatedBank: req.body.relatedBank,
+      relatedCash: req.body.relatedCash,
+      type: "Debit",
+      relatedTransaction: freqfTransResult._id,
+      createdBy: createdBy,
+    });
+    var freqfTransUpdate = await Transaction.findOneAndUpdate(
+      { _id: freqfTransResult._id },
+      {
+        relatedTransaction: freqSecTransResult._id,
+      },
+      { new: true }
+    );
+    if (req.body.relatedBank) {
+      var freqSecamountUpdate = await Accounting.findOneAndUpdate(
+        { _id: req.body.relatedBank },
+        { $inc: { amount: req.body.psPaidAmount } }
+      );
+    } else if (req.body.relatedCash) {
+      var freqSecamountUpdate = await Accounting.findOneAndUpdate(
+        { _id: req.body.relatedCash },
+        { $inc: { amount: req.body.psPaidAmount } }
+      );
+    }
+    //Freq Update end
+    const populatedResult = await PackageSelection.find({ _id: result._id })
+      .populate(
+        "createdBy relatedAppointments remainingAppointments relatedTransaction relatedPatient"
+      )
+      .populate({
+        path: "relatedPackage",
+        model: "Packages",
+        populate: {
+          path: "relatedTreatments",
+          model: "Treatments",
+        },
+      })
+      .populate({
+        path: "relatedAppointments",
+        model: "Appointments",
+        populate: {
+          path: "relatedDoctor",
+          model: "Doctors",
+        },
+      });
+    const accResult = await Appointment.findOneAndUpdate(
+      { _id: req.body.appointment },
+      { $addToSet: { relatedPackageSelection: result._id } },
+      { new: true }
+    );
+    if (data.relatedPatient) {
+      const patientResult = await Patient.findOneAndUpdate(
+        { _id: req.body.relatedPatient },
+        { $addToSet: { relatedPackageSelection: result._id } },
+        { new: true }
+      );
+    }
+    if (treatmentVoucherResult) {
+      var populatedTV = await TreatmentVoucher.find({
+        _id: treatmentVoucherResult._id,
+      }).populate("relatedDiscount");
+    }
+    if (req.body.psBalance > 0) {
+      const debtCreate = await Debt.create({
+        balance: req.body.psBalance,
+        relatedPatient: data.relatedPatient,
+        relatedTreatmentVoucher: treatmentVoucherResult._id,
+      });
+      const fTransaction = new Transaction({
+        amount: req.body.psBalance,
+        date: Date.now(),
+        remark: remark,
+        relatedAccounting: "6505692e8a572e8de464c0ea", //Account Receivable from Customer
+        type: "Debit",
+        createdBy: createdBy,
+      });
+      const fTransResult = await fTransaction.save();
+      var amountUpdate = await Accounting.findOneAndUpdate(
+        { _id: "6505692e8a572e8de464c0ea" }, //Account Receivable from Customer
+        { $inc: { amount: req.body.psBalance } }
+      );
+
+      const secTransaction = new Transaction({
+        amount: data.psPaidAmount,
+        date: Date.now(),
+        remark: remark,
+        relatedBank: relatedBank,
+        relatedCash: relatedCash,
+        type: "Debit",
+        relatedTransaction: fTransResult._id,
+        createdBy: createdBy,
+      });
+      const secTransResult = await secTransaction.save();
+      var fTransUpdate = await Transaction.findOneAndUpdate(
+        { _id: fTransResult._id },
+        {
+          relatedTransaction: secTransResult._id,
+        },
+        { new: true }
+      );
+      if (relatedBank) {
+        var amountUpdate = await Accounting.findOneAndUpdate(
+          { _id: relatedBank },
+          { $inc: { amount: req.body.psPaidAmount } }
+        );
+      } else if (relatedCash) {
+        var amountUpdate = await Accounting.findOneAndUpdate(
+          { _id: relatedCash },
+          { $inc: { amount: req.body.psPaidAmount } }
+        );
+      }
+    }
+
+    let response = {
+      message: "Treatment Selection create success",
+      success: true,
+      data: populatedResult,
+      patientFreqUpdate: freqUpdate,
+      // fTransResult: fTransResult,
+      // secTransResult: secTransResult,
+      // treatmentVoucherResult:treatmentVoucherResult
+    };
+    if (populatedTV) response.treatmentVoucherResult = populatedTV;
+    // if (fTransUpdate) response.fTransResult = fTransUpdate
+    // if (fTransResult) response.secTransResult = secTransResult
+    res.status(200).send(response);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).send({ error: true, message: error.message });
+  }
 };
 
 exports.updatePackageSelection = async (req, res, next) => {
-    try {
-        let data = req.body;
-        if (data.paidAmount) {
-            data = { ...data, leftOverAmount: data.totalAmount - data.paidAmount } // leftOverAmount Calculation
-        }
-        if (data.paidAmount === 0) data = { ...data, leftOverAmount: data.totalAmount }
-        const result = await PackageSelection.findOneAndUpdate(
-            { _id: req.body.id },
-            data,
-            { new: true },
-        ).populate('relatedTreatment');
-        return res.status(200).send({ success: true, data: result });
-    } catch (error) {
-        return res.status(500).send({ "error": true, "message": error.message })
+  try {
+    let data = req.body;
+    if (data.paidAmount) {
+      data = { ...data, leftOverAmount: data.totalAmount - data.paidAmount }; // leftOverAmount Calculation
     }
+    if (data.paidAmount === 0)
+      data = { ...data, leftOverAmount: data.totalAmount };
+    const result = await PackageSelection.findOneAndUpdate(
+      { _id: req.body.id },
+      data,
+      { new: true }
+    ).populate("relatedTreatment");
+    return res.status(200).send({ success: true, data: result });
+  } catch (error) {
+    return res.status(500).send({ error: true, message: error.message });
+  }
 };
 
 // exports.treatmentPayment = async (req, res, next) => {
@@ -856,123 +950,135 @@ exports.updatePackageSelection = async (req, res, next) => {
 // };
 
 exports.deletePackageSelection = async (req, res, next) => {
-    try {
-        const result = await PackageSelection.findOneAndUpdate(
-            { _id: req.params.id },
-            { isDeleted: true },
-            { new: true },
-        );
-        return res.status(200).send({ success: true, data: { isDeleted: result.isDeleted } });
-    } catch (error) {
-        return res.status(500).send({ "error": true, "message": error.message })
-
-    }
+  try {
+    const result = await PackageSelection.findOneAndUpdate(
+      { _id: req.params.id },
+      { isDeleted: true },
+      { new: true }
+    );
+    return res
+      .status(200)
+      .send({ success: true, data: { isDeleted: result.isDeleted } });
+  } catch (error) {
+    return res.status(500).send({ error: true, message: error.message });
+  }
 };
 
 exports.activatePackageSelection = async (req, res, next) => {
-    try {
-        const result = await PackageSelection.findOneAndUpdate(
-            { _id: req.params.id },
-            { isDeleted: false },
-            { new: true },
-        );
-        return res.status(200).send({ success: true, data: { isDeleted: result.isDeleted } });
-    } catch (error) {
-        return res.status(500).send({ "error": true, "message": error.message })
-    }
+  try {
+    const result = await PackageSelection.findOneAndUpdate(
+      { _id: req.params.id },
+      { isDeleted: false },
+      { new: true }
+    );
+    return res
+      .status(200)
+      .send({ success: true, data: { isDeleted: result.isDeleted } });
+  } catch (error) {
+    return res.status(500).send({ error: true, message: error.message });
+  }
 };
 
 exports.createTreatmentTransaction = async (req, res) => {
-    try {
-        //first transaction 
-        const fTransaction = new Transaction({
-            "amount": req.body.amount,
-            "date": req.body.date,
-            "relatedBranch": req.body.relatedBranch,
-            "remark": req.body.remark,
-            "relatedAccounting": req.body.firstAccount,
-            "type": "Credit",
-            "createdBy": createdBy,
-            "relatedBranch": { isDeleted: false }.relatedBranch
-        })
-        const fTransResult = await fTransaction.save()
-        const secTransaction = new Transaction(
-            {
-                "amount": req.body.amount,
-                "date": req.body.date,
-                "relatedBranch": req.body.relatedBranch,
-                "remark": req.body.remark,
-                "relatedAccounting": req.body.secondAccount,
-                "type": "Debit",
-                "relatedTransaction": fTransResult._id,
-                "createdBy": createdBy,
-                "relatedBranch": { isDeleted: false }.relatedBranch
-            }
-        )
-        var fTransUpdate = await Transaction.findOneAndUpdate(
-            { _id: fTransResult._id },
-            {
-                relatedTransaction: secTransResult._id
-            },
-            { new: true }
-        )
-        const secTransResult = await secTransaction.save()
-        res.status(200).send({
-            message: 'MedicineSale Transaction success',
-            success: true,
-            fTrans: fTransUpdate,
-            sTrans: secTransResult
-        });
-    } catch (error) {
-        return res.status(500).send({ "error": true, "message": error.message })
-    }
-}
-
-exports.getRelatedPackageSelections = async (req, res) => {
-    try {
-        let query = { isDeleted: false };
-        let { relatedPatient, start, end, relatedAppointments } = req.body
-        if (start && end) query.createdAt = { $gte: start, $lte: end }
-        if (relatedPatient) query.relatedPatient = relatedPatient
-        if (relatedAppointments) query.relatedAppointments = { $in: relatedAppointments }
-        const result = await PackageSelection.find(query).populate('createdBy relatedAppointments remainingAppointments relatedTransaction relatedPatient relatedTreatmentList').populate({
-            path: 'relatedTreatment',
-            model: 'Treatments',
-            populate: {
-                path: 'relatedDoctor',
-                model: 'Doctors'
-            }
-        })
-        if (result.length === 0)
-            return res.status(404).json({ error: true, message: 'No Record Found' });
-        return res.status(200).send({ success: true, data: result });
-    } catch (error) {
-
-        return res.status(500).send({ error: true, message: 'An Error Occured While Fetching Related Treatment Selections' })
-    }
+  try {
+    //first transaction
+    const fTransaction = new Transaction({
+      amount: req.body.amount,
+      date: req.body.date,
+      relatedBranch: req.body.relatedBranch,
+      remark: req.body.remark,
+      relatedAccounting: req.body.firstAccount,
+      type: "Credit",
+      createdBy: createdBy,
+      relatedBranch: { isDeleted: false }.relatedBranch,
+    });
+    const fTransResult = await fTransaction.save();
+    const secTransaction = new Transaction({
+      amount: req.body.amount,
+      date: req.body.date,
+      relatedBranch: req.body.relatedBranch,
+      remark: req.body.remark,
+      relatedAccounting: req.body.secondAccount,
+      type: "Debit",
+      relatedTransaction: fTransResult._id,
+      createdBy: createdBy,
+      relatedBranch: { isDeleted: false }.relatedBranch,
+    });
+    var fTransUpdate = await Transaction.findOneAndUpdate(
+      { _id: fTransResult._id },
+      {
+        relatedTransaction: secTransResult._id,
+      },
+      { new: true }
+    );
+    const secTransResult = await secTransaction.save();
+    res.status(200).send({
+      message: "MedicineSale Transaction success",
+      success: true,
+      fTrans: fTransUpdate,
+      sTrans: secTransResult,
+    });
+  } catch (error) {
+    return res.status(500).send({ error: true, message: error.message });
+  }
 };
 
+exports.getRelatedPackageSelections = async (req, res) => {
+  try {
+    let query = { isDeleted: false };
+    let { relatedPatient, start, end, relatedAppointments } = req.body;
+    if (start && end) query.createdAt = { $gte: start, $lte: end };
+    if (relatedPatient) query.relatedPatient = relatedPatient;
+    if (relatedAppointments)
+      query.relatedAppointments = { $in: relatedAppointments };
+    const result = await PackageSelection.find(query)
+      .populate(
+        "createdBy relatedAppointments remainingAppointments relatedTransaction relatedPatient relatedTreatmentList"
+      )
+      .populate({
+        path: "relatedTreatment",
+        model: "Treatments",
+        populate: {
+          path: "relatedDoctor",
+          model: "Doctors",
+        },
+      });
+    if (result.length === 0)
+      return res.status(404).json({ error: true, message: "No Record Found" });
+    return res.status(200).send({ success: true, data: result });
+  } catch (error) {
+    return res.status(500).send({
+      error: true,
+      message: "An Error Occured While Fetching Related Treatment Selections",
+    });
+  }
+};
 
 exports.searchPackageSelections = async (req, res, next) => {
-    try {
-        let query = { isDeleted: false }
-        let { search, relatedPatient } = req.body
-        if (relatedPatient) query.relatedPatient = relatedPatient
-        if (search) query.$text = { $search: search }
-        const result = await PackageSelection.find(query).populate('createdBy relatedAppointments remainingAppointments relatedTransaction relatedPatient relatedTreatmentList').populate({
-            path: 'relatedTreatment',
-            model: 'Treatments',
-            populate: {
-                path: 'relatedDoctor',
-                model: 'Doctors'
-            }
-        })
-        if (result.length === 0) return res.status(404).send({ error: true, message: 'No Record Found!' })
-        return res.status(200).send({ success: true, data: result })
-    } catch (err) {
-        return res.status(500).send({ error: true, message: err.message })
-    }
-}
+  try {
+    let query = { isDeleted: false };
+    let { search, relatedPatient } = req.body;
+    if (relatedPatient) query.relatedPatient = relatedPatient;
+    if (search) query.$text = { $search: search };
+    const result = await PackageSelection.find(query)
+      .populate(
+        "createdBy relatedAppointments remainingAppointments relatedTransaction relatedPatient relatedTreatmentList"
+      )
+      .populate({
+        path: "relatedTreatment",
+        model: "Treatments",
+        populate: {
+          path: "relatedDoctor",
+          model: "Doctors",
+        },
+      });
+    if (result.length === 0)
+      return res.status(404).send({ error: true, message: "No Record Found!" });
+    return res.status(200).send({ success: true, data: result });
+  } catch (err) {
+    return res.status(500).send({ error: true, message: err.message });
+  }
+};
 
 // exports.TopTenFilter = async (req, res) => {
 //     try {
@@ -1020,45 +1126,53 @@ exports.searchPackageSelections = async (req, res, next) => {
 // }
 
 exports.TopTenFilter = async (req, res) => {
-    try {
-        let query = { isDeleted: false };
-        let { start, end } = req.query;
-        if (start, end) query.createdAt = { $gte: start, $lte: end };
+  try {
+    let query = { isDeleted: false };
+    let { start, end } = req.query;
+    if ((start, end)) query.createdAt = { $gte: start, $lte: end };
 
-        const TreatmentResult = await PackageSelection.find(query)
-            .populate('relatedTreatment')
-            .populate({
-                path: 'relatedTreatment',
-                populate: {
-                    path: 'treatmentName',
-                    model: 'TreatmentLists',
-                }
-            });
+    const TreatmentResult = await PackageSelection.find(query)
+      .populate("relatedTreatment")
+      .populate({
+        path: "relatedTreatment",
+        populate: {
+          path: "treatmentName",
+          model: "TreatmentLists",
+        },
+      });
 
-        const treatmentNameMap = TreatmentResult.reduce((result, { relatedTreatment }) => {
-            const { name, treatmentName } = relatedTreatment;
-            const treatmentUnit = name;
-            const treatment = treatmentName.name;
+    const treatmentNameMap = TreatmentResult.reduce(
+      (result, { relatedTreatment }) => {
+        const { name, treatmentName } = relatedTreatment;
+        const treatmentUnit = name;
+        const treatment = treatmentName.name;
 
-            if (result.hasOwnProperty(treatmentUnit)) {
-                result[treatmentUnit].qty++;
-            } else {
-                result[treatmentUnit] = { treatmentUnit, treatment, qty: 1 };
-            }
+        if (result.hasOwnProperty(treatmentUnit)) {
+          result[treatmentUnit].qty++;
+        } else {
+          result[treatmentUnit] = { treatmentUnit, treatment, qty: 1 };
+        }
 
-            return result;
-        }, {});
+        return result;
+      },
+      {}
+    );
 
-        const reducedTreatmentNames = Object.values(treatmentNameMap);
+    const reducedTreatmentNames = Object.values(treatmentNameMap);
 
-        const sortedTreatmentNames = reducedTreatmentNames.sort((a, b) => b.qty - a.qty); // Descending
+    const sortedTreatmentNames = reducedTreatmentNames.sort(
+      (a, b) => b.qty - a.qty
+    ); // Descending
 
-        return res.status(200).send({ success: true, data: sortedTreatmentNames, list: TreatmentResult });
-    } catch (error) {
-        return res.status(500).send({ error: true, message: error.message });
-    }
+    return res.status(200).send({
+      success: true,
+      data: sortedTreatmentNames,
+      list: TreatmentResult,
+    });
+  } catch (error) {
+    return res.status(500).send({ error: true, message: error.message });
+  }
 };
-
 
 // const TreatmentNames = TreatmentResult.reduce((result, { relatedTreatment }) => {
 //     const { name, treatmentName } = relatedTreatment;

@@ -170,7 +170,7 @@ exports.createExpense = async (req, res, next) => {
 
     const sequencePart = String(sequenceNumber).padStart(4, "0");
     const ExpenseCode = `EXP-${datePart}-${sequencePart}`;
-    newBody.ExpenseCode = ExpenseCode;
+    newBody.code = ExpenseCode;
 
     const newExpense = new Expense(newBody);
     const result = await newExpense.save();
@@ -179,7 +179,8 @@ exports.createExpense = async (req, res, next) => {
       .populate("relatedBranch")
       .populate("relatedAccounting")
       .populate("relatedBankAccount")
-      .populate("relatedCashAccount");
+      .populate("relatedCashAccount")
+      .populate("code");
 
     const firstTransaction = {
       initialExchangeRate: newBody.initialExchangeRate,

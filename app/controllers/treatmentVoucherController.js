@@ -1087,6 +1087,7 @@ exports.TreatmentVoucherFilter = async (req, res) => {
           path: "item_id",
         },
       });
+
     let allBankResult = await TreatmentVoucher.find(query)
       .populate(
         "medicineItems.item_id multiTreatment.item_id relatedTreatment relatedBranch relatedDoctor relatedBank relatedCash relatedPatient relatedAccounting payment createdBy newTreatmentVoucherId relatedRepay"
@@ -1121,11 +1122,13 @@ exports.TreatmentVoucherFilter = async (req, res) => {
           path: "item_id",
         },
       });
+
     if (!bankID) {
       const { relatedBank, ...query2 } = query;
       query2.relatedCash = { $exists: true };
       if (startDate && endDate)
         query2.createdAt = { $gte: startDate, $lte: endDate };
+
       let cashResult = await TreatmentVoucher.find({ ...query2, Refund: false })
         .populate(
           "newTreatmentVoucherId medicineItems.item_id multiTreatment.item_id relatedTreatment secondAccount relatedBranch relatedDoctor relatedBank relatedCash relatedPatient relatedAccounting payment createdBy relatedRepay"
@@ -1160,6 +1163,7 @@ exports.TreatmentVoucherFilter = async (req, res) => {
             path: "item_id",
           },
         });
+
       let allCashResult = await TreatmentVoucher.find(query2)
         .populate(
           "newTreatmentVoucherId medicineItems.item_id multiTreatment.item_id relatedTreatment secondAccount relatedBranch relatedDoctor relatedBank relatedCash relatedPatient relatedAccounting payment createdBy relatedRepay"

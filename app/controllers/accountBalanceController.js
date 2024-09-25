@@ -732,9 +732,18 @@ exports.getOpeningAndClosingCashAndBankWithExactData = async (req, res) => {
         return total;
       });
 
+    const medicineBankSaleQuery = {
+      Refund: false,
+      isDeleted: false,
+      type: type,
+      relatedBank: { $exists: true },
+      relatedBranch,
+      createdAt: { $gte: startDate, $lt: endDate },
+    };
+
     // Calculate bank totals
     const bankMedicineSaleSecondTotal = await TreatmentVoucher.find({
-      ...medicineSaleQuery,
+      ...medicineBankSaleQuery,
       secondAccount: { $exists: true },
     }).then((msResult) =>
       msResult.reduce((acc, curVal) => {
@@ -802,16 +811,129 @@ exports.getOpeningAndClosingCashAndBankWithExactData = async (req, res) => {
       relatedBranch,
       tsType: "TSMulti",
     })
-      .populate({ path: "secondAccount", populate: { path: "relatedHeader" } })
+      .populate({ path: "secondAccount", populate: { path: "paymentType" } })
       .then((result) =>
         result.reduce((acc, curVal) => {
-          if (curVal.secondAccount.relatedHeader.name === "Bank") {
+          if (curVal.secondAccount.paymentType === "Bank") {
             return acc + curVal.secondAmount;
           }
           return acc;
         }, 0)
       );
 
+    let queryCombineTreatmentVoucher = {
+      Refund: false,
+      isDeleted: false,
+      createdAt: { $gte: startDate, $lt: endDate },
+      relatedCash: { $exists: true },
+      relatedBranch: relatedBranch,
+      tsType: "Combined",
+    };
+
+    const combinedSaleFristCashTotal = await TreatmentVoucher.find(
+      queryCombineTreatmentVoucher
+    )
+      .populate("secondAccount")
+      .then((result) => {
+        //    console.log(result)
+        if (result) {
+          const total = result.reduce((accumulator, currentValue) => {
+            return (
+              accumulator +
+              currentValue.totalPaidAmount +
+              currentValue.msPaidAmount
+            );
+          }, 0);
+          return total;
+        }
+        return 0;
+      });
+
+    //query second cash combined voucher
+    let queryCombineTreatmentVoucher2 = {
+      Refund: false,
+      isDeleted: false,
+      createdAt: { $gte: startDate, $lt: endDate },
+      secondAccount: { $exists: true },
+      relatedBranch: relatedBranch,
+      tsType: "Combined",
+    };
+
+    const combinedSaleSecondCashTotal = await TreatmentVoucher.find(
+      queryCombineTreatmentVoucher2
+    )
+      .populate({
+        path: "secondAccount",
+        populate: {
+          path: "relatedHeader",
+        },
+      })
+      .then((cmResult) => {
+        //   return res.status(200).send({data:result})
+        const total = cmResult.reduce(
+          (accumulator, currentValue) => {
+            if (
+              currentValue.secondAccount.relatedHeader.name === "Cash In Hand"
+            ) {
+              return accumulator + currentValue.secondAmount;
+            } else {
+              return accumulator;
+            }
+          },
+
+          0
+        );
+
+        return total;
+      });
+
+    let queryCombinedBankTotal = {
+      Refund: false,
+      isDeleted: false,
+      createdAt: { $gte: startDate, $lt: endDate },
+      relatedBranch: relatedBranch,
+      tsType: "TSMulti",
+    };
+
+    const combinedSaleFirstBankTotal = await TreatmentVoucher.find(
+      queryCombinedBankTotal
+    )
+      .populate("secondAccount")
+      .then((result) => {
+        if (result) {
+          const total = result.reduce((accumulator, currentValue) => {
+            return (
+              accumulator +
+              currentValue.totalPaidAmount +
+              currentValue.msPaidAmount
+            );
+          }, 0);
+          return total;
+        }
+        return 0;
+      });
+
+    const incomeTotal = await Income.find({
+      date: { $gte: startDate, $lt: endDate },
+      relatedBranch: relatedBranch,
+    }).then((result) => {
+      if (result) {
+        const total = result.reduce((accumulator, currentValue) => {
+          return accumulator + currentValue.finalAmount;
+        }, 0);
+        return total;
+      }
+      return 0;
+    });
+
+    //Repay
+    const totalRepay = await totalRepayFunction({
+      relatedBranch: relatedBranch,
+      repaymentDate: {
+        $gte: moment.tz("Asia/Yangon").format(startDate.toISOString()),
+        $lt: moment.tz("Asia/Yangon").format(endDate.toISOString()),
+      },
+    });
     return res.status(200).send({
       success: true,
       openingTotal: AccountOpeningTotal,
@@ -825,6 +947,7 @@ exports.getOpeningAndClosingCashAndBankWithExactData = async (req, res) => {
       TVFirstCashTotal: type === "Opening" ? TVFirstCashTotal : 0,
       TVSecondCashTotal: type === "Opening" ? TVSecondCashTotal : 0,
       TVSecondBankTotal: type === "Opening" ? TVSecondBankTotal : 0,
+      incomeTotal: type === "Opening" ? incomeTotal : 0,
       transferBalances: type === "Closing" ? AccountTransferBalance : 0,
       total:
         type === "Opening"
@@ -832,12 +955,18 @@ exports.getOpeningAndClosingCashAndBankWithExactData = async (req, res) => {
             cashMedicineSaleSecondTotal +
             TVFirstCashTotal +
             TVSecondCashTotal +
-            AccountOpeningTotal
+            AccountOpeningTotal +
+            incomeTotal +
+            combinedSaleFristCashTotal +
+            combinedSaleSecondCashTotal +
+            totalRepay.cashTotal +
+            combinedSaleFirstBankTotal
           : 0,
       closingCash:
         type === "Opening"
           ? cashMedicineSaleFirstTotal +
             cashMedicineSaleSecondTotal +
+            totalRepay.cashTotal +
             TVFirstCashTotal +
             TVSecondCashTotal +
             AccountOpeningTotal -
@@ -845,8 +974,11 @@ exports.getOpeningAndClosingCashAndBankWithExactData = async (req, res) => {
           : 0,
       closingBank:
         type === "Opening"
-          ? bankMedicineSaleSecondTotal + TVSecondBankTotal
+          ? bankMedicineSaleSecondTotal +
+            TVSecondBankTotal +
+            combinedSaleFirstBankTotal
           : 0,
+      totalRepay: totalRepay,
     });
   } catch (error) {
     return res.status(500).send({ error: true, message: error.message });

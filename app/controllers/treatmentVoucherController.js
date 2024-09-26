@@ -1020,10 +1020,13 @@ exports.TreatmentVoucherFilter = async (req, res) => {
   let firstCashName = [];
   let secondCashName = [];
   let query = { relatedBank: { $exists: true }, isDeleted: false };
+
   let response = {
     success: true,
+    _metadata: {},
     data: {},
   };
+
   try {
     const {
       startDate,
@@ -1037,7 +1040,10 @@ exports.TreatmentVoucherFilter = async (req, res) => {
       bankID,
       relatedBranch,
       income,
+      page = 1,
+      limit = 30,
     } = req.query;
+
     if (startDate && endDate)
       query.createdAt = { $gte: startDate, $lte: endDate };
     if (relatedPatient) query.relatedPatient = relatedPatient;
@@ -1048,11 +1054,17 @@ exports.TreatmentVoucherFilter = async (req, res) => {
     if (purchaseType) query.purchaseType = purchaseType;
     if (relatedDoctor) query.relatedDoctor = relatedDoctor;
     if (relatedBranch) query.relatedBranch = relatedBranch;
+
+    const pageNumber = parseInt(page);
+    const limitNumber = parseInt(limit);
+    const skipIndex = (pageNumber - 1) * limitNumber;
+
     // const cacheKey = JSON.stringify(query);
     // const getCaches = cacheHelper.get(cacheKey)
     // if(getCaches){
     //     return res.status(200).send(getCaches)
     // }
+
     let bankResult = await TreatmentVoucher.find({ ...query, Refund: false })
       .populate(
         "medicineItems.item_id multiTreatment.item_id relatedTreatment relatedBranch relatedDoctor relatedBank relatedCash relatedPatient relatedAccounting payment createdBy newTreatmentVoucherId relatedRepay"
@@ -1086,7 +1098,9 @@ exports.TreatmentVoucherFilter = async (req, res) => {
         populate: {
           path: "item_id",
         },
-      });
+      })
+      .skip(skipIndex)
+      .limit(limitNumber);
 
     let allBankResult = await TreatmentVoucher.find(query)
       .populate(
@@ -1264,6 +1278,11 @@ exports.TreatmentVoucherFilter = async (req, res) => {
             CashTotal: CashTotal,
           });
     }
+
+    // Add pagination metadata
+    const totalItems = await TreatmentVoucher.countDocuments(query);
+    const totalPages = Math.ceil(totalItems / limitNumber);
+
     //filter solid beauty
     const BankNames = bankResult.reduce(
       (
@@ -1309,6 +1328,7 @@ exports.TreatmentVoucherFilter = async (req, res) => {
       },
       {}
     );
+
     const BankTotal = bankResult.reduce(
       (total, sale) =>
         total +
@@ -1392,15 +1412,309 @@ exports.TreatmentVoucherFilter = async (req, res) => {
         $lte: moment.tz("Asia/Yangon").format(endDate),
       };
     const totalRepay = await totalRepayFunction(queryRepay);
+
     response.data = {
       ...response.data,
       repay: totalRepay,
+    };
+
+    response._metadata = {
+      totalItems: totalItems,
+      totalPages: totalPages,
+      currentPage: pageNumber,
+      itemsPerPage: limitNumber,
     };
     //console.log("next second amount  ",secondBankCashAmount)
     // cacheHelper.set(cacheKey, response)
     return res.status(200).send(response);
   } catch (error) {
     return res.status(500).send({ error: true, message: error.message });
+  }
+};
+
+exports.VersionOneTreatmentVoucherFilter = async (req, res) => {
+  let { page = 1, limit = 30 } = req.query;
+  let secondBankAndCashAccount = {};
+  let secondBankCashAmount = [];
+  let firstBankName = [];
+  let firstCashName = [];
+  let secondCashName = [];
+  let query = { relatedBank: { $exists: true }, isDeleted: false };
+
+  page = parseInt(page);
+  limit = parseInt(Math.min(limit, 30));
+  const skip = (page - 1) * limit;
+
+  let response = {
+    success: true,
+    _metadata: {},
+    data: {},
+  };
+
+  try {
+    const {
+      startDate,
+      endDate,
+      createdBy,
+      purchaseType,
+      relatedDoctor,
+      bankType,
+      tsType,
+      relatedPatient,
+      bankID,
+      relatedBranch,
+      income,
+    } = req.query;
+
+    let matchStage = {
+      isDeleted: false,
+      relatedBank: { $exists: true },
+    };
+
+    if (startDate && endDate) {
+      matchStage.createdAt = { $gte: startDate, $lte: endDate };
+    }
+    if (relatedPatient) matchStage.relatedPatient = relatedPatient;
+    if (bankType) matchStage.bankType = bankType;
+    if (createdBy) matchStage.createdBy = createdBy;
+    if (tsType) matchStage.tsType = tsType;
+    if (bankID) matchStage.relatedBank = bankID;
+    if (purchaseType) matchStage.purchaseType = purchaseType;
+    if (relatedDoctor) matchStage.relatedDoctor = relatedDoctor;
+    if (relatedBranch) matchStage.relatedBranch = relatedBranch;
+
+    const QueryPipeline = [
+      { $match: matchStage },
+
+      { $match: { Refund: false } },
+
+      {
+        $lookup: {
+          from: "medicineitems",
+          localField: "medicineItems.item_id",
+          foreignField: "_id",
+          as: "medicineItems",
+        },
+      },
+
+      {
+        $lookup: {
+          from: "treatments",
+          localField: "multiTreatment.item_id",
+          foreignField: "_id",
+          as: "multiTreatment",
+        },
+      },
+
+      {
+        $lookup: {
+          from: "treatments",
+          localField: "relatedTreatment",
+          foreignField: "_id",
+          as: "relatedTreatment",
+        },
+      },
+
+      {
+        $lookup: {
+          from: "branches",
+          localField: "relatedBranch",
+          foreignField: "_id",
+          as: "relatedBranch",
+        },
+      },
+
+      {
+        $lookup: {
+          from: "doctors",
+          localField: "relatedDoctor",
+          foreignField: "_id",
+          as: "relatedDoctor",
+        },
+      },
+
+      {
+        $lookup: {
+          from: "accountinglists",
+          localField: "relatedBank",
+          foreignField: "_id",
+          as: "relatedBank",
+        },
+      },
+
+      {
+        $lookup: {
+          from: "accountinglists",
+          localField: "relatedCash",
+          foreignField: "_id",
+          as: "relatedCash",
+        },
+      },
+
+      {
+        $lookup: {
+          from: "patients",
+          localField: "relatedPatient",
+          foreignField: "_id",
+          as: "relatedPatient",
+        },
+      },
+
+      {
+        $lookup: {
+          from: "accountinglists",
+          localField: "relatedAccounting",
+          foreignField: "_id",
+          as: "relatedAccounting",
+        },
+      },
+
+      {
+        $lookup: {
+          from: "attachments",
+          localField: "payment",
+          foreignField: "_id",
+          as: "payment",
+        },
+      },
+
+      {
+        $lookup: {
+          from: "users",
+          localField: "createdBy",
+          foreignField: "_id",
+          as: "createdBy",
+        },
+      },
+
+      {
+        $lookup: {
+          from: "treatmentvouchers",
+          localField: "newTreatmentVoucherId",
+          foreignField: "_id",
+          as: "newTreatmentVoucherId",
+        },
+      },
+
+      {
+        $lookup: {
+          from: "repayments",
+          localField: "relatedRepay",
+          foreignField: "_id",
+          as: "relatedRepay",
+        },
+      },
+
+      {
+        $lookup: {
+          from: "treatmentselections",
+          localField: "relatedTreatmentSelection",
+          foreignField: "_id",
+          as: "relatedTreatmentSelection",
+        },
+      },
+
+      {
+        $unwind: {
+          path: "$relatedTreatmentSelection",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+
+      {
+        $lookup: {
+          from: "appointments",
+          localField: "relatedTreatmentSelection.relatedAppointments",
+          foreignField: "_id",
+          as: "relatedAppointments",
+        },
+      },
+
+      {
+        $unwind: {
+          path: "$relatedAppointments",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+
+      {
+        $lookup: {
+          from: "doctors",
+          localField: "relatedAppointments.relatedDoctor",
+          foreignField: "_id",
+          as: "relatedDoctor",
+        },
+      },
+
+      {
+        $unwind: {
+          path: "$relatedDoctor",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+
+      {
+        $lookup: {
+          from: "accountinglists",
+          localField: "secondAccount",
+          foreignField: "_id",
+          as: "secondAccount",
+        },
+      },
+
+      {
+        $unwind: {
+          path: "$secondAccount",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+
+      {
+        $lookup: {
+          from: "accountheaders",
+          localField: "secondAccount.relatedHeader",
+          foreignField: "_id",
+          as: "secondAccount.relatedHeader",
+        },
+      },
+
+      {
+        $unwind: {
+          path: "$secondAccount.relatedHeader",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+
+      {
+        $lookup: {
+          from: "treatmentpackages",
+          localField: "relatedTreatmentPackage.item_id",
+          foreignField: "_id",
+          as: "relatedTreatmentPackage",
+        },
+      },
+
+      {
+        $unwind: {
+          path: "$relatedTreatmentPackage",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+    ];
+
+    let bankResult = await TreatmentVoucher.aggregate(QueryPipeline)
+      .skip(skip)
+      .limit(limit);
+
+    response.data = {
+      ...response.data,
+      bankResult,
+    };
+  } catch (error) {
+    return res.status(500).send({
+      error: true,
+      message: error.message,
+    });
   }
 };
 

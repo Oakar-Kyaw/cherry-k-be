@@ -42,7 +42,11 @@ module.exports = (app) => {
 
   app
     .route("/api/treatment-vouchers/TV-Filter")
-    .get(verifyToken, catchError(treatmentVoucher.TreatmentVoucherFilter));
+    .get(catchError(treatmentVoucher.TreatmentVoucherFilter));
+
+  app
+    .route("/api/treatment-voucher/v1/TV-Filter")
+    .get(catchError(treatmentVoucher.VersionOneTreatmentVoucherFilter));
 
   app
     .route("/api/v1/treatment-vouchers/list")

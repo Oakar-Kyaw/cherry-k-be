@@ -26,7 +26,11 @@ exports.autoCreateUsage = async (
   let generalItemsFinished = [];
   let machineFinished = [];
 
-  let createdBy = req.credentials.id;
+  let noProcedureItemsStock = [];
+  let noAccessoryItemsStock = [];
+  let noGeneralItemsStock = [];
+
+  // let createdBy = req.credentials.id;
 
   try {
     if (!relatedBranch || relatedBranch === undefined) {
@@ -40,7 +44,7 @@ exports.autoCreateUsage = async (
     });
 
     let status;
-    if (appResult[0].relatedUsage === undefined) {
+    if (appResult.relatedUsage === undefined) {
       if (procedureMedicine && procedureMedicine.length > 0) {
         Promise.all(
           procedureMedicine.map(async (e) => {
@@ -56,6 +60,7 @@ exports.autoCreateUsage = async (
                 procedureItemsError.push(e);
               } else if (Number(stock.totalUnit) >= Number(e.actual)) {
                 let totalUnit = Number(stock.totalUnit) - Number(e.actual);
+
                 const result = await ProcedureItem.findOne({ _id: e.item_id });
                 const from = Number(result.fromUnit);
                 const to = Number(result.toUnit);
@@ -73,15 +78,15 @@ exports.autoCreateUsage = async (
                 procedureItemsFinished.push(e);
 
                 await Log.create({
-                  relatedTreatmentSelection: relatedTreatmentSelection,
-                  relatedAppointment: relatedAppointment,
+                  relatedTreatmentSelection: treatmentSelectionId,
+                  relatedAppointment: appointmentId,
                   relatedProcedureItems: e.item_id,
                   currentQty: stock.totalUnit,
                   actualQty: e.actual,
                   finalQty: totalUnit,
                   relatedBranch: relatedBranch,
                   type: "Usage",
-                  createdBy: createdBy,
+                  // createdBy: createdBy,
                 });
               }
             } catch (e) {
@@ -107,7 +112,7 @@ exports.autoCreateUsage = async (
               } else if (Number(stock.totalUnit) >= Number(e.actual)) {
                 let totalUnit = Number(stock.totalUnit) - Number(e.actual);
 
-                await AccessoryItem.findOne({ _id: e.item_id });
+                const result = await AccessoryItem.findOne({ _id: e.item_id });
                 const from = Number(result.fromUnit);
                 const to = Number(result.toUnit);
                 const currentQty = (from * totalUnit) / to;
@@ -124,15 +129,15 @@ exports.autoCreateUsage = async (
                 accessoryItemsFinished.push(e);
 
                 await Log.create({
-                  relatedTreatmentSelection: relatedTreatmentSelection,
-                  relatedAppointment: relatedAppointment,
+                  relatedTreatmentSelection: treatmentSelectionId,
+                  relatedAppointment: appointmentId,
                   relatedAccessoryItems: e.item_id,
                   currentQty: stock.totalUnit,
                   actualQty: e.actual,
                   finalQty: totalUnit,
                   type: "Usage",
                   relatedBranch: relatedBranch,
-                  createdBy: createdBy,
+                  // createdBy: createdBy,
                 });
               }
             } catch (e) {
@@ -157,7 +162,7 @@ exports.autoCreateUsage = async (
             } else if (Number(stock.totalUnit) >= Number(e.actual)) {
               let totalUnit = Number(stock.totalUnit) - Number(e.actual);
 
-              await GeneralItem.findOne({ _id: e.item_id });
+              const result = await GeneralItem.findOne({ _id: e.item_id });
               const from = Number(result.fromUnit);
               const to = Number(result.toUnit);
               const currentQty = (from * totalUnit) / to;
@@ -174,15 +179,15 @@ exports.autoCreateUsage = async (
               generalItemsFinished.push(e);
 
               await Log.create({
-                relatedTreatmentSelection: relatedTreatmentSelection,
-                relatedAppointment: relatedAppointment,
+                relatedTreatmentSelection: treatmentSelectionId,
+                relatedAppointment: appointmentId,
                 relatedGeneralItems: e.item_id,
                 currentQty: stock.totalUnit,
                 actualQty: e.actual,
                 finalQty: totalUnit,
                 type: "Usage",
                 relatedBranch: relatedBranch,
-                createdBy: createdBy,
+                // createdBy: createdBy,
               });
             }
           })
@@ -195,7 +200,7 @@ exports.autoCreateUsage = async (
             if (e.stock < e.actual) {
               machineError.push(e);
             } else if (e.stock >= e.actual) {
-              await MachineModel.find({ _id: e.item_id });
+              const result = await MachineModel.find({ _id: e.item_id });
               let totalUnit = e.stock - e.actual;
               const from = result[0].fromUnit;
               const to = result[0].toUnit;
@@ -210,15 +215,15 @@ exports.autoCreateUsage = async (
               machineFinished.push(e);
 
               await Log.create({
-                relatedTreatmentSelection: relatedTreatmentSelection,
-                relatedAppointment: relatedAppointment,
+                relatedTreatmentSelection: treatmentSelectionId,
+                relatedAppointment: appointmentId,
                 relatedMachine: e.item_id,
                 currentQty: e.stock,
                 actualQty: e.actual,
                 finalQty: totalUnit,
                 type: "Usage",
                 relatedBranch: relatedBranch,
-                createdBy: createdBy,
+                // createdBy: createdBy,
               });
             }
           })
@@ -250,12 +255,14 @@ exports.autoCreateUsage = async (
         machine: machineFinished,
         machineError: machineError,
         relatedBranch: relatedBranch,
-        relatedAppointment: relatedAppointment,
+        relatedAppointment: appointmentId,
         procedureItemsError: procedureItemsError,
         accessoryItemsError: accessoryItemsError,
         generalItemsError: generalItemsError,
         usageStatus: status,
-        relatedTreatmentSelection: treatmentSelectionId,
+        relatedTreatmentSelection: Array.isArray(treatmentSelectionId)
+          ? treatmentSelectionId[0]
+          : treatmentSelectionId,
       });
 
       var appointmentUpdateDoc = await Appointment.findOneAndUpdate(
@@ -278,7 +285,7 @@ exports.autoCreateUsage = async (
       });
     } else {
       const usageRecordResultDoc = await usageRecord.find(
-        { relatedUsage: appResult[0].relatedUsage },
+        { relatedUsage: appResult.relatedUsage },
         { sort: { createdAt: -1 } }
       );
 
@@ -345,7 +352,7 @@ exports.autoCreateUsage = async (
               finalQty: totalUnit,
               type: "Usage",
               relatedBranch: relatedBranch,
-              createdBy: createdBy,
+              // createdBy: createdBy,
             });
           }
         }
@@ -385,7 +392,7 @@ exports.autoCreateUsage = async (
               finalQty: totalUnit,
               type: "Usage",
               relatedBranch: relatedBranch,
-              createdBy: createdBy,
+              // createdBy: createdBy,
             });
           }
         }
@@ -422,7 +429,7 @@ exports.autoCreateUsage = async (
               finalQty: totalUnit,
               type: "Usage",
               relatedBranch: relatedBranch,
-              createdBy: createdBy,
+              // createdBy: createdBy,
             });
           }
         }

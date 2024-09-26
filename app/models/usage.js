@@ -12,8 +12,7 @@ let UsageSchema = new Schema({
   },
   relatedAppointment: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "appointments",
-    required: true,
+    ref: "Appointments",
   },
   procedureMedicine: [
     {

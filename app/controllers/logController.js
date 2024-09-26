@@ -9,6 +9,10 @@ const Stock = require("../models/stock");
 const UsageRecords = require("../models/usageRecord");
 const Appointment = require("../models/appointment");
 
+const {
+  updateStocksBasedOnUsage,
+} = require("../lib/removeProcedureItemsFromUsages");
+
 exports.listAllLog = async (req, res) => {
   try {
     let { skip, limit, relatedStock } = req.query;
@@ -305,30 +309,37 @@ exports.getStockTotalUnit = async (req, res) => {
   try {
     let accessoryResults = [];
     let data = req.body;
+
+    console.log("Data from body: ", data);
+
     if (data.procedureItems)
       var procedureItems = await Stock.find({
         isDeleted: false,
         relatedProcedureItems: { $in: data.procedureItems },
         relatedBranch: data.relatedBranch,
       }).populate("relatedProcedureItems");
+
     if (data.medicineItems)
       var medicineItems = await Stock.find({
         isDeleted: false,
         relatedMedicineItems: { $in: data.medicineItems },
         relatedBranch: data.relatedBranch,
       }).populate("relatedMedicineItems");
+
     if (data.accessoryItems)
       accessoryResults = await Stock.find({
         isDeleted: false,
         relatedAccessoryItems: { $in: data.accessoryItems },
         relatedBranch: data.relatedBranch,
       }).populate("relatedAccessoryItems");
+
     if (data.machine)
       var machine = await Stock.find({
         isDeleted: false,
         relatedMachine: { $in: data.machine },
         relatedBranch: data.relatedBranch,
       }).populate("relatedMachine");
+
     return res.status(200).send({
       success: true,
       procedureItems: procedureItems,
@@ -365,6 +376,9 @@ exports.createUsage = async (req, res) => {
     generalItem,
     machine,
   } = req.body;
+
+  console.log("Data From Create Usage : ", req.body);
+
   let { relatedBranch } = req.body;
   let machineError = [];
   let procedureItemsError = [];
@@ -602,6 +616,9 @@ exports.createUsage = async (req, res) => {
         machine: machineFinished,
       };
       var usageResult = await Usage.create(req.body);
+
+      updateStocksBasedOnUsage(procedureMedicine);
+
       var appointmentUpdate = await Appointment.findOneAndUpdate(
         { _id: req.body.relatedAppointment },
         { usageStatus: status, relatedUsage: usageResult._id },

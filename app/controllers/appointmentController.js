@@ -186,166 +186,176 @@ exports.createAppointment = async (req, res, next) => {
   }
 };
 
-exports.NewUpdateAppointment = async (req, res, next) => {
-  try {
-    let { relatedPatient, treatmentSelectId } = req.body;
-    console.log(req.body, "here");
+// exports.NewUpdateAppointment = async (req, res, next) => {
+//   try {
+//     let { relatedPatient, treatmentSelectId, id } = req.body;
+//     console.log(req.body, "here");
 
-    const appointmentId = req.body.id;
+//     // const appointmentId = req.body.id;
 
-    //query treatment selection
-    let treatmentSelectQuery = await TreatmentSelection.findById(
-      treatmentSelectId
-    );
+//     //query treatment selection
+//     let treatmentSelectQuery = await TreatmentSelection.findById(
+//       treatmentSelectId
+//     );
 
-    const retrievedAppointment = await Appointment.findById(appointmentId)
-      .populate("relatedPatient")
-      .populate("relatedDoctor")
-      .populate("relatedTherapist")
-      .populate("relatedNurse")
-      .populate("relatedTreatmentSelection")
-      .populate("relatedUsage");
+//     const retrievedAppointment = await Appointment.findById(id)
+//       .populate("relatedPatient")
+//       .populate("relatedDoctor")
+//       .populate("relatedTherapist")
+//       .populate("relatedNurse")
+//       .populate("relatedTreatmentSelection")
+//       .populate("relatedUsage");
 
-    if (!retrievedAppointment) {
-      return res
-        .status(404)
-        .send({ success: false, message: "Appointment not found" });
-    }
+//     console.log("Retrieved Appointment", retrievedAppointment);
 
-    const updatedAppointmentDoc = await Appointment.findByIdAndUpdate(
-      { _id: appointmentId },
-      req.body,
-      { new: true }
-    )
-      .populate("relatedPatient")
-      .populate("relatedDoctor")
-      .populate("relatedTherapist")
-      .populate("relatedNurse")
-      .populate("relatedTreatmentSelection");
+//     if (!retrievedAppointment) {
+//       return res
+//         .status(404)
+//         .send({ success: false, message: "Appointment not found" });
+//     }
 
-    const RetrievedTreatmentSelectId =
-      retrievedAppointment.relatedTreatmentSelection;
+//     const updatedAppointmentDoc = await Appointment.findByIdAndUpdate(
+//       { _id: id },
+//       req.body,
+//       { new: true }
+//     )
+//       .populate("relatedPatient")
+//       .populate("relatedDoctor")
+//       .populate("relatedTherapist")
+//       .populate("relatedNurse")
+//       .populate("relatedTreatmentSelection");
 
-    const RetrievedTreatmentSelectByIdQuery = await TreatmentSelection.findById(
-      RetrievedTreatmentSelectId
-    );
+//     const RetrievedTreatmentSelectId =
+//       retrievedAppointment.relatedTreatmentSelection[0]._id;
 
-    if (!RetrievedTreatmentSelectByIdQuery) {
-      return res
-        .status(404)
-        .send({ success: false, message: "Treatment selection not found" });
-    }
+//     const RetrievedTreatmentSelectByIdQuery = await TreatmentSelection.findById(
+//       RetrievedTreatmentSelectId
+//     );
 
-    if (relatedPatient) {
-      const patientUpdate = await Patient.findOneAndUpdate(
-        { _id: relatedPatient },
-        { $inc: { unfinishedAppointments: -1, finishedAppointments: 1 } }
-      );
+//     if (!RetrievedTreatmentSelectByIdQuery) {
+//       return res
+//         .status(404)
+//         .send({ success: false, message: "Treatment selection not found" });
+//     }
 
-      if (!patientUpdate) {
-        return res
-          .status(404)
-          .send({ success: false, message: "Patient not found" });
-      }
-    }
+//     if (relatedPatient) {
+//       const patientUpdate = await Patient.findOneAndUpdate(
+//         { _id: relatedPatient },
+//         { $inc: { unfinishedAppointments: -1, finishedAppointments: 1 } }
+//       );
 
-    //calculate actual Revenue and deferRevenue
-    let actualRevenue =
-      treatmentSelectQuery.actualRevenue +
-      treatmentSelectQuery.perAppointmentPrice;
+//       if (!patientUpdate) {
+//         return res
+//           .status(404)
+//           .send({ success: false, message: "Patient not found" });
+//       }
+//     }
 
-    let deferRevenue =
-      treatmentSelectQuery.deferRevenue -
-      treatmentSelectQuery.perAppointmentPrice;
+//     //calculate actual Revenue and deferRevenue
+//     let actualRevenue =
+//       treatmentSelectQuery.actualRevenue +
+//       treatmentSelectQuery.perAppointmentPrice;
 
-    if (deferRevenue >= 0) {
-      await TreatmentSelection.findByIdAndUpdate(treatmentSelectId, {
-        actualRevenue: actualRevenue,
-        deferRevenue: deferRevenue,
-      });
-    }
+//     let deferRevenue =
+//       treatmentSelectQuery.deferRevenue -
+//       treatmentSelectQuery.perAppointmentPrice;
 
-    const treatmentSelect = await TreatmentSelection.findById(
-      treatmentSelectId
-    ).populate("relatedAppointments");
+//     if (deferRevenue >= 0) {
+//       await TreatmentSelection.findByIdAndUpdate(treatmentSelectId, {
+//         actualRevenue: actualRevenue,
+//         deferRevenue: deferRevenue,
+//       });
+//     }
 
-    if (!treatmentSelect) {
-      return res.status(404).send({
-        success: true,
-        message: "Updated Treatment Selection not found",
-      });
-    }
+//     const treatmentSelect = await TreatmentSelection.findById(
+//       treatmentSelectId
+//     ).populate("relatedAppointments");
 
-    //if status of all appoointment is true, 'ongoing' flag wil be true
-    let filter = treatmentSelect.relatedAppointments.filter(
-      (appointments) => appointments.status == false
-    );
+//     if (!treatmentSelect) {
+//       return res.status(404).send({
+//         success: true,
+//         message: "Updated Treatment Selection not found",
+//       });
+//     }
 
-    if (filter.length == 0)
-      await TreatmentSelection.findByIdAndUpdate(treatmentSelectId, {
-        selectionStatus: "Done",
-      });
+//     //if status of all appoointment is true, 'ongoing' flag wil be true
+//     let filter = treatmentSelect.relatedAppointments.filter(
+//       (appointments) => appointments.status == false
+//     );
 
-    // Create or update the usage for the appointment
-    if (retrievedAppointment.relatedUsage) {
-      const usageDoc = await UsageModel.findById(
-        retrievedAppointment.relatedUsage
-      );
+//     if (filter.length == 0)
+//       await TreatmentSelection.findByIdAndUpdate(treatmentSelectId, {
+//         selectionStatus: "Done",
+//       });
 
-      if (usageDoc && usageDoc.procedureMedicine.length > 0) {
-        const usageResultDoc = await autoCreateUsage(
-          usageDoc,
-          retrievedAppointment.relatedBranch,
-          appointmentId,
-          treatmentSelectId
-        );
-        console.log("Usage Updated", usageResultDoc);
-      } else {
-        console.warn("No procedureMedicine found in usageDoc");
-      }
-    } else {
-      const usageData = {
-        relatedAppointments: retrievedAppointment._id,
-        relatedTreatmentSelection:
-          retrievedAppointment.relatedTreatmentSelection,
-        relatedBranch: retrievedAppointment.relatedBranch,
-        procedureMedicine: [],
-        procedureAccessory: [],
-        generalItem: [],
-        machine: [],
-      };
+//     // Create or update the usage for the appointment
+//     if (retrievedAppointment.relatedUsage) {
+//       const usageDoc = await UsageModel.findById(
+//         retrievedAppointment.relatedUsage
+//       );
 
-      const usage = await UsageModel.create(usageData);
+//       if (usageDoc && usageDoc.procedureMedicine.length > 0) {
+//         const usageResultDoc = await autoCreateUsage(
+//           usageDoc,
+//           retrievedAppointment.relatedBranch,
+//           id,
+//           treatmentSelectId
+//         );
+//         console.log("Usage Updated", usageResultDoc);
 
-      await Appointment.findByIdAndUpdate(retrievedAppointment._id, {
-        relatedUsage: usage._id,
-      });
+//         updateStocksBasedOnUsage(
+//           retrievedAppointment.relatedTreatmentSelection,
+//           retrievedAppointment.relatedPatient,
+//           id
+//         );
+//       } else {
+//         console.warn("No procedureMedicine found in usageDoc");
+//       }
+//     } else {
+//       const usageData = {
+//         relatedAppointments: retrievedAppointment._id,
+//         relatedTreatmentSelection:
+//           retrievedAppointment.relatedTreatmentSelection[0]._id,
+//         relatedBranch: retrievedAppointment.relatedBranch,
+//         // procedureMedicine: [],
+//         // procedureAccessory: [],
+//         // generalItem: [],
+//         // machine: [],
+//       };
 
-      const usageResult = await autoCreateUsage(
-        usage,
-        retrievedAppointment.relatedBranch,
-        appointmentId,
-        treatmentSelectId
-      );
+//       console.log("Retrieved Appointment ID : ", retrievedAppointment._id);
 
-      console.log("Usage Created and items are updated", usageResult);
+//       const NewUsage = await UsageModel.create(usageData);
 
-      updateStocksBasedOnUsage(
-        retrievedAppointment.relatedTreatmentSelection,
-        retrievedAppointment.relatedPatient,
-        appointmentId
-      );
-    }
+//       await Appointment.findByIdAndUpdate(retrievedAppointment._id, {
+//         relatedUsage: NewUsage._id,
+//       });
 
-    return res.status(200).send({
-      success: true,
-      data: updatedAppointmentDoc,
-      treatmentSelect: treatmentSelect,
-    });
-  } catch (error) {
-    return res.status(500).send({ error: true, message: error.message });
-  }
-};
+//       const usageResult = await autoCreateUsage(
+//         NewUsage,
+//         retrievedAppointment.relatedBranch,
+//         id,
+//         treatmentSelectId
+//       );
+
+//       console.log("Usage Created and items are updated", usageResult);
+
+//       updateStocksBasedOnUsage(
+//         retrievedAppointment.relatedTreatmentSelection[0],
+//         retrievedAppointment.relatedPatient,
+//         id
+//       );
+//     }
+
+//     return res.status(200).send({
+//       success: true,
+//       data: updatedAppointmentDoc,
+//       treatmentSelect: treatmentSelect,
+//     });
+//   } catch (error) {
+//     return res.status(500).send({ error: true, message: error.message });
+//   }
+// };
 
 exports.updateAppointment = async (req, res, next) => {
   try {
@@ -397,10 +407,14 @@ exports.updateAppointment = async (req, res, next) => {
     let filter = treatmentSelect.relatedAppointments.filter(
       (appointments) => appointments.status == false
     );
+
     if (filter.length == 0)
       await TreatmentSelection.findByIdAndUpdate(treatmentSelectId, {
         selectionStatus: "Done",
       });
+
+    // updateStocksBasedOnUsage(treatmentSelectId, relatedPatient, req.body.id);
+
     return res
       .status(200)
       .send({ success: true, data: result, treatmentSelect: treatmentSelect });

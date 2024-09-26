@@ -102,28 +102,28 @@ const Appointment = mongoose.model("Appointments", AppointmentSchema);
 
 //Author: Kyaw Zaw Lwin
 
-AppointmentSchema.post("save", async function (doc, next) {
-  try {
-    if (!doc.relatedUsage) {
-      const usageData = {
-        relatedAppointment: doc._id,
-        relatedTreatmentSelection: doc.relatedTreatmentSelection,
-        relatedBranch: doc.relatedBranch,
-        procedureMedicine: [],
-        procedureAccessory: [],
-        generalItem: [],
-        machine: [],
-      };
+// AppointmentSchema.post("save", async function (doc, next) {
+//   try {
+//     if (!doc.relatedUsage) {
+//       const usageData = {
+//         relatedAppointment: doc._id,
+//         relatedTreatmentSelection: doc.relatedTreatmentSelection,
+//         relatedBranch: doc.relatedBranch,
+//         procedureMedicine: [],
+//         procedureAccessory: [],
+//         generalItem: [],
+//         machine: [],
+//       };
 
-      const usageResult = await UsageModel.create(usageData);
-      await Appointment.findByIdAndUpdate(doc._id, {
-        relatedUsage: usageResult._id,
-      });
-    }
-    next();
-  } catch (error) {
-    next(error);
-  }
-});
+//       const usageResult = await UsageModel.create(usageData);
+//       await Appointment.findByIdAndUpdate(doc._id, {
+//         relatedUsage: usageResult._id,
+//       });
+//     }
+//     next();
+//   } catch (error) {
+//     next(error);
+//   }
+// });
 
 module.exports = Appointment;

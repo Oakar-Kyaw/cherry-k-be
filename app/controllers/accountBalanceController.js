@@ -56,8 +56,11 @@ exports.getAccountBalance = async (req, res) => {
 
 exports.createAccountBalance = async (req, res, next) => {
   let newBody = req.body;
+
   let { relatedAccounting, relatedBranch, amount } = newBody;
+
   let oldBody;
+
   try {
     const { amount, date, relatedBranch, type } = req.body;
     let endDate;
@@ -76,6 +79,7 @@ exports.createAccountBalance = async (req, res, next) => {
       exact.getSeconds(),
       exact.getMilliseconds()
     );
+
     oldBody = {
       relatedAccounting: relatedAccounting,
       type: "Closing",
@@ -83,6 +87,7 @@ exports.createAccountBalance = async (req, res, next) => {
       date: endDate,
       relatedBranch: relatedBranch,
     };
+
     const oldAccountBalance = new AccountBalance(oldBody);
     const newAccountBalance = new AccountBalance(newBody);
     const oldResult = await oldAccountBalance.save();
@@ -624,7 +629,7 @@ exports.getOpeningAndClosingWithExactDate = async (req, res) => {
 };
 
 exports.getOpeningAndClosingCashAndBankWithExactData = async (req, res) => {
-  let { exactDate, relatedBranch, type } = req.query;
+  let { exactDate, relatedBranch, type, relatedAccounting } = req.query;
 
   try {
     const date = new Date(exactDate);
@@ -650,7 +655,8 @@ exports.getOpeningAndClosingCashAndBankWithExactData = async (req, res) => {
 
     const AccountQuery = {
       isDeleted: false,
-      relatedBranch,
+      relatedBranch: relatedBranch,
+      relatedAccounting: relatedAccounting,
       type: type,
       date: { $gte: startDate, $lt: endDate },
     };
@@ -661,9 +667,11 @@ exports.getOpeningAndClosingCashAndBankWithExactData = async (req, res) => {
 
     const AccountClosingQueryData = {
       isDeleted: false,
-      relatedBranch,
+      relatedBranch: relatedBranch,
+      relatedAccounting: relatedAccounting,
       type: "Closing",
       date: { $gte: startDate, $lt: endDate },
+      transferAmount: { $gt: 0 },
     };
 
     const accountClosingLatestDocument = await AccountBalance.find(
@@ -737,7 +745,8 @@ exports.getOpeningAndClosingCashAndBankWithExactData = async (req, res) => {
       isDeleted: false,
       type: type,
       relatedBank: { $exists: true },
-      relatedBranch,
+      relatedBranch: relatedBranch,
+      relatedAccounting: relatedAccounting,
       createdAt: { $gte: startDate, $lt: endDate },
     };
 
@@ -772,7 +781,7 @@ exports.getOpeningAndClosingCashAndBankWithExactData = async (req, res) => {
     const TVFirstCashTotal = await TreatmentVoucher.find({
       isDeleted: false,
       createdAt: { $gte: startDate, $lt: endDate },
-      relatedBranch,
+      relatedBranch: relatedBranch,
       tsType: "TSMulti",
     })
       .populate("secondAccount")
@@ -790,7 +799,7 @@ exports.getOpeningAndClosingCashAndBankWithExactData = async (req, res) => {
       isDeleted: false,
       createdAt: { $gte: startDate, $lt: endDate },
       secondAccount: { $exists: true },
-      relatedBranch,
+      relatedBranch: relatedBranch,
       tsType: "TSMulti",
     })
       .populate({ path: "secondAccount", populate: { path: "relatedHeader" } })
@@ -808,16 +817,14 @@ exports.getOpeningAndClosingCashAndBankWithExactData = async (req, res) => {
       isDeleted: false,
       createdAt: { $gte: startDate, $lt: endDate },
       secondAccount: { $exists: true },
-      relatedBranch,
+      relatedBranch: relatedBranch,
       tsType: "TSMulti",
+      "secondAccount.relatedHeader.name": { $regex: "Bank", $options: "i" },
     })
-      .populate({ path: "secondAccount", populate: { path: "paymentType" } })
+      .populate({ path: "secondAccount", populate: { path: "relatedHeader" } })
       .then((result) =>
         result.reduce((acc, curVal) => {
-          if (curVal.secondAccount.paymentType === "Bank") {
-            return acc + curVal.secondAmount;
-          }
-          return acc;
+          return acc + curVal.secondAmount;
         }, 0)
       );
 
@@ -934,6 +941,11 @@ exports.getOpeningAndClosingCashAndBankWithExactData = async (req, res) => {
         $lt: moment.tz("Asia/Yangon").format(endDate.toISOString()),
       },
     });
+
+    console.log("Final Data", {
+      transferBalances: type === "Opening" ? AccountTransferBalance : 0,
+    });
+
     return res.status(200).send({
       success: true,
       openingTotal: AccountOpeningTotal,
@@ -969,6 +981,8 @@ exports.getOpeningAndClosingCashAndBankWithExactData = async (req, res) => {
             totalRepay.cashTotal +
             TVFirstCashTotal +
             TVSecondCashTotal +
+            combinedSaleFristCashTotal +
+            combinedSaleSecondCashTotal +
             AccountOpeningTotal -
             (expenseTotal + AccountTransferBalance)
           : 0,

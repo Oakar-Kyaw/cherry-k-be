@@ -1,9 +1,8 @@
-'use strict';
+"use strict";
 
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 mongoose.promise = global.Promise;
 const Schema = mongoose.Schema;
-
 
 let TreatmentUnitSchema = new Schema({
   code: {
@@ -14,13 +13,13 @@ let TreatmentUnitSchema = new Schema({
   },
   procedureMedicine: {
     type: [mongoose.Schema.Types.ObjectId],
-    ref: 'ProcedureMedicines' //array of objectIDss
+    ref: "ProcedureMedicines", //array of objectIDss
   },
   machine: {
     type: [mongoose.Schema.Types.ObjectId], //array of objectIDs
   },
   estimateCost: {
-    type: Number
+    type: Number,
   },
   sellingPrice: {
     type: Number,
@@ -29,12 +28,12 @@ let TreatmentUnitSchema = new Schema({
     type: String,
   },
   updatedAt: {
-    type: Date
+    type: Date,
   },
   isDeleted: {
     type: Boolean,
     required: true,
-    default: false
+    default: false,
   },
   patientTreatmentID: {
     type: String,
@@ -45,33 +44,37 @@ let TreatmentUnitSchema = new Schema({
   },
   relatedBranch: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Branches'
+    ref: "Branches",
   },
   editTime: {
-    type: String
+    type: String,
   },
   editPerson: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Users"
+    ref: "Users",
   },
   editEmail: {
-    type: String
+    type: String,
   },
   location: {
-    type: String
+    type: String,
   },
   deleteTime: {
-    type: String
+    type: String,
   },
   deletePerson: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Users"
+    ref: "Users",
   },
   deleteEmail: {
-    type: String
+    type: String,
+  },
+  medicineProductFlag: {
+    type: Boolean,
+    default: false,
   },
 });
 
-module.exports = mongoose.model('TreatmentUnits', TreatmentUnitSchema);
+module.exports = mongoose.model("TreatmentUnits", TreatmentUnitSchema);
 
 //Author: Kyaw Zaw Lwin

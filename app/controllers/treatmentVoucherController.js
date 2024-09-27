@@ -1019,7 +1019,12 @@ exports.TreatmentVoucherFilter = async (req, res) => {
   let firstBankName = [];
   let firstCashName = [];
   let secondCashName = [];
-  let query = { relatedBank: { $exists: true }, isDeleted: false };
+
+  let query = {
+    relatedBank: { $exists: true },
+    isDeleted: false,
+    relatedBranch: { $exists: true },
+  };
 
   let response = {
     success: true,
@@ -1237,6 +1242,7 @@ exports.TreatmentVoucherFilter = async (req, res) => {
               amount: secondAmount,
             });
           }
+
           if (relatedCash) {
             const { name } = relatedCash;
             result[name] =

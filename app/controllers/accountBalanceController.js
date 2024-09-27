@@ -392,6 +392,7 @@ exports.getOpeningAndClosingWithExactDate = async (req, res) => {
         }
         return 0;
       });
+
     //query only cash TSMulti by second
     let queryTreatmentVoucher2 = {
       isDeleted: false,
@@ -698,7 +699,7 @@ exports.getOpeningAndClosingCashAndBankWithExactData = async (req, res) => {
       tsType: "MS",
       relatedCash: { $exists: true },
       relatedBank: { $exists: true },
-      relatedBranch,
+      relatedBranch: relatedBranch,
       createdAt: { $gte: startDate, $lt: endDate },
     };
 
@@ -718,7 +719,6 @@ exports.getOpeningAndClosingCashAndBankWithExactData = async (req, res) => {
     const cashMedicineSaleSecondTotal = await TreatmentVoucher.find({
       ...medicineSaleQuery,
       relatedCash: { $exists: true },
-      relatedBank: { $exists: false },
       secondAccount: { $exists: true },
     })
       .populate({ path: "secondAccount", populate: { path: "relatedHeader" } })
@@ -754,6 +754,7 @@ exports.getOpeningAndClosingCashAndBankWithExactData = async (req, res) => {
     const bankMedicineSaleSecondTotal = await TreatmentVoucher.find({
       ...medicineBankSaleQuery,
       secondAccount: { $exists: true },
+      relatedBank: { $exists: true },
     }).then((msResult) =>
       msResult.reduce((acc, curVal) => {
         if (curVal.paymentType === "Bank") {
@@ -779,8 +780,10 @@ exports.getOpeningAndClosingCashAndBankWithExactData = async (req, res) => {
 
     // Calculate cash from Treatment Vouchers
     const TVFirstCashTotal = await TreatmentVoucher.find({
+      Refund: false,
       isDeleted: false,
       createdAt: { $gte: startDate, $lt: endDate },
+      relatedCash: { $exists: true },
       relatedBranch: relatedBranch,
       tsType: "TSMulti",
     })
@@ -788,7 +791,13 @@ exports.getOpeningAndClosingCashAndBankWithExactData = async (req, res) => {
       .then((result) => {
         if (result) {
           const total = result.reduce((accumulator, currentValue) => {
-            return accumulator + currentValue.totalPaidAmount;
+            return (
+              accumulator +
+              (currentValue.paidAmount || 0) +
+              (currentValue.msPaidAmount || 0) +
+              (currentValue.totalPaidAmount || 0) +
+              (currentValue.psPaidAmount || 0)
+            );
           }, 0);
           return total;
         }
@@ -822,10 +831,9 @@ exports.getOpeningAndClosingCashAndBankWithExactData = async (req, res) => {
       "secondAccount.relatedHeader.name": { $regex: "Bank", $options: "i" },
     })
       .populate({ path: "secondAccount", populate: { path: "relatedHeader" } })
-      .then((result) =>
-        result.reduce((acc, curVal) => {
-          return acc + curVal.secondAmount;
-        }, 0)
+      .then(
+        (result) =>
+          result.reduce((acc, curVal) => acc + (curVal.secondAmount || 0), 0) // Ensure secondAmount defaults to 0
       );
 
     let queryCombineTreatmentVoucher = {
@@ -907,17 +915,14 @@ exports.getOpeningAndClosingCashAndBankWithExactData = async (req, res) => {
     )
       .populate("secondAccount")
       .then((result) => {
-        if (result) {
-          const total = result.reduce((accumulator, currentValue) => {
-            return (
-              accumulator +
-              currentValue.totalPaidAmount +
-              currentValue.msPaidAmount
-            );
+        if (result && result.length > 0) {
+          return result.reduce((accumulator, currentValue) => {
+            const totalPaid = currentValue.totalPaidAmount || 0; // Ensure totalPaidAmount defaults to 0
+            const msPaid = currentValue.msPaidAmount || 0; // Ensure msPaidAmount defaults to 0
+            return accumulator + totalPaid + msPaid;
           }, 0);
-          return total;
         }
-        return 0;
+        return 0; // If no result, return 0
       });
 
     const incomeTotal = await Income.find({
@@ -946,6 +951,16 @@ exports.getOpeningAndClosingCashAndBankWithExactData = async (req, res) => {
       transferBalances: type === "Opening" ? AccountTransferBalance : 0,
     });
 
+    console.log("bankMedicineSaleSecondTotal:", bankMedicineSaleSecondTotal);
+    console.log("TVSecondBankTotal:", TVSecondBankTotal);
+    console.log("combinedSaleFirstBankTotal:", combinedSaleFirstBankTotal);
+    console.log(
+      "closingBank:",
+      bankMedicineSaleSecondTotal +
+        TVSecondBankTotal +
+        combinedSaleFirstBankTotal
+    );
+
     return res.status(200).send({
       success: true,
       openingTotal: AccountOpeningTotal,
@@ -971,8 +986,7 @@ exports.getOpeningAndClosingCashAndBankWithExactData = async (req, res) => {
             incomeTotal +
             combinedSaleFristCashTotal +
             combinedSaleSecondCashTotal +
-            totalRepay.cashTotal +
-            combinedSaleFirstBankTotal
+            totalRepay.cashTotal
           : 0,
       closingCash:
         type === "Opening"
@@ -987,11 +1001,9 @@ exports.getOpeningAndClosingCashAndBankWithExactData = async (req, res) => {
             (expenseTotal + AccountTransferBalance)
           : 0,
       closingBank:
-        type === "Opening"
-          ? bankMedicineSaleSecondTotal +
-            TVSecondBankTotal +
-            combinedSaleFirstBankTotal
-          : 0,
+        bankMedicineSaleSecondTotal +
+        TVSecondBankTotal +
+        combinedSaleFirstBankTotal,
       totalRepay: totalRepay,
     });
   } catch (error) {

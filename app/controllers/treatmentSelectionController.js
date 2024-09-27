@@ -216,21 +216,25 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
     relatedDiscount,
     relatedDoctor,
     paymentMethod,
+    isMedicineProduct = false,
     treatmentPackage,
     relatedBranch,
     createdAt,
     tsType,
   } = req.body;
+
   let tvcCreate = false;
   let TSArray = [];
   let TSPackageArray = [];
   let getAccountingAcccount;
   let getPackageAccountingAccount;
   let attachID;
+
   let response = {
     message: "Treatment Selection create success",
     success: true,
   };
+
   try {
     //clear cach of voucher list
     cacheHelper.clearAll();
@@ -243,13 +247,17 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
       relatedDoctor: relatedDoctor,
       multiTreatment: multiTreatment,
     });
+
     if (checkDuplicate)
       return res
         .status(403)
         .send({ success: false, message: "Duplicate Vouchers" });
+
     let day = new Date().toISOString();
     let today = day.split("T");
+
     console.log("today", today, today[0].replace(/-/g, ""));
+
     const latestDocument = await TreatmentVoucher.find({
       isDeleted: false,
       tsType: "TSMulti",
@@ -259,15 +267,18 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
       .sort({ _id: -1 })
       .limit(1)
       .exec();
+
     if (latestDocument.length === 0) {
       req.body["code"] = "TVC-" + today[0].replace(/-/g, "") + "-1"; // if seq is undefined set initial patientID and seq
       req.body["seq"] = 1;
     }
+
     if (latestDocument.length > 0 && latestDocument[0].seq) {
       const increment = latestDocument[0].seq + 1;
       req.body["code"] = "TVC-" + today[0].replace(/-/g, "") + "-" + increment; // if seq is undefined set initial patientID and seq
       req.body["seq"] = increment;
     }
+
     if (files.payment) {
       for (const element of files.payment) {
         let imgPath = element.path.split("cherry-k")[1];
@@ -285,6 +296,7 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
     // return
 
     console.log(attachID);
+
     const patientUpdate = await Patient.findOneAndUpdate(
       { _id: relatedPatient },
       {
@@ -296,12 +308,14 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
       },
       { new: true }
     );
+
     data = {
       ...data,
       createdBy: createdBy,
       tsType: "TSMulti",
       relatedBranch: data.relatedBranch,
     };
+
     //Adding TSMulti type
     tvcCreate = true;
     let parsedMulti = JSON.parse(multiTreatment);
@@ -341,6 +355,7 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
       let result = await TreatmentSelection.create(data);
       TSArray.push(result._id);
     }
+
     for (const i of parsedPackage) {
       console.log("parseMult Package", i);
       data.multiTreatmentPackage = parsedPackage;
@@ -388,6 +403,7 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
           TSArray.push(result._id);
         }
       }
+
       if (getPackageAccountingAccount.relatedAccount) {
         const sellingPrice = getPackageAccountingAccount.sellingPrice;
         const transaction = await Transaction.create({
@@ -403,11 +419,13 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
           { $inc: { amount: req.body.totalPaidAmount } }
         );
       }
+
       data.relatedTreatmentSelection = TSArray;
       console.log("data realed treatmentselection is ", data, TSArray);
       let result = await treatmentPackageSelections.create(data);
       TSPackageArray.push(result._id);
     }
+
     if (req.body.secondAmount) {
       var fsecAmtTransResult = await Transaction.create({
         amount: req.body.secondAmount,
@@ -419,11 +437,13 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
         createdBy: createdBy,
         relatedBranch: req.mongoQuery.relatedBranch,
       });
+
       const amountUpdates = await Accounting.findOneAndUpdate(
         { _id: req.body.secondAccount },
         { $inc: { amount: req.body.secondAmount } }
       );
     }
+
     if (tvcCreate === true) {
       //--> treatment voucher create
       let dataTVC = {
@@ -458,6 +478,7 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
         createdAt: req.body.createdAt,
         balance: req.body.balance,
       };
+
       dataTVC.multiTreatment = parsedMulti;
       // let today = new Date().toISOString()
       // const latestDocument = await TreatmentVoucher.find({}, { seq: 1 }).sort({ _id: -1 }).limit(1).exec();
@@ -482,6 +503,7 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
       dataTVC["relatedTreatmentPackageSelection"] = TSPackageArray;
       var treatmentVoucherResult = await TreatmentVoucher.create(dataTVC);
     }
+
     if (treatmentVoucherResult) {
       var populatedTV = await TreatmentVoucher.find({
         _id: treatmentVoucherResult._id,
@@ -505,6 +527,7 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
         },
       }
     );
+
     if (req.body.balance > 0) {
       const debtCreate = await Debt.create({
         balance: req.body.balance,
@@ -512,6 +535,7 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
         relatedTreatmentVoucher: treatmentVoucherResult._id,
         relatedBranch: relatedBranch,
       });
+
       const fTransaction = new Transaction({
         amount: req.body.balance,
         date: Date.now(),
@@ -520,6 +544,7 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
         type: "Debit",
         createdBy: createdBy,
       });
+
       const fTransResult = await fTransaction.save();
       var amountUpdate = await Accounting.findOneAndUpdate(
         { _id: "6505692e8a572e8de464c0ea" }, //Account Receivable from Customer
@@ -536,7 +561,9 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
         relatedTransaction: fTransResult._id,
         createdBy: createdBy,
       });
+
       const secTransResult = await secTransaction.save();
+
       var fTransUpdate = await Transaction.findOneAndUpdate(
         { _id: fTransResult._id },
         {
@@ -544,6 +571,7 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
         },
         { new: true }
       );
+
       if (relatedBank) {
         var amountUpdate = await Accounting.findOneAndUpdate(
           { _id: relatedBank },
@@ -565,7 +593,9 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
       type: "Credit",
       createdBy: createdBy,
     });
+
     const fTransResult = await fTransaction.save();
+
     var amountUpdate = await Accounting.findOneAndUpdate(
       { _id: "6492cbb6dbf11808abf6685d" }, //Sales Income (Treatment)
       { $inc: { amount: req.body.totalAmount } }
@@ -581,7 +611,9 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
       relatedTransaction: fTransResult._id,
       createdBy: createdBy,
     });
+
     const secTransResult = await secTransaction.save();
+
     var fTransUpdate = await Transaction.findOneAndUpdate(
       { _id: fTransResult._id },
       {
@@ -589,6 +621,7 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
       },
       { new: true }
     );
+
     if (relatedBank) {
       var amountUpdate = await Accounting.findOneAndUpdate(
         { _id: relatedBank },
@@ -600,7 +633,9 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
         { $inc: { amount: req.body.totalPaidAmount } }
       );
     }
+
     if (populatedTV) response.treatmentVoucherResult = populatedTV;
+
     if (treatmentReturn === "true") {
       let updateRefundInTreatmentVoucherList =
         await TreatmentVoucher.findByIdAndUpdate(refundVoucherId, {
@@ -611,7 +646,9 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
           refundAmount: refundAmount,
           newTreatmentVoucherCode: newTreatmentVoucherCode || null,
         });
+
       let totalSelectionLength = JSON.parse(selections);
+
       if (totalSelectionLength.length != 0) {
         //  console.log("selectinonn is "+ JSON.stringify(totalLength))
         for (let i = 0; i < totalSelectionLength.length; i++) {

@@ -69,10 +69,6 @@ let TreatmentUnitSchema = new Schema({
   deleteEmail: {
     type: String,
   },
-  medicineProductFlag: {
-    type: Boolean,
-    default: false,
-  },
 });
 
 module.exports = mongoose.model("TreatmentUnits", TreatmentUnitSchema);

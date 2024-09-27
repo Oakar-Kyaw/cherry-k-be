@@ -1,13 +1,13 @@
-'use strict';
+"use strict";
 
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 mongoose.promise = global.Promise;
 const Schema = mongoose.Schema;
 
 let TreatmentSchema = new Schema({
   treatmentCode: {
     type: String,
-    required: true
+    required: true,
   },
   name: {
     type: String,
@@ -17,97 +17,107 @@ let TreatmentSchema = new Schema({
     ref: "TreatmentLists",
   },
   treatmentTimes: {
-    type: Number
+    type: Number,
   },
   relatedDoctor: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Doctors',
+    ref: "Doctors",
     // required: function() {
     //     return !this.relatedTherapist; // therapist is required if field2 is not provided
     //   }
   },
   relatedTherapist: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Therapists',
+    ref: "Therapists",
     // required: function() {
     //     return !this.relatedDoctor; // doctor is required if field2 is not provided
     //   }
   },
-  procedureMedicine: [{
-    item_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'ProcedureItems'
+  procedureMedicine: [
+    {
+      item_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "ProcedureItems",
+      },
+      quantity: {
+        type: Number,
+      },
+      perUsageQTY: {
+        type: Number,
+      },
+      unit: {
+        type: String,
+      },
     },
-    quantity: {
-      type: Number
+  ],
+  medicineLists: [
+    {
+      item_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "MedicineItems",
+      },
+      quantity: {
+        type: Number,
+      },
+      perUsageQTY: {
+        type: Number,
+      },
+      unit: {
+        type: String,
+      },
     },
-    perUsageQTY: {
-      type: Number
+  ],
+  procedureAccessory: [
+    {
+      item_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "AccessoryItems",
+      },
+      quantity: {
+        type: Number,
+      },
+      perUsageQTY: {
+        type: Number,
+      },
+      unit: {
+        type: String,
+      },
     },
-    unit: {
-      type: String
-    }
-  }],
-  medicineLists: [{
-    item_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'MedicineItems'
+  ],
+  general: [
+    {
+      item_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "GeneralItems",
+      },
+      quantity: {
+        type: Number,
+      },
+      perUsageQTY: {
+        type: Number,
+      },
+      unit: {
+        type: String,
+      },
     },
-    quantity: {
-      type: Number
+  ],
+  machine: [
+    {
+      item_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "FixedAssets",
+      },
+      quantity: {
+        type: Number,
+      },
+      perUsageQTY: {
+        type: Number,
+      },
+      unit: {
+        type: String,
+      },
     },
-    perUsageQTY: {
-      type: Number
-    },
-    unit: {
-      type: String
-    }
-  }],
-  procedureAccessory: [{
-    item_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'AccessoryItems'
-    },
-    quantity: {
-      type: Number
-    },
-    perUsageQTY: {
-      type: Number
-    },
-    unit: {
-      type: String
-    }
-  }],
-  general: [{
-    item_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'GeneralItems'
-    },
-    quantity: {
-      type: Number
-    },
-    perUsageQTY: {
-      type: Number
-    },
-    unit: {
-      type: String
-    }
-  }],
-  machine: [{
-    item_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'FixedAssets'
-    },
-    quantity: {
-      type: Number
-    },
-    perUsageQTY: {
-      type: Number
-    },
-    unit: {
-      type: String
-    }
-  }],
+  ],
   estimateTotalPrice: {
     type: Number,
   },
@@ -118,151 +128,164 @@ let TreatmentSchema = new Schema({
     type: Number,
   },
   description: {
-    type: String
+    type: String,
   },
   isDeleted: {
     type: Boolean,
     required: true,
-    default: false
+    default: false,
   },
   relatedPatient: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Patients'
+    ref: "Patients",
   },
   relatedAppointment: {
     type: [mongoose.Schema.Types.ObjectId],
-    ref: 'Appointments'
+    ref: "Appointments",
   },
   status: {
     type: Boolean,
   },
   relatedAccount: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'AccountingLists'
+    ref: "AccountingLists",
   },
   relatedBranch: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Branches'
+    ref: "Branches",
   },
   sellEndFlag: {
     type: Boolean,
-    default: false
+    default: false,
+  },
+  TamweSellingPrice: {
+    type: Number,
+  },
+  TamweEstimateTotalPrice: {
+    type: Number,
   },
   TCLSellingPrice: {
-    type: Number
+    type: Number,
   },
   TCLEstimateTotalPrice: {
-    type: Number
+    type: Number,
   },
   EightMileSellingPrice: {
-    type: Number
+    type: Number,
   },
   EightMileEstimateTotalPrice: {
-    type: Number
+    type: Number,
   },
   NPTSellingPrice: {
-    type: Number
+    type: Number,
   },
   NPTEstimateTotalPrice: {
-    type: Number
+    type: Number,
   },
   LSHSellingPrice: {
-    type: Number
+    type: Number,
   },
   LSHEstimateTotalPrice: {
-    type: Number
+    type: Number,
   },
   MDYSellingPrice: {
-    type: Number
+    type: Number,
   },
   MDYEstimateTotalPrice: {
-    type: Number
+    type: Number,
   },
   KShoppingSellingPrice: {
-    type: Number
+    type: Number,
   },
   KShoppingEstimateTotalPrice: {
-    type: Number
+    type: Number,
   },
   SanChaungSellingPrice: {
-    type: Number
+    type: Number,
   },
   SanChaungEstimateTotalPrice: {
-    type: Number
+    type: Number,
   },
   ThingangyunSellingPrice: {
-    type: Number
+    type: Number,
   },
   ThingangyunEstimateTotalPrice: {
-    type: Number
+    type: Number,
   },
   HlaingTharYarSellingPrice: {
-    type: Number
+    type: Number,
   },
   HlaingTharYarEstimateTotalPrice: {
-    type: Number
+    type: Number,
   },
   // for promotion with point
   startPromotionPointDate: {
-    type: Date
+    type: Date,
   },
   endPromotionPointDate: {
-    type: Date
+    type: Date,
   },
   buyableWithPoint: {
-    type: Boolean
+    type: Boolean,
   },
   deductPoint: {
-    type: Number
+    type: Number,
   },
-  deductByTier: [{
-     tierName:{
-      type: String
-     },
-     percent: {
-      type: Number
-     }
-  }],
+  deductByTier: [
+    {
+      tierName: {
+        type: String,
+      },
+      percent: {
+        type: Number,
+      },
+    },
+  ],
   addPoint: {
-    type: Number
+    type: Number,
   },
-  promotionPointDate:[{
-    startPromotionPointDate: {
-      type: Date
+  promotionPointDate: [
+    {
+      startPromotionPointDate: {
+        type: Date,
+      },
+      endPromotionPointDate: {
+        type: Date,
+      },
+      deductPoint: {
+        type: Number,
+      },
     },
-    endPromotionPointDate: {
-      type: Date
-    },
-    deductPoint: {
-      type: Number
-    },
-
-  }],
+  ],
   editTime: {
-    type: String
+    type: String,
   },
   editPerson: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Users"
+    ref: "Users",
   },
   editEmail: {
-    type: String
+    type: String,
   },
   location: {
-    type: String
+    type: String,
   },
   deleteTime: {
-    type: String
+    type: String,
   },
   deletePerson: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Users"
+    ref: "Users",
   },
   deleteEmail: {
-    type: String
+    type: String,
+  },
+  isMedicineProduct: {
+    type: Boolean,
+    default: false,
   },
 });
 
-module.exports = mongoose.model('Treatments', TreatmentSchema);
+module.exports = mongoose.model("Treatments", TreatmentSchema);
 
 //Author: Kyaw Zaw Lwin

@@ -295,6 +295,7 @@ exports.getOpeningAndClosingWithExactDate = async (req, res) => {
       relatedAccounting: relatedAccounting,
       type: "Closing",
       date: { $gte: startDate, $lt: endDate },
+      transferAmount: { $gt: 0 },
     };
 
     const closingLatestDocument = await AccountBalance.find(closingQueryData)
@@ -629,387 +630,386 @@ exports.getOpeningAndClosingWithExactDate = async (req, res) => {
   }
 };
 
-exports.getOpeningAndClosingCashAndBankWithExactData = async (req, res) => {
-  let { exactDate, relatedBranch, type, relatedAccounting } = req.query;
+// exports.getOpeningAndClosingCashAndBankWithExactData = async (req, res) => {
+//   let { exactDate, relatedBranch, type, relatedAccounting } = req.query;
 
-  try {
-    const date = new Date(exactDate);
-    const startDate = new Date(
-      date.getFullYear(),
-      date.getMonth(),
-      date.getDate(),
-      date.getHours(),
-      date.getMinutes(),
-      date.getSeconds(),
-      date.getMilliseconds()
-    ); // Set start date to the beginning of the day
+//   try {
+//     const date = new Date(exactDate);
+//     const startDate = new Date(
+//       date.getFullYear(),
+//       date.getMonth(),
+//       date.getDate(),
+//       date.getHours(),
+//       date.getMinutes(),
+//       date.getSeconds(),
+//       date.getMilliseconds()
+//     ); // Set start date to the beginning of the day
 
-    const endDate = new Date(
-      date.getFullYear(),
-      date.getMonth(),
-      date.getDate() + 1,
-      date.getHours(),
-      date.getMinutes(),
-      date.getSeconds(),
-      date.getMilliseconds()
-    ); // Set end date to the beginning of the next day
+//     const endDate = new Date(
+//       date.getFullYear(),
+//       date.getMonth(),
+//       date.getDate() + 1,
+//       date.getHours(),
+//       date.getMinutes(),
+//       date.getSeconds(),
+//       date.getMilliseconds()
+//     ); // Set end date to the beginning of the next day
 
-    const AccountQuery = {
-      isDeleted: false,
-      relatedBranch: relatedBranch,
-      relatedAccounting: relatedAccounting,
-      type: type,
-      date: { $gte: startDate, $lt: endDate },
-    };
+//     const AccountQuery = {
+//       isDeleted: false,
+//       relatedBranch: relatedBranch,
+//       relatedAccounting: relatedAccounting,
+//       type: type,
+//       date: { $gte: startDate, $lt: endDate },
+//     };
 
-    const accountLatestDocument = await AccountBalance.find(AccountQuery)
-      .sort({ _id: -1 })
-      .limit(1);
+//     const accountLatestDocument = await AccountBalance.find(AccountQuery)
+//       .sort({ _id: -1 })
+//       .limit(1);
 
-    const AccountClosingQueryData = {
-      isDeleted: false,
-      relatedBranch: relatedBranch,
-      relatedAccounting: relatedAccounting,
-      type: "Closing",
-      date: { $gte: startDate, $lt: endDate },
-      transferAmount: { $gt: 0 },
-    };
+//     const AccountClosingQueryData = {
+//       isDeleted: false,
+//       relatedBranch: relatedBranch,
+//       relatedAccounting: relatedAccounting,
+//       type: "Closing",
+//       date: { $gte: startDate, $lt: endDate },
+//       transferAmount: { $gt: 0 },
+//     };
 
-    const accountClosingLatestDocument = await AccountBalance.find(
-      AccountClosingQueryData
-    )
-      .sort({ _id: -1 })
-      .limit(1);
+//     const accountClosingLatestDocument = await AccountBalance.find(
+//       AccountClosingQueryData
+//     )
+//       .sort({ _id: -1 })
+//       .limit(1);
 
-    let AccountOpeningTotal =
-      accountLatestDocument.length != 0 &&
-      accountLatestDocument[0].type === "Opening"
-        ? accountLatestDocument[0].amount
-        : 0;
+//     let AccountOpeningTotal =
+//       accountLatestDocument.length != 0 &&
+//       accountLatestDocument[0].type === "Opening"
+//         ? accountLatestDocument[0].amount
+//         : 0;
 
-    let AccountTransferBalance =
-      accountClosingLatestDocument.length !== 0
-        ? accountClosingLatestDocument[0].transferAmount
-        : 0;
+//     let AccountTransferBalance =
+//       accountClosingLatestDocument.length !== 0
+//         ? accountClosingLatestDocument[0].transferAmount
+//         : 0;
 
-    // Fetching cash and bank entries from TreatmentVouchers and Expenses
-    const medicineSaleQuery = {
-      Refund: false,
-      isDeleted: false,
-      tsType: "MS",
-      relatedCash: { $exists: true },
-      relatedBank: { $exists: true },
-      relatedBranch: relatedBranch,
-      createdAt: { $gte: startDate, $lt: endDate },
-    };
+//     // Fetching cash and bank entries from TreatmentVouchers and Expenses
+//     const medicineSaleQuery = {
+//       Refund: false,
+//       isDeleted: false,
+//       tsType: "MS",
+//       relatedCash: { $exists: true },
+//       relatedBank: { $exists: true },
+//       relatedBranch: relatedBranch,
+//       createdAt: { $gte: startDate, $lt: endDate },
+//     };
 
-    // Calculate cash totals
-    const cashMedicineSaleFirstTotal = await TreatmentVoucher.find(
-      medicineSaleQuery
-    ).then((msResult) => {
-      if (msResult) {
-        const msTotal = msResult.reduce((accumulator, currentValue) => {
-          return accumulator + currentValue.msPaidAmount;
-        }, 0);
-        return msTotal;
-      }
-      return 0;
-    });
+//     // Calculate cash totals
+//     const cashMedicineSaleFirstTotal = await TreatmentVoucher.find(
+//       medicineSaleQuery
+//     ).then((msResult) => {
+//       if (msResult) {
+//         const msTotal = msResult.reduce((accumulator, currentValue) => {
+//           return accumulator + currentValue.msPaidAmount;
+//         }, 0);
+//         return msTotal;
+//       }
+//       return 0;
+//     });
 
-    const cashMedicineSaleSecondTotal = await TreatmentVoucher.find({
-      ...medicineSaleQuery,
-      relatedCash: { $exists: true },
-      secondAccount: { $exists: true },
-    })
-      .populate({ path: "secondAccount", populate: { path: "relatedHeader" } })
-      .then((msResult) => {
-        const total = msResult.reduce(
-          (accumulator, currentValue) => {
-            if (
-              currentValue.secondAccount.relatedHeader.name === "Cash In Hand"
-            ) {
-              return accumulator + currentValue.secondAmount;
-            } else {
-              return accumulator;
-            }
-          },
+//     const cashMedicineSaleSecondTotal = await TreatmentVoucher.find({
+//       ...medicineSaleQuery,
+//       relatedCash: { $exists: true },
+//       secondAccount: { $exists: true },
+//     })
+//       .populate({ path: "secondAccount", populate: { path: "relatedHeader" } })
+//       .then((msResult) => {
+//         const total = msResult.reduce(
+//           (accumulator, currentValue) => {
+//             if (
+//               currentValue.secondAccount.relatedHeader.name === "Cash In Hand"
+//             ) {
+//               return accumulator + currentValue.secondAmount;
+//             } else {
+//               return accumulator;
+//             }
+//           },
 
-          0
-        );
+//           0
+//         );
 
-        return total;
-      });
+//         return total;
+//       });
 
-    const medicineBankSaleQuery = {
-      Refund: false,
-      isDeleted: false,
-      type: type,
-      relatedBank: { $exists: true },
-      relatedBranch: relatedBranch,
-      relatedAccounting: relatedAccounting,
-      createdAt: { $gte: startDate, $lt: endDate },
-    };
+//     const medicineBankSaleQuery = {
+//       Refund: false,
+//       isDeleted: false,
+//       type: type,
+//       relatedBank: { $exists: true },
+//       relatedBranch: relatedBranch,
+//       relatedAccounting: relatedAccounting,
+//       createdAt: { $gte: startDate, $lt: endDate },
+//     };
 
-    // Calculate bank totals
-    const bankMedicineSaleSecondTotal = await TreatmentVoucher.find({
-      ...medicineBankSaleQuery,
-      secondAccount: { $exists: true },
-      relatedBank: { $exists: true },
-    }).then((msResult) =>
-      msResult.reduce((acc, curVal) => {
-        if (curVal.paymentType === "Bank") {
-          return acc + (curVal.totalAmount || 0);
-        }
-        return acc;
-      }, 0)
-    );
+//     // Calculate bank totals
+//     const bankMedicineSaleSecondTotal = await TreatmentVoucher.find({
+//       ...medicineBankSaleQuery,
+//       secondAccount: { $exists: true },
+//       relatedBank: { $exists: true },
+//     }).then((msResult) =>
+//       msResult.reduce((acc, curVal) => {
+//         if (curVal.paymentType === "Bank") {
+//           return acc + (curVal.totalAmount || 0);
+//         }
+//         return acc;
+//       }, 0)
+//     );
 
-    const expenseTotal = await Expense.find({
-      isDeleted: false,
-      date: { $gte: startDate, $lt: endDate },
-      relatedBranch: relatedBranch,
-    }).then((result) => {
-      if (result) {
-        const total = result.reduce((accumulator, currentValue) => {
-          return accumulator + currentValue.finalAmount;
-        }, 0);
-        return total;
-      }
-      return 0;
-    });
+//     const expenseTotal = await Expense.find({
+//       isDeleted: false,
+//       date: { $gte: startDate, $lt: endDate },
+//       relatedBranch: relatedBranch,
+//     }).then((result) => {
+//       if (result) {
+//         const total = result.reduce((accumulator, currentValue) => {
+//           return accumulator + currentValue.finalAmount;
+//         }, 0);
+//         return total;
+//       }
+//       return 0;
+//     });
 
-    // Calculate cash from Treatment Vouchers
-    const TVFirstCashTotal = await TreatmentVoucher.find({
-      Refund: false,
-      isDeleted: false,
-      createdAt: { $gte: startDate, $lt: endDate },
-      relatedCash: { $exists: true },
-      relatedBranch: relatedBranch,
-      tsType: "TSMulti",
-    })
-      .populate("secondAccount")
-      .then((result) => {
-        if (result) {
-          const total = result.reduce((accumulator, currentValue) => {
-            return (
-              accumulator +
-              (currentValue.paidAmount || 0) +
-              (currentValue.msPaidAmount || 0) +
-              (currentValue.totalPaidAmount || 0) +
-              (currentValue.psPaidAmount || 0)
-            );
-          }, 0);
-          return total;
-        }
-        return 0;
-      });
+//     // Calculate cash from Treatment Vouchers
+//     const TVFirstCashTotal = await TreatmentVoucher.find({
+//       Refund: false,
+//       isDeleted: false,
+//       createdAt: { $gte: startDate, $lt: endDate },
+//       relatedCash: { $exists: true },
+//       relatedBranch: relatedBranch,
+//       tsType: "TSMulti",
+//     })
+//       .populate("secondAccount")
+//       .then((result) => {
+//         if (result) {
+//           const total = result.reduce((accumulator, currentValue) => {
+//             return (
+//               accumulator +
+//               (currentValue.paidAmount || 0) +
+//               (currentValue.msPaidAmount || 0) +
+//               (currentValue.totalPaidAmount || 0) +
+//               (currentValue.psPaidAmount || 0)
+//             );
+//           }, 0);
+//           return total;
+//         }
+//         return 0;
+//       });
 
-    const TVSecondCashTotal = await TreatmentVoucher.find({
-      isDeleted: false,
-      createdAt: { $gte: startDate, $lt: endDate },
-      secondAccount: { $exists: true },
-      relatedBranch: relatedBranch,
-      tsType: "TSMulti",
-    })
-      .populate({ path: "secondAccount", populate: { path: "relatedHeader" } })
-      .then((result) =>
-        result.reduce((acc, curVal) => {
-          if (curVal.secondAccount.relatedHeader.name === "Cash In Hand") {
-            return acc + curVal.secondAmount;
-          }
-          return acc;
-        }, 0)
-      );
+//     const TVSecondCashTotal = await TreatmentVoucher.find({
+//       isDeleted: false,
+//       createdAt: { $gte: startDate, $lt: endDate },
+//       secondAccount: { $exists: true },
+//       relatedBranch: relatedBranch,
+//       tsType: "TSMulti",
+//     })
+//       .populate({ path: "secondAccount", populate: { path: "relatedHeader" } })
+//       .then((result) =>
+//         result.reduce((acc, curVal) => {
+//           if (curVal.secondAccount.relatedHeader.name === "Cash In Hand") {
+//             return acc + curVal.secondAmount;
+//           }
+//           return acc;
+//         }, 0)
+//       );
 
-    // Calculate bank from Treatment Vouchers
-    const TVSecondBankTotal = await TreatmentVoucher.find({
-      isDeleted: false,
-      createdAt: { $gte: startDate, $lt: endDate },
-      secondAccount: { $exists: true },
-      relatedBranch: relatedBranch,
-      tsType: "TSMulti",
-      "secondAccount.relatedHeader.name": { $regex: "Bank", $options: "i" },
-    })
-      .populate({ path: "secondAccount", populate: { path: "relatedHeader" } })
-      .then(
-        (result) =>
-          result.reduce((acc, curVal) => acc + (curVal.secondAmount || 0), 0) // Ensure secondAmount defaults to 0
-      );
+//     // Calculate bank from Treatment Vouchers
+//     const TVSecondBankTotal = await TreatmentVoucher.find({
+//       isDeleted: false,
+//       createdAt: { $gte: startDate, $lt: endDate },
+//       secondAccount: { $exists: true },
+//       relatedBranch: relatedBranch,
+//       tsType: "TSMulti",
+//       "secondAccount.relatedHeader.name": { $regex: "Bank", $options: "i" },
+//     })
+//       .populate({ path: "secondAccount", populate: { path: "relatedHeader" } })
+//       .then(
+//         (result) =>
+//           result.reduce((acc, curVal) => acc + (curVal.secondAmount || 0), 0) // Ensure secondAmount defaults to 0
+//       );
 
-    let queryCombineTreatmentVoucher = {
-      Refund: false,
-      isDeleted: false,
-      createdAt: { $gte: startDate, $lt: endDate },
-      relatedCash: { $exists: true },
-      relatedBranch: relatedBranch,
-      tsType: "Combined",
-    };
+//     let queryCombineTreatmentVoucher = {
+//       Refund: false,
+//       isDeleted: false,
+//       createdAt: { $gte: startDate, $lt: endDate },
+//       relatedCash: { $exists: true },
+//       relatedBranch: relatedBranch,
+//       tsType: "Combined",
+//     };
 
-    const combinedSaleFristCashTotal = await TreatmentVoucher.find(
-      queryCombineTreatmentVoucher
-    )
-      .populate("secondAccount")
-      .then((result) => {
-        //    console.log(result)
-        if (result) {
-          const total = result.reduce((accumulator, currentValue) => {
-            return (
-              accumulator +
-              currentValue.totalPaidAmount +
-              currentValue.msPaidAmount
-            );
-          }, 0);
-          return total;
-        }
-        return 0;
-      });
+//     const combinedSaleFristCashTotal = await TreatmentVoucher.find(
+//       queryCombineTreatmentVoucher
+//     )
+//       .populate("secondAccount")
+//       .then((result) => {
+//         //    console.log(result)
+//         if (result) {
+//           const total = result.reduce((accumulator, currentValue) => {
+//             return (
+//               accumulator +
+//               currentValue.totalPaidAmount +
+//               currentValue.msPaidAmount
+//             );
+//           }, 0);
+//           return total;
+//         }
+//         return 0;
+//       });
 
-    //query second cash combined voucher
-    let queryCombineTreatmentVoucher2 = {
-      Refund: false,
-      isDeleted: false,
-      createdAt: { $gte: startDate, $lt: endDate },
-      secondAccount: { $exists: true },
-      relatedBranch: relatedBranch,
-      tsType: "Combined",
-    };
+//     //query second cash combined voucher
+//     let queryCombineTreatmentVoucher2 = {
+//       Refund: false,
+//       isDeleted: false,
+//       createdAt: { $gte: startDate, $lt: endDate },
+//       secondAccount: { $exists: true },
+//       relatedBranch: relatedBranch,
+//       tsType: "Combined",
+//     };
 
-    const combinedSaleSecondCashTotal = await TreatmentVoucher.find(
-      queryCombineTreatmentVoucher2
-    )
-      .populate({
-        path: "secondAccount",
-        populate: {
-          path: "relatedHeader",
-        },
-      })
-      .then((cmResult) => {
-        //   return res.status(200).send({data:result})
-        const total = cmResult.reduce(
-          (accumulator, currentValue) => {
-            if (
-              currentValue.secondAccount.relatedHeader.name === "Cash In Hand"
-            ) {
-              return accumulator + currentValue.secondAmount;
-            } else {
-              return accumulator;
-            }
-          },
+//     const combinedSaleSecondCashTotal = await TreatmentVoucher.find(
+//       queryCombineTreatmentVoucher2
+//     )
+//       .populate({
+//         path: "secondAccount",
+//         populate: {
+//           path: "relatedHeader",
+//         },
+//       })
+//       .then((cmResult) => {
+//         //   return res.status(200).send({data:result})
+//         const total = cmResult.reduce(
+//           (accumulator, currentValue) => {
+//             if (
+//               currentValue.secondAccount.relatedHeader.name === "Cash In Hand"
+//             ) {
+//               return accumulator + currentValue.secondAmount;
+//             } else {
+//               return accumulator;
+//             }
+//           },
 
-          0
-        );
+//           0
+//         );
 
-        return total;
-      });
+//         return total;
+//       });
 
-    let queryCombinedBankTotal = {
-      Refund: false,
-      isDeleted: false,
-      createdAt: { $gte: startDate, $lt: endDate },
-      relatedBranch: relatedBranch,
-      tsType: "TSMulti",
-    };
+//     let queryCombinedBankTotal = {
+//       Refund: false,
+//       isDeleted: false,
+//       createdAt: { $gte: startDate, $lt: endDate },
+//       relatedBranch: relatedBranch,
+//       tsType: "TSMulti",
+//     };
 
-    const combinedSaleFirstBankTotal = await TreatmentVoucher.find(
-      queryCombinedBankTotal
-    )
-      .populate("secondAccount")
-      .then((result) => {
-        if (result && result.length > 0) {
-          return result.reduce((accumulator, currentValue) => {
-            const totalPaid = currentValue.totalPaidAmount || 0; // Ensure totalPaidAmount defaults to 0
-            const msPaid = currentValue.msPaidAmount || 0; // Ensure msPaidAmount defaults to 0
-            return accumulator + totalPaid + msPaid;
-          }, 0);
-        }
-        return 0; // If no result, return 0
-      });
+//     const combinedSaleFirstBankTotal = await TreatmentVoucher.find(
+//       queryCombinedBankTotal
+//     )
+//       .populate("secondAccount")
+//       .then((result) => {
+//         if (result && result.length > 0) {
+//           return result.reduce((accumulator, currentValue) => {
+//             const totalPaid = currentValue.totalPaidAmount;
+//             return totalPaid + accumulator;
+//           }, 0);
+//         }
+//         return 0; // If no result, return 0
+//       });
 
-    const incomeTotal = await Income.find({
-      date: { $gte: startDate, $lt: endDate },
-      relatedBranch: relatedBranch,
-    }).then((result) => {
-      if (result) {
-        const total = result.reduce((accumulator, currentValue) => {
-          return accumulator + currentValue.finalAmount;
-        }, 0);
-        return total;
-      }
-      return 0;
-    });
+//     const incomeTotal = await Income.find({
+//       date: { $gte: startDate, $lt: endDate },
+//       relatedBranch: relatedBranch,
+//     }).then((result) => {
+//       if (result) {
+//         const total = result.reduce((accumulator, currentValue) => {
+//           return accumulator + currentValue.finalAmount;
+//         }, 0);
+//         return total;
+//       }
+//       return 0;
+//     });
 
-    //Repay
-    const totalRepay = await totalRepayFunction({
-      relatedBranch: relatedBranch,
-      repaymentDate: {
-        $gte: moment.tz("Asia/Yangon").format(startDate.toISOString()),
-        $lt: moment.tz("Asia/Yangon").format(endDate.toISOString()),
-      },
-    });
+//     //Repay
+//     const totalRepay = await totalRepayFunction({
+//       relatedBranch: relatedBranch,
+//       repaymentDate: {
+//         $gte: moment.tz("Asia/Yangon").format(startDate.toISOString()),
+//         $lt: moment.tz("Asia/Yangon").format(endDate.toISOString()),
+//       },
+//     });
 
-    console.log("Final Data", {
-      transferBalances: type === "Opening" ? AccountTransferBalance : 0,
-    });
+//     console.log("Final Data", {
+//       transferBalances: type === "Opening" ? AccountTransferBalance : 0,
+//     });
 
-    console.log("bankMedicineSaleSecondTotal:", bankMedicineSaleSecondTotal);
-    console.log("TVSecondBankTotal:", TVSecondBankTotal);
-    console.log("combinedSaleFirstBankTotal:", combinedSaleFirstBankTotal);
-    console.log(
-      "closingBank:",
-      bankMedicineSaleSecondTotal +
-        TVSecondBankTotal +
-        combinedSaleFirstBankTotal
-    );
+//     console.log("bankMedicineSaleSecondTotal:", bankMedicineSaleSecondTotal);
+//     console.log("TVSecondBankTotal:", TVSecondBankTotal);
+//     console.log("combinedSaleFirstBankTotal:", combinedSaleFirstBankTotal);
+//     console.log(
+//       "closingBank:",
+//       bankMedicineSaleSecondTotal + TVSecondBankTotal
+//     );
 
-    return res.status(200).send({
-      success: true,
-      openingTotal: AccountOpeningTotal,
-      cashMedicineSaleFirstTotal:
-        type === "Opening" ? cashMedicineSaleFirstTotal : 0,
-      cashMedicineSaleSecondTotal:
-        type === "Opening" ? cashMedicineSaleSecondTotal : 0,
-      bankMedicineSaleSecondTotal:
-        type === "Opening" ? bankMedicineSaleSecondTotal : 0,
-      expenseTotal: type === "Opening" ? expenseTotal : 0,
-      TVFirstCashTotal: type === "Opening" ? TVFirstCashTotal : 0,
-      TVSecondCashTotal: type === "Opening" ? TVSecondCashTotal : 0,
-      TVSecondBankTotal: type === "Opening" ? TVSecondBankTotal : 0,
-      incomeTotal: type === "Opening" ? incomeTotal : 0,
-      transferBalances: type === "Closing" ? AccountTransferBalance : 0,
-      total:
-        type === "Opening"
-          ? cashMedicineSaleFirstTotal +
-            cashMedicineSaleSecondTotal +
-            TVFirstCashTotal +
-            TVSecondCashTotal +
-            AccountOpeningTotal +
-            incomeTotal +
-            combinedSaleFristCashTotal +
-            combinedSaleSecondCashTotal +
-            totalRepay.cashTotal
-          : 0,
-      closingCash:
-        type === "Opening"
-          ? cashMedicineSaleFirstTotal +
-            cashMedicineSaleSecondTotal +
-            totalRepay.cashTotal +
-            TVFirstCashTotal +
-            TVSecondCashTotal +
-            combinedSaleFristCashTotal +
-            combinedSaleSecondCashTotal +
-            AccountOpeningTotal -
-            (expenseTotal + AccountTransferBalance)
-          : 0,
-      closingBank:
-        bankMedicineSaleSecondTotal +
-        TVSecondBankTotal +
-        combinedSaleFirstBankTotal,
-      totalRepay: totalRepay,
-    });
-  } catch (error) {
-    return res.status(500).send({ error: true, message: error.message });
-  }
-};
+//     return res.status(200).send({
+//       success: true,
+//       openingTotal: AccountOpeningTotal,
+//       cashMedicineSaleFirstTotal:
+//         type === "Opening" ? cashMedicineSaleFirstTotal : 0,
+//       cashMedicineSaleSecondTotal:
+//         type === "Opening" ? cashMedicineSaleSecondTotal : 0,
+//       bankMedicineSaleSecondTotal:
+//         type === "Opening" ? bankMedicineSaleSecondTotal : 0,
+//       expenseTotal: type === "Opening" ? expenseTotal : 0,
+//       TVFirstCashTotal: type === "Opening" ? TVFirstCashTotal : 0,
+//       TVSecondCashTotal: type === "Opening" ? TVSecondCashTotal : 0,
+//       TVSecondBankTotal: type === "Opening" ? TVSecondBankTotal : 0,
+//       incomeTotal: type === "Opening" ? incomeTotal : 0,
+//       transferBalances: type === "Closing" ? AccountTransferBalance : 0,
+//       total:
+//         type === "Opening"
+//           ? cashMedicineSaleFirstTotal +
+//             cashMedicineSaleSecondTotal +
+//             TVFirstCashTotal +
+//             TVSecondCashTotal +
+//             AccountOpeningTotal +
+//             incomeTotal +
+//             combinedSaleFristCashTotal +
+//             combinedSaleSecondCashTotal +
+//             totalRepay.cashTotal
+//           : 0,
+//       closingCash:
+//         type === "Opening"
+//           ? cashMedicineSaleFirstTotal +
+//             cashMedicineSaleSecondTotal +
+//             totalRepay.cashTotal +
+//             TVFirstCashTotal +
+//             TVSecondCashTotal +
+//             combinedSaleFristCashTotal +
+//             combinedSaleSecondCashTotal +
+//             AccountOpeningTotal -
+//             (expenseTotal + AccountTransferBalance)
+//           : 0,
+//       closingBank:
+//         type === "Opening"
+//           ? bankMedicineSaleSecondTotal +
+//             TVSecondBankTotal +
+//             combinedSaleFirstBankTotal
+//           : 0,
+//       totalRepay: totalRepay,
+//     });
+//   } catch (error) {
+//     return res.status(500).send({ error: true, message: error.message });
+//   }
+// };
 
 exports.knasGetOpeningAndClosingWithExactDate = async (req, res) => {
   let { exact, relatedBranch, type, relatedAccounting } = req.query;

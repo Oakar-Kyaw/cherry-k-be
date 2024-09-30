@@ -695,7 +695,15 @@ exports.createTreatmentSelection = async (req, res, next) => {
   let createdBy = req.credentials.id;
   let files = req.files;
 
-  let isMedicineProduct = true;
+  let parsedMulti = JSON.parse(req.body.multiTreatment);
+
+  for (const treatmentMulti of parsedMulti) {
+    const treatmentDoc = await Treatment.findById(treatmentMulti.item_id);
+
+    if (treatmentDoc) {
+      var isMedicineProduct = treatmentDoc.isMedicineProduct;
+    }
+  }
 
   try {
     if (req.body.originalDate === undefined)

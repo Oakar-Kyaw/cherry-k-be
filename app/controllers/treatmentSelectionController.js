@@ -193,6 +193,7 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
   let files = req.files;
   let data = req.body;
   let createdBy = req.credentials.id;
+
   let {
     selections,
     relatedPatient,
@@ -216,12 +217,15 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
     relatedDiscount,
     relatedDoctor,
     paymentMethod,
-    isMedicineProduct = false,
     treatmentPackage,
     relatedBranch,
     createdAt,
     tsType,
   } = req.body;
+
+  let parsedMulti = JSON.parse(req.body.multiTreatment);
+
+  console.log("req.body treatment creation", req.body);
 
   let tvcCreate = false;
   let TSArray = [];
@@ -230,9 +234,22 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
   let getPackageAccountingAccount;
   let attachID;
 
+  for (const treatmentMulti of parsedMulti) {
+    const treatmentDoc = await Treatment.findById(treatmentMulti.item_id);
+
+    var isMedicineProduct = treatmentDoc.isMedicineProduct;
+  }
+
+  const showOnlyMedicineTrueProducts = await TreatmentVoucher.find({
+    tsType: "TSMulti",
+    Refund: false,
+    isMedicineProduct: true,
+  });
+
   let response = {
     message: "Treatment Selection create success",
     success: true,
+    showOnlyMedicineTrueProducts: showOnlyMedicineTrueProducts,
   };
 
   try {
@@ -420,7 +437,7 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
         );
       }
 
-      data.relatedTreatmentSelection = TSArray;
+      data.relatedTreatmentSelection = isMedicineProduct ? null : TSArray;
       console.log("data realed treatmentselection is ", data, TSArray);
       let result = await treatmentPackageSelections.create(data);
       TSPackageArray.push(result._id);
@@ -452,7 +469,7 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
         secondAmount: req.body.secondAmount,
         secondAccount: req.body.secondAccount,
         isDouble: req.body.isDouble,
-        relatedTreatmentSelection: TSArray,
+        relatedTreatmentSelection: isMedicineProduct ? null : TSArray,
         relatedTreatmentPackageSelection: TSPackageArray,
         deposit: req.body.deposit,
         relatedBranch: req.body.relatedBranch,
@@ -477,6 +494,7 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
         tsType: "TSMulti",
         createdAt: req.body.createdAt,
         balance: req.body.balance,
+        isMedicineProduct: isMedicineProduct,
       };
 
       dataTVC.multiTreatment = parsedMulti;
@@ -518,7 +536,9 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
     var updatePatient = await Patient.findOneAndUpdate(
       { _id: relatedPatient },
       {
-        $addToSet: { relatedTreatmentSelection: TSArray },
+        $addToSet: {
+          relatedTreatmentSelection: isMedicineProduct ? null : TSArray,
+        },
         $push: { relatedPackageSelection: { $each: TSPackageArray } },
         $inc: {
           conditionAmount: req.body.totalAmount,
@@ -661,7 +681,7 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
       }
     }
 
-    res.status(200).send(response);
+    return res.status(200).send(response);
   } catch (error) {
     console.log(error);
     return res.status(500).send({ error: true, message: error.message });
@@ -674,11 +694,15 @@ exports.createTreatmentSelection = async (req, res, next) => {
   let tvcCreate = false;
   let createdBy = req.credentials.id;
   let files = req.files;
+
+  let isMedicineProduct = true;
+
   try {
     if (req.body.originalDate === undefined)
       return res
         .status(500)
         .send({ error: true, message: "Original Date is required" });
+
     const appointmentConfig = {
       relatedPatient: req.body.relatedPatient,
       relatedDoctor: req.body.relatedDoctor,
@@ -686,6 +710,7 @@ exports.createTreatmentSelection = async (req, res, next) => {
       phone: req.body.phone,
       relatedBranch: req.body.relatedBranch,
     };
+
     console.log(appointmentConfig);
     const numTreatments = req.body.treatmentTimes;
     const dataconfigs = [];
@@ -696,6 +721,7 @@ exports.createTreatmentSelection = async (req, res, next) => {
       const config = { ...appointmentConfig, originalDate: date };
       dataconfigs.push(config);
     }
+
     const appointmentResult = await Appointment.insertMany(dataconfigs);
     appointmentResult.map(function (element, index) {
       relatedAppointments.push(element._id);
@@ -734,6 +760,7 @@ exports.createTreatmentSelection = async (req, res, next) => {
       relatedBranch: req.mongoQuery.relatedBranch,
       tsType: "TS",
     };
+
     console.log(data, "data1"); //adding TS
 
     // if (req.body.secondAccount) {
@@ -795,10 +822,12 @@ exports.createTreatmentSelection = async (req, res, next) => {
         type: "Credit",
         createdBy: createdBy,
       });
+
       var amountUpdate = await Accounting.findOneAndUpdate(
         { _id: "6467379159a9bc811d97f4d2" },
         { $inc: { amount: req.body.paidAmount } }
       );
+
       //sec transaction
       var secTransResult = await Transaction.create({
         amount: req.body.paidAmount,
@@ -810,6 +839,7 @@ exports.createTreatmentSelection = async (req, res, next) => {
         relatedTransaction: fTransResult._id,
         createdBy: createdBy,
       });
+
       var fTransUpdate = await Transaction.findOneAndUpdate(
         { _id: fTransResult._id },
         {
@@ -817,6 +847,7 @@ exports.createTreatmentSelection = async (req, res, next) => {
         },
         { new: true }
       );
+
       if (req.body.relatedBank) {
         var amountUpdate = await Accounting.findOneAndUpdate(
           { _id: req.body.relatedBank },
@@ -830,15 +861,18 @@ exports.createTreatmentSelection = async (req, res, next) => {
       }
       tvcCreate = true;
     }
+
     if (fTransResult && secTransResult) {
       data = {
         ...data,
         relatedTransaction: [fTransResult._id, secTransResult._id],
       };
     } //adding relatedTransactions to treatmentSelection model
+
     if (treatmentVoucherResult) {
       data = { ...data, relatedTreatmentVoucher: treatmentVoucherResult._id };
     }
+
     console.log(data, "data2");
     const result = await TreatmentSelection.create(data);
 
@@ -846,6 +880,7 @@ exports.createTreatmentSelection = async (req, res, next) => {
       const treatmentResult = await Treatment.find({
         _id: req.body.relatedTreatment,
       });
+
       let advanceAmount = req.body.totalAmount - req.body.paidAmount;
 
       if (
@@ -861,10 +896,12 @@ exports.createTreatmentSelection = async (req, res, next) => {
           type: "Debit",
           createdBy: createdBy,
         });
+
         var amountUpdate = await Accounting.findOneAndUpdate(
           { _id: "6467379159a9bc811d97f4d2" },
           { $inc: { amount: -req.body.totalAmount } }
         );
+
         //sec transaction
         var secTransResult = await Transaction.create({
           amount: req.body.paidAmount,
@@ -876,6 +913,7 @@ exports.createTreatmentSelection = async (req, res, next) => {
           relatedTransaction: fTransResult._id,
           createdBy: createdBy,
         });
+
         var fTransUpdate = await Transaction.findOneAndUpdate(
           { _id: fTransResult._id },
           {
@@ -883,6 +921,7 @@ exports.createTreatmentSelection = async (req, res, next) => {
           },
           { new: true }
         );
+
         if (req.body.relatedBank) {
           var freqSecamountUpdate = await Accounting.findOneAndUpdate(
             { _id: req.body.relatedBank },
@@ -894,6 +933,7 @@ exports.createTreatmentSelection = async (req, res, next) => {
             { $inc: { amount: req.body.paidAmount } }
           );
         }
+
         var secTransResult2 = await Transaction.create({
           amount: req.body.totalAmount,
           date: Date.now(),
@@ -903,10 +943,12 @@ exports.createTreatmentSelection = async (req, res, next) => {
           relatedTransaction: fTransResult._id,
           createdBy: createdBy,
         });
+
         var freqSecamountUpdate2 = await Accounting.findOneAndUpdate(
           { _id: treatmentResult[0].relatedAccount },
           { $inc: { amount: req.body.totalAmount } }
         );
+
         const ARUpdate = await AdvanceRecords.findOneAndUpdate(
           { _id: req.body.advanceID },
           { amount: 0 },
@@ -1028,7 +1070,7 @@ exports.createTreatmentSelection = async (req, res, next) => {
         secondAmount: req.body.secondAmount,
         secondAccount: req.body.secondAccount,
         isDouble: req.body.isDouble,
-        relatedTreatmentSelection: result._id,
+        relatedTreatmentSelection: isMedicineProduct ? null : result._id,
         relatedTreatment: req.body.relatedTreatment,
         relatedAppointment: req.body.relatedAppointment,
         relatedPatient: req.body.relatedPatient,
@@ -1047,18 +1089,23 @@ exports.createTreatmentSelection = async (req, res, next) => {
         amount: req.body.totalAmount,
         paidAmount: req.body.paidAmount,
         balance: req.body.balance,
+        isMedicineProduct,
       };
+
       let today = new Date().toISOString();
+
       const latestDocument = await TreatmentVoucher.find({}, { seq: 1 })
         .sort({ _id: -1 })
         .limit(1)
         .exec();
+
       if (latestDocument.length === 0)
         dataTVC = {
           ...dataTVC,
           seq: 1,
           code: "TVC-" + today.split("T")[0].replace(/-/g, "") + "-1",
         }; // if seq is undefined set initial patientID and seq
+
       if (latestDocument.length > 0) {
         const increment = latestDocument[0].seq + 1;
         dataTVC = {
@@ -1092,7 +1139,7 @@ exports.createTreatmentSelection = async (req, res, next) => {
         secondAmount: req.body.secondAmount,
         secondAccount: req.body.secondAccount,
         isDouble: req.body.isDouble,
-        relatedTreatmentSelection: result._id,
+        relatedTreatmentSelection: isMedicineProduct ? null : result._id,
         relatedTreatment: req.body.relatedTreatment,
         relatedAppointment: req.body.relatedAppointment,
         relatedPatient: req.body.relatedPatient,
@@ -1108,6 +1155,7 @@ exports.createTreatmentSelection = async (req, res, next) => {
         payment: attachID,
         relatedDiscount: req.body.relatedDiscount,
         relatedDoctor: req.body.relatedDoctor,
+        isMedicineProduct,
       };
       let today = new Date().toISOString();
       const latestDocument = await TreatmentVoucher.find({}, { seq: 1 })
@@ -1153,7 +1201,7 @@ exports.createTreatmentSelection = async (req, res, next) => {
         secondAmount: req.body.secondAmount,
         secondAccount: req.body.secondAccount,
         isDouble: req.body.isDouble,
-        relatedTreatmentSelection: result._id,
+        relatedTreatmentSelection: isMedicineProduct ? null : result._id,
         relatedTreatment: req.body.relatedTreatment,
         relatedAppointment: req.body.relatedAppointment,
         relatedPatient: req.body.relatedPatient,
@@ -1171,6 +1219,7 @@ exports.createTreatmentSelection = async (req, res, next) => {
         payment: attachID,
         relatedDiscount: req.body.relatedDiscount,
         relatedDoctor: req.body.relatedDoctor,
+        isMedicineProduct,
       };
       let today = new Date().toISOString();
       const latestDocument = await TreatmentVoucher.find({}, { seq: 1 })
@@ -1292,13 +1341,21 @@ exports.createTreatmentSelection = async (req, res, next) => {
 
     const accResult = await Appointment.findOneAndUpdate(
       { _id: req.body.appointment },
-      { $addToSet: { relatedTreatmentSelection: result._id } },
+      {
+        $addToSet: {
+          relatedTreatmentSelection: isMedicineProduct ? null : result._id,
+        },
+      },
       { new: true }
     );
     if (data.relatedPatient) {
       const patientResult = await Patient.findOneAndUpdate(
         { _id: req.body.relatedPatient },
-        { $addToSet: { relatedTreatmentSelection: result._id } },
+        {
+          $addToSet: {
+            relatedTreatmentSelection: isMedicineProduct ? null : result._id,
+          },
+        },
         { new: true }
       );
     }
@@ -1359,20 +1416,29 @@ exports.createTreatmentSelection = async (req, res, next) => {
       }
     }
 
+    const showOnlyMedicineTrueProducts = await TreatmentVoucher.find({
+      isMedicineProduct: true,
+      tsType: "MS",
+      Refund: false,
+    });
+
     let response = {
       message: "Treatment Selection create success",
       success: true,
       data: populatedResult,
       appointmentAutoGenerate: appointmentResult,
       patientFreqUpdate: freqUpdate,
+      showOnlyMedicineTrueProducts: showOnlyMedicineTrueProducts,
       // fTransResult: fTransResult,
       // secTransResult: secTransResult,
       // treatmentVoucherResult:treatmentVoucherResult
     };
+
     if (populatedTV) response.treatmentVoucherResult = populatedTV;
     // if (fTransUpdate) response.fTransResult = fTransUpdate
     // if (fTransResult) response.secTransResult = secTransResult
-    res.status(200).send(response);
+
+    return res.status(200).send(response);
   } catch (error) {
     console.log(error);
     return res.status(500).send({ error: true, message: error.message });

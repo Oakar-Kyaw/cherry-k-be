@@ -313,6 +313,10 @@ let TreatmentVoucherSchema = new Schema({
     type: String,
     enum: ["Pending", "Canceled", "Paid"],
   },
+  isMedicineProduct: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 module.exports = mongoose.model("TreatmentVouchers", TreatmentVoucherSchema);

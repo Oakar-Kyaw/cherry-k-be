@@ -617,7 +617,7 @@ exports.createUsage = async (req, res) => {
       };
       var usageResult = await Usage.create(req.body);
 
-      updateStocksBasedOnUsage(procedureMedicine);
+      // updateStocksBasedOnUsage(procedureMedicine);
 
       var appointmentUpdate = await Appointment.findOneAndUpdate(
         { _id: req.body.relatedAppointment },

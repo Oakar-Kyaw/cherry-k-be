@@ -586,15 +586,15 @@ exports.createUsage = async (req, res) => {
       //usage create
       if (
         machineError.length > 0 ||
-        procedureItemsError.length > 0 ||
-        accessoryItemsError.length > 0
+        procedureItemsError.length > 0
+        // accessoryItemsError.length > 0
       )
         status = "In Progress";
 
       if (
         machineError.length === 0 &&
-        procedureItemsError.length === 0 &&
-        accessoryItemsError.length === 0
+        procedureItemsError.length === 0
+        // accessoryItemsError.length === 0
       ) {
         status = "Finished";
         // removeProcedureItemsFromUsages(relatedBranch);
@@ -605,12 +605,12 @@ exports.createUsage = async (req, res) => {
         machineError: machineError,
         usageStatus: status,
         procedureItemsError: procedureItemsError,
-        accessoryItemsError: accessoryItemsError,
+        // accessoryItemsError: accessoryItemsError,
         generalItemsError: generalItemsError,
         noProcedureItemsStock: noProcedureItemsStock,
-        noAccessoryItemsStock: noAccessoryItemsStock,
+        // noAccessoryItemsStock: noAccessoryItemsStock,
         noGeneralItemsStock: noGeneralItemsStock,
-        procedureAccessory: accessoryItemsFinished,
+        // procedureAccessory: accessoryItemsFinished,
         procedureMedicine: procedureItemsFinished,
         generalItem: generalItemsFinished,
         machine: machineFinished,
@@ -628,16 +628,16 @@ exports.createUsage = async (req, res) => {
         relatedUsage: usageResult._id,
         usageStatus: status,
         procedureMedicine: procedureItemsFinished,
-        procedureAccessory: accessoryItemsFinished,
+        // procedureAccessory: accessoryItemsFinished,
         generalItem: generalItemsFinished,
         machine: machineFinished,
         relatedBranch: req.mongoQuery.relatedBranch,
         machineError: machineError,
         procedureItemsError: procedureItemsError,
-        accessoryItemsError: accessoryItemsError,
+        // accessoryItemsError: accessoryItemsError,
         generalItemsError: generalItemsError,
         noProcedureItemsStock: noProcedureItemsStock,
-        noAccessoryItemsStock: noAccessoryItemsStock,
+        // noAccessoryItemsStock: noAccessoryItemsStock,
         noGeneralItemsStock: noGeneralItemsStock,
       });
     } else {

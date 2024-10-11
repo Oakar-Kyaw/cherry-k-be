@@ -49,8 +49,32 @@ module.exports = (app) => {
     .get(catchError(treatmentVoucher.VersionOneTreatmentVoucherFilter));
 
   app
+    .route("/api/treatment-vouchers/v1/TV-Filter/bank")
+    .get(catchError(treatmentVoucher.NewTreatmentVoucherFilter));
+
+  app
+    .route("/api/treatment-vouchers/TV-Filter/bank-tsmulti")
+    .get(catchError(treatmentVoucher.treatmentFilterWithBankTSMulti));
+
+  app
+    .route("/api/treatment-voucher/TV-Filter/cash-tsmulti")
+    .get(catchError(treatmentVoucher.treatmentFilterWithCashTSMulti));
+
+  app
+    .route("/api/treatment-vouchers/TV-Filter/bank-ms")
+    .get(catchError(treatmentVoucher.treatmentFilterWithBankMS));
+
+  app
+    .route("/api/treatment-vouchers/TV-Filter/cash-ms")
+    .get(catchError(treatmentVoucher.treatmentFilterWithCashMS));
+
+  app
     .route("/api/v1/treatment-vouchers/list")
     .get(catchError(treatmentVoucher.showAllTreatmentVouchers));
+
+  app
+    .route("/api/v1/treatment-vouchers/TV-Filter/cash")
+    .get(catchError(treatmentVoucher.NewTreatmentVoucherFilterCash));
 
   app
     .route("/api/treatment-vouchers/ms/single")

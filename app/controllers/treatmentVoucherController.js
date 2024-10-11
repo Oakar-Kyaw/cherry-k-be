@@ -23,6 +23,7 @@ const KmaxVoucher = require("../models/kmaxVoucher");
 const MedicineItemsModel = require("../models/medicineItem");
 const MedicineItemsRecordModel = require("../models/medicineItemRecord");
 const MedicineSalesModel = require("../models/medicineSale");
+const mongoose = require("mongoose");
 
 exports.combineMedicineSale = async (req, res) => {
   let data = req.body;
@@ -1013,8 +1014,870 @@ exports.getwithExactDate = async (req, res) => {
   }
 };
 
+exports.NewTreatmentVoucherFilter = async (req, res) => {
+  let response = {
+    success: true,
+    _metadata: {},
+    data: {},
+  };
+
+  try {
+    const {
+      startDate,
+      endDate,
+      createdBy,
+      purchaseType,
+      relatedDoctor,
+      bankType,
+      tsType,
+      relatedPatient,
+      bankID,
+      relatedBranch,
+      income,
+      page = 1,
+      limit = 30,
+    } = req.query;
+
+    let query = {
+      relatedBank: { $exists: true },
+      isDeleted: false,
+      relatedBranch: { $exists: true },
+    };
+
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        return res.status(400).send({
+          error: true,
+          message: "Invalid startDate or endDate format.",
+        });
+      }
+
+      query.createdAt = {
+        $gte: start,
+        $lte: new Date(end.setHours(23, 59, 59, 999)),
+      };
+    }
+
+    if (relatedPatient) query.relatedPatient = relatedPatient;
+    if (bankType) query.bankType = bankType;
+    if (createdBy) query.createdBy = mongoose.Types.ObjectId(createdBy);
+    if (bankID) query.relatedBank = bankID;
+    if (purchaseType) query.purchaseType = purchaseType;
+    if (relatedDoctor) query.relatedDoctor = relatedDoctor;
+    if (relatedBranch)
+      query.relatedBranch = mongoose.Types.ObjectId(relatedBranch);
+    if (tsType) {
+      query.tsType = tsType;
+    } else {
+      query.tsType = { $in: ["TSMulti", "MS"] };
+    }
+
+    const pageNumber = parseInt(page);
+    const limitNumber = parseInt(limit);
+    const skipIndex = (pageNumber - 1) * limitNumber;
+
+    // Aggregate query for bank payments
+    const bankResult = await TreatmentVoucher.aggregate([
+      {
+        $match: {
+          ...query,
+          Refund: false,
+          paymentType: "Bank",
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalPaidAmountSum: { $sum: { $ifNull: ["$totalPaidAmount", 0] } },
+          msPaidAmount: { $sum: { $ifNull: ["$msPaidAmount", 0] } },
+          psPaidAmount: { $sum: { $ifNull: ["$psPaidAmount", 0] } },
+          paidAmount: { $sum: { $ifNull: ["$paidAmount", 0] } },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          totalPaidAmountSum: {
+            $add: [
+              "$totalPaidAmountSum",
+              "$msPaidAmount",
+              "$psPaidAmount",
+              "$paidAmount",
+            ],
+          },
+        },
+      },
+      {
+        $skip: skipIndex,
+      },
+      {
+        $limit: limitNumber,
+      },
+    ]);
+
+    let secondBankCashAmount = [];
+    let firstBankName = [];
+    let secondCashName = [];
+
+    // Aggregating and processing the second account and cash amounts
+    let allBankResult = await TreatmentVoucher.find(query)
+      .populate("secondAccount relatedBank relatedCash relatedRepay") // Add relatedRepay here
+      .lean();
+
+    console.log("allBankResult", allBankResult);
+
+    // Iterate over results to extract second account and cash-related data
+    const BankNames = allBankResult.reduce(
+      (
+        result,
+        {
+          Refund,
+          relatedBank,
+          paidAmount,
+          msPaidAmount,
+          totalPaidAmount,
+          psPaidAmount,
+          secondAccount,
+          secondAmount,
+        }
+      ) => {
+        if (
+          secondAccount &&
+          secondAccount.relatedHeader.name == "Cash In Hand"
+        ) {
+          let { name } = secondAccount;
+          secondCashName.push({ cashname: name, amount: secondAmount });
+        } else if (
+          secondAccount &&
+          secondAccount.relatedHeader.name === "Cash At Bank"
+        ) {
+          const bankName = secondAccount.name;
+          secondBankCashAmount.push({
+            bankname: bankName,
+            amount: secondAmount,
+          });
+        }
+
+        if (relatedBank) {
+          const { name } = relatedBank;
+          result[name] =
+            (result[name] || 0) +
+            (paidAmount || 0) +
+            (msPaidAmount || 0) +
+            (totalPaidAmount || 0) +
+            (psPaidAmount || 0);
+        }
+        return result;
+      },
+      {}
+    );
+
+    const BankTotal = allBankResult.reduce(
+      (total, sale) =>
+        total +
+        (sale.paidAmount || 0) +
+        (sale.msPaidAmount || 0) +
+        (sale.totalPaidAmount || 0) +
+        (sale.psPaidAmount || 0),
+      0
+    );
+
+    let secondBank = secondBankCashAmount.reduce((result, nextresult) => {
+      const equalBankName = result.find(
+        (t) => t.bankname === nextresult.bankname
+      );
+
+      if (equalBankName) {
+        equalBankName.amount += nextresult.amount;
+      } else {
+        result.push({
+          bankname: nextresult.bankname,
+          amount: nextresult.amount,
+        });
+      }
+
+      return result;
+    }, []);
+
+    if (BankNames) {
+      Object.keys(BankNames).forEach((key) =>
+        firstBankName.push({ bankname: key, amount: BankNames[key] })
+      );
+    }
+
+    response.data = {
+      ...response.data,
+      BankTotal: BankTotal,
+      secondBank: secondBank,
+      firstBankName: firstBankName,
+      BankList: allBankResult,
+    };
+
+    // Example to add metadata to the response
+    const totalItems = await TreatmentVoucher.countDocuments(query);
+    const totalPages = Math.ceil(totalItems / limitNumber);
+
+    response._metadata = {
+      totalItems: totalItems,
+      totalPages: totalPages,
+      currentPage: pageNumber,
+      itemsPerPage: limitNumber,
+    };
+
+    return res.status(200).send(response);
+  } catch (error) {
+    return res.status(500).send({ error: true, message: error.message });
+  }
+};
+
+exports.treatmentFilterWithBankMS = async (req, res) => {
+  let response = {
+    success: true,
+    _metadata: {},
+    data: {},
+  };
+
+  try {
+    const {
+      startDate,
+      endDate,
+      createdBy,
+      purchaseType,
+      relatedDoctor,
+      bankType,
+      tsType,
+      relatedPatient,
+      bankID,
+      relatedBranch,
+      income,
+      page = 1,
+      limit = 30,
+    } = req.query;
+
+    let query = {
+      relatedBank: { $exists: true },
+      isDeleted: false,
+      relatedBranch: { $exists: true },
+    };
+
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+
+      // Check if the created Date objects are valid
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        return res.status(400).send({
+          error: true,
+          message: "Invalid startDate or endDate format.",
+        });
+      }
+
+      // Ensure the end date captures the full day
+      query.createdAt = {
+        $gte: start,
+        $lte: new Date(end.setHours(23, 59, 59, 999)), // End of the day
+      };
+    }
+    if (relatedPatient) query.relatedPatient = relatedPatient;
+    if (bankType) query.bankType = bankType;
+    if (createdBy) query.createdBy = mongoose.Types.ObjectId(createdBy);
+    if (bankID) query.relatedBank = bankID;
+    if (purchaseType) query.purchaseType = purchaseType;
+    if (relatedDoctor) query.relatedDoctor = relatedDoctor;
+    if (relatedBranch) {
+      query.relatedBranch = mongoose.Types.ObjectId(relatedBranch);
+    }
+    if (tsType) {
+      query.tsType = tsType;
+    } else {
+      query.tsType = "MS";
+    }
+
+    const pageNumber = parseInt(page);
+    const limitNumber = parseInt(limit);
+    const skipIndex = (pageNumber - 1) * limitNumber;
+
+    // Aggregate query for bank payments
+    const bankResult = await TreatmentVoucher.aggregate([
+      {
+        $match: {
+          ...query,
+          Refund: false,
+          paymentType: "Bank",
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalPaidAmountSum: { $sum: { $ifNull: ["$totalPaidAmount", 0] } },
+          msPaidAmount: { $sum: { $ifNull: ["$msPaidAmount", 0] } },
+          psPaidAmount: { $sum: { $ifNull: ["$psPaidAmount", 0] } },
+          paidAmount: { $sum: { $ifNull: ["$paidAmount", 0] } },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          totalPaidAmountSum: {
+            $add: [
+              "$totalPaidAmountSum",
+              "$msPaidAmount",
+              "$psPaidAmount",
+              "$paidAmount",
+            ],
+          },
+        },
+      },
+      {
+        $skip: skipIndex,
+      },
+      {
+        $limit: limitNumber,
+      },
+    ]);
+
+    // Process bankResult and populate as needed
+    console.log("Bank Result:", bankResult);
+
+    if (bankResult.length > 0) {
+      response.data.bankResult = bankResult[0]; // Assuming you want to set the first result
+    } else {
+      response.data.bankResult = {
+        totalPaidAmountSum: 0,
+        bankPaymentSum: 0,
+      };
+    }
+
+    // Example to add metadata to the response
+    const totalItems = await TreatmentVoucher.countDocuments(query);
+    const totalPages = Math.ceil(totalItems / limitNumber);
+
+    response._metadata = {
+      totalItems: totalItems,
+      totalPages: totalPages,
+      currentPage: pageNumber,
+      itemsPerPage: limitNumber,
+    };
+
+    return res.status(200).send(response);
+  } catch (error) {
+    return res.status(500).send({ error: true, message: error.message });
+  }
+};
+
+exports.treatmentFilterWithCashMS = async (req, res) => {
+  let response = {
+    success: true,
+    _metadata: {},
+    data: {},
+  };
+
+  try {
+    const {
+      startDate,
+      endDate,
+      createdBy,
+      purchaseType,
+      relatedDoctor,
+      bankType,
+      tsType,
+      relatedPatient,
+      bankID,
+      relatedBranch,
+      income,
+      page = 1,
+      limit = 30,
+    } = req.query;
+
+    let query = {
+      relatedBank: { $exists: true },
+      isDeleted: false,
+      relatedBranch: { $exists: true },
+    };
+
+    if (startDate && endDate) {
+      query.createdAt = {
+        $gte: new Date(startDate),
+        $lte: new Date(`${endDate}T23:59:59.999Z`),
+      };
+    }
+    if (relatedPatient) query.relatedPatient = relatedPatient;
+    if (bankType) query.bankType = bankType;
+    if (createdBy) query.createdBy = mongoose.Types.ObjectId(createdBy);
+    if (bankID) query.relatedBank = bankID;
+    if (purchaseType) query.purchaseType = purchaseType;
+    if (relatedDoctor) query.relatedDoctor = relatedDoctor;
+    if (relatedBranch) {
+      query.relatedBranch = mongoose.Types.ObjectId(relatedBranch);
+    }
+    if (tsType) {
+      query.tsType = tsType;
+    } else {
+      query.tsType = "MS";
+    }
+
+    const pageNumber = parseInt(page);
+    const limitNumber = parseInt(limit);
+    const skipIndex = (pageNumber - 1) * limitNumber;
+
+    // Aggregate query for bank payments
+    const bankResult = await TreatmentVoucher.aggregate([
+      {
+        $match: {
+          ...query,
+          Refund: false,
+          paymentType: "Cash",
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalPaidAmountSum: { $sum: { $ifNull: ["$totalPaidAmount", 0] } },
+          msPaidAmount: { $sum: { $ifNull: ["$msPaidAmount", 0] } },
+          psPaidAmount: { $sum: { $ifNull: ["$psPaidAmount", 0] } },
+          paidAmount: { $sum: { $ifNull: ["$paidAmount", 0] } },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          totalPaidAmountSum: {
+            $add: [
+              "$totalPaidAmountSum",
+              "$msPaidAmount",
+              "$psPaidAmount",
+              "$paidAmount",
+            ],
+          },
+        },
+      },
+      {
+        $skip: skipIndex,
+      },
+      {
+        $limit: limitNumber,
+      },
+    ]);
+
+    // Process bankResult and populate as needed
+    console.log("Bank Result:", bankResult);
+
+    if (bankResult.length > 0) {
+      response.data.bankResult = bankResult[0]; // Assuming you want to set the first result
+    } else {
+      response.data.bankResult = {
+        totalPaidAmountSum: 0,
+        bankPaymentSum: 0,
+      };
+    }
+
+    // Example to add metadata to the response
+    const totalItems = await TreatmentVoucher.countDocuments(query);
+    const totalPages = Math.ceil(totalItems / limitNumber);
+
+    response._metadata = {
+      totalItems: totalItems,
+      totalPages: totalPages,
+      currentPage: pageNumber,
+      itemsPerPage: limitNumber,
+    };
+
+    return res.status(200).send(response);
+  } catch (error) {
+    return res.status(500).send({ error: true, message: error.message });
+  }
+};
+
+exports.treatmentFilterWithBankTSMulti = async (req, res) => {
+  let response = {
+    success: true,
+    _metadata: {},
+    data: {},
+  };
+
+  try {
+    const {
+      startDate,
+      endDate,
+      createdBy,
+      purchaseType,
+      relatedDoctor,
+      bankType,
+      tsType,
+      relatedPatient,
+      bankID,
+      relatedBranch,
+      income,
+      page = 1,
+      limit = 30,
+    } = req.query;
+
+    let query = {
+      relatedBank: { $exists: true },
+      isDeleted: false,
+      relatedBranch: { $exists: true },
+    };
+
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+
+      // Check if the created Date objects are valid
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        return res.status(400).send({
+          error: true,
+          message: "Invalid startDate or endDate format.",
+        });
+      }
+
+      // Ensure the end date captures the full day
+      query.createdAt = {
+        $gte: start,
+        $lte: new Date(end.setHours(23, 59, 59, 999)), // End of the day
+      };
+    }
+
+    if (relatedPatient) query.relatedPatient = relatedPatient;
+    if (bankType) query.bankType = bankType;
+    if (createdBy) query.createdBy = mongoose.Types.ObjectId(createdBy);
+    if (bankID) query.relatedBank = bankID;
+    if (purchaseType) query.purchaseType = purchaseType;
+    if (relatedDoctor) query.relatedDoctor = relatedDoctor;
+    if (relatedBranch) {
+      query.relatedBranch = mongoose.Types.ObjectId(relatedBranch);
+    }
+    if (tsType) {
+      query.tsType = tsType;
+    } else {
+      query.tsType = "TSMulti";
+    }
+
+    const pageNumber = parseInt(page);
+    const limitNumber = parseInt(limit);
+    const skipIndex = (pageNumber - 1) * limitNumber;
+
+    // Aggregate query for bank payments
+    const bankResult = await TreatmentVoucher.aggregate([
+      {
+        $match: {
+          ...query,
+          Refund: false,
+          paymentType: "Bank",
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalPaidAmountSum: { $sum: { $ifNull: ["$totalPaidAmount", 0] } },
+          msPaidAmount: { $sum: { $ifNull: ["$msPaidAmount", 0] } },
+          psPaidAmount: { $sum: { $ifNull: ["$psPaidAmount", 0] } },
+          paidAmount: { $sum: { $ifNull: ["$paidAmount", 0] } },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          totalPaidAmountSum: {
+            $add: [
+              "$totalPaidAmountSum",
+              "$msPaidAmount",
+              "$psPaidAmount",
+              "$paidAmount",
+            ],
+          },
+        },
+      },
+      {
+        $skip: skipIndex,
+      },
+      {
+        $limit: limitNumber,
+      },
+    ]);
+
+    // Process bankResult and populate as needed
+    console.log("Bank Result:", bankResult);
+
+    if (bankResult.length > 0) {
+      response.data.bankResult = bankResult[0]; // Assuming you want to set the first result
+    } else {
+      response.data.bankResult = {
+        totalPaidAmountSum: 0,
+        bankPaymentSum: 0,
+      };
+    }
+
+    // Example to add metadata to the response
+    const totalItems = await TreatmentVoucher.countDocuments(query);
+    const totalPages = Math.ceil(totalItems / limitNumber);
+
+    response._metadata = {
+      totalItems: totalItems,
+      totalPages: totalPages,
+      currentPage: pageNumber,
+      itemsPerPage: limitNumber,
+    };
+
+    return res.status(200).send(response);
+  } catch (error) {
+    return res.status(500).send({ error: true, message: error.message });
+  }
+};
+
+exports.treatmentFilterWithCashTSMulti = async (req, res) => {
+  let response = {
+    success: true,
+    _metadata: {},
+    data: {},
+  };
+
+  try {
+    const {
+      startDate,
+      endDate,
+      createdBy,
+      purchaseType,
+      relatedDoctor,
+      bankType,
+      tsType,
+      relatedPatient,
+      bankID,
+      relatedBranch,
+      income,
+      page = 1,
+      limit = 30,
+    } = req.query;
+
+    let query = {
+      relatedBank: { $exists: true },
+      isDeleted: false,
+      relatedBranch: { $exists: true },
+    };
+
+    if (startDate && endDate) {
+      query.createdAt = {
+        $gte: new Date(startDate),
+        $lte: new Date(`${endDate}T23:59:59.999Z`),
+      };
+    }
+    if (relatedPatient) query.relatedPatient = relatedPatient;
+    if (bankType) query.bankType = bankType;
+    if (createdBy) query.createdBy = mongoose.Types.ObjectId(createdBy);
+    if (bankID) query.relatedBank = bankID;
+    if (purchaseType) query.purchaseType = purchaseType;
+    if (relatedDoctor) query.relatedDoctor = relatedDoctor;
+    if (relatedBranch) {
+      query.relatedBranch = mongoose.Types.ObjectId(relatedBranch);
+    }
+    if (tsType) {
+      query.tsType = tsType;
+    } else {
+      query.tsType = "TSMulti";
+    }
+
+    const pageNumber = parseInt(page);
+    const limitNumber = parseInt(limit);
+    const skipIndex = (pageNumber - 1) * limitNumber;
+
+    // Aggregate query for bank payments
+    const bankResult = await TreatmentVoucher.aggregate([
+      {
+        $match: {
+          ...query,
+          Refund: false,
+          paymentType: "Cash",
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalPaidAmountSum: { $sum: { $ifNull: ["$totalPaidAmount", 0] } },
+          msPaidAmount: { $sum: { $ifNull: ["$msPaidAmount", 0] } },
+          psPaidAmount: { $sum: { $ifNull: ["$psPaidAmount", 0] } },
+          paidAmount: { $sum: { $ifNull: ["$paidAmount", 0] } },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          totalPaidAmountSum: {
+            $add: [
+              "$totalPaidAmountSum",
+              "$msPaidAmount",
+              "$psPaidAmount",
+              "$paidAmount",
+            ],
+          },
+        },
+      },
+      {
+        $skip: skipIndex,
+      },
+      {
+        $limit: limitNumber,
+      },
+    ]);
+
+    // Process bankResult and populate as needed
+    console.log("Bank Result:", bankResult);
+
+    if (bankResult.length > 0) {
+      response.data.bankResult = bankResult[0]; // Assuming you want to set the first result
+    } else {
+      response.data.bankResult = {
+        totalPaidAmountSum: 0,
+        bankPaymentSum: 0,
+      };
+    }
+
+    // Example to add metadata to the response
+    const totalItems = await TreatmentVoucher.countDocuments(query);
+    const totalPages = Math.ceil(totalItems / limitNumber);
+
+    response._metadata = {
+      totalItems: totalItems,
+      totalPages: totalPages,
+      currentPage: pageNumber,
+      itemsPerPage: limitNumber,
+    };
+
+    return res.status(200).send(response);
+  } catch (error) {
+    return res.status(500).send({ error: true, message: error.message });
+  }
+};
+
+exports.NewTreatmentVoucherFilterCash = async (req, res) => {
+  let response = {
+    success: true,
+    _metadata: {},
+    data: {},
+  };
+
+  try {
+    const {
+      startDate,
+      endDate,
+      createdBy,
+      tsType,
+      relatedBranch,
+      page = 1,
+      limit = 30,
+    } = req.query;
+
+    // Construct the query based on provided parameters
+    let query = {
+      relatedBank: { $exists: true },
+      isDeleted: false,
+      relatedBranch: { $exists: true },
+    };
+
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+
+      // Check if the created Date objects are valid
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        return res.status(400).send({
+          error: true,
+          message: "Invalid startDate or endDate format.",
+        });
+      }
+
+      // Ensure the end date captures the full day
+      query.createdAt = {
+        $gte: start,
+        $lte: new Date(end.setHours(23, 59, 59, 999)), // End of the day
+      };
+    }
+
+    if (createdBy) query.createdBy = mongoose.Types.ObjectId(createdBy);
+    if (relatedBranch) {
+      query.relatedBranch = mongoose.Types.ObjectId(relatedBranch);
+    }
+    if (tsType) {
+      query.tsType = tsType;
+    } else {
+      query.tsType = { $in: ["TSMulti", "MS"] };
+    }
+
+    const pageNumber = parseInt(page);
+    const limitNumber = parseInt(limit);
+    const skipIndex = (pageNumber - 1) * limitNumber;
+
+    // Aggregate query for payment summary
+    const paymentResult = await TreatmentVoucher.aggregate([
+      {
+        $match: {
+          ...query,
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalPaidAmount: { $sum: { $ifNull: ["$totalPaidAmount", 0] } },
+          msPaidAmount: { $sum: { $ifNull: ["$msPaidAmount", 0] } },
+          paidAmount: { $sum: { $ifNull: ["$paidAmount", 0] } },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          sumPaidAmounts: {
+            $add: ["$totalPaidAmount", "$msPaidAmount", "$paidAmount"],
+          },
+          cashPaymentTypeSum: {
+            $cond: {
+              if: { $eq: ["$paymentType", "Cash"] },
+              then: {
+                $add: ["$totalPaidAmount", "$msPaidAmount", "$paidAmount"],
+              },
+              else: 0,
+            },
+          },
+        },
+      },
+      {
+        $skip: skipIndex,
+      },
+      {
+        $limit: limitNumber,
+      },
+    ]);
+
+    // Process paymentResult and populate as needed
+    console.log("Payment Result:", paymentResult);
+
+    if (paymentResult.length > 0) {
+      response.data.paymentResult = paymentResult[0]; // Assuming you want to set the first result
+    } else {
+      response.data.paymentResult = {
+        sumPaidAmounts: 0,
+        cashPaymentTypeSum: 0,
+      };
+    }
+
+    // Example to add metadata to the response
+    const totalItems = await TreatmentVoucher.countDocuments(query);
+    const totalPages = Math.ceil(totalItems / limitNumber);
+
+    response._metadata = {
+      totalItems: totalItems,
+      totalPages: totalPages,
+      currentPage: pageNumber,
+      itemsPerPage: limitNumber,
+    };
+
+    return res.status(200).send(response);
+  } catch (error) {
+    return res.status(500).send({ error: true, message: error.message });
+  }
+};
+
 exports.TreatmentVoucherFilter = async (req, res) => {
-  let secondBankAndCashAccount = {};
   let secondBankCashAmount = [];
   let firstBankName = [];
   let firstCashName = [];
@@ -1049,16 +1912,33 @@ exports.TreatmentVoucherFilter = async (req, res) => {
       limit = 30,
     } = req.query;
 
-    if (startDate && endDate)
-      query.createdAt = { $gte: startDate, $lte: endDate };
+    if (startDate && endDate) {
+      query.createdAt = {
+        $gte: startDate, // Converting to Date object
+        $lte: endDate, // End of day
+      };
+    }
+
     if (relatedPatient) query.relatedPatient = relatedPatient;
     if (bankType) query.bankType = bankType;
-    if (createdBy) query.createdBy = createdBy;
-    if (tsType) query.tsType = tsType;
+
+    if (createdBy) {
+      query.createdBy = mongoose.Types.ObjectId(createdBy); // Converting to ObjectId
+    }
+
     if (bankID) query.relatedBank = bankID;
     if (purchaseType) query.purchaseType = purchaseType;
     if (relatedDoctor) query.relatedDoctor = relatedDoctor;
-    if (relatedBranch) query.relatedBranch = relatedBranch;
+
+    if (relatedBranch) {
+      query.relatedBranch = mongoose.Types.ObjectId(relatedBranch); // Converting to ObjectId
+    }
+
+    if (tsType) {
+      query.tsType = tsType;
+    } else {
+      query.tsType = { $in: ["TSMulti", "MS"] }; // Default value when tsType is missing
+    }
 
     const pageNumber = parseInt(page);
     const limitNumber = parseInt(limit);
@@ -1069,6 +1949,8 @@ exports.TreatmentVoucherFilter = async (req, res) => {
     // if(getCaches){
     //     return res.status(200).send(getCaches)
     // }
+
+    console.log("Modified Query:", query);
 
     let bankResult = await TreatmentVoucher.find({ ...query, Refund: false })
       .populate(
@@ -1106,6 +1988,8 @@ exports.TreatmentVoucherFilter = async (req, res) => {
       })
       .skip(skipIndex)
       .limit(limitNumber);
+
+    console.log("Bank Result:", bankResult);
 
     let allBankResult = await TreatmentVoucher.find(query)
       .populate(
@@ -1285,10 +2169,6 @@ exports.TreatmentVoucherFilter = async (req, res) => {
           });
     }
 
-    // Add pagination metadata
-    const totalItems = await TreatmentVoucher.countDocuments(query);
-    const totalPages = Math.ceil(totalItems / limitNumber);
-
     //filter solid beauty
     const BankNames = bankResult.reduce(
       (
@@ -1296,7 +2176,6 @@ exports.TreatmentVoucherFilter = async (req, res) => {
         {
           Refund,
           relatedBank,
-          tsType,
           paidAmount,
           msPaidAmount,
           totalPaidAmount,
@@ -1344,6 +2223,9 @@ exports.TreatmentVoucherFilter = async (req, res) => {
         (sale.psPaidAmount || 0),
       0
     );
+
+    console.log("Bank Total", BankTotal);
+
     //     if( bankResult.secondAccount || cashResult.secondAccount ) {
     //         // if(bankResult.secondAccount && bankResult.secondAccount.relatedHeader.name === "Cash At Bank" ){
     //         //     const {name} =bankResult.secondAccount;
@@ -1418,6 +2300,10 @@ exports.TreatmentVoucherFilter = async (req, res) => {
         $lte: moment.tz("Asia/Yangon").format(endDate),
       };
     const totalRepay = await totalRepayFunction(queryRepay);
+
+    // Add pagination metadata
+    const totalItems = await TreatmentVoucher.countDocuments(query);
+    const totalPages = Math.ceil(totalItems / limitNumber);
 
     response.data = {
       ...response.data,

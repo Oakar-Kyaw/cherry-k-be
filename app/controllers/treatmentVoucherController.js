@@ -23,6 +23,7 @@ const KmaxVoucher = require("../models/kmaxVoucher");
 const MedicineItemsModel = require("../models/medicineItem");
 const MedicineItemsRecordModel = require("../models/medicineItemRecord");
 const MedicineSalesModel = require("../models/medicineSale");
+const BranchModel = require("../models/branch");
 const mongoose = require("mongoose");
 
 exports.combineMedicineSale = async (req, res) => {
@@ -319,6 +320,11 @@ exports.createSingleMedicineSale = async (req, res) => {
     // let checkDuplicate = await checkDuplicateVoucher({ tsType: tsType, msTotalAmount: msTotalAmount, relatedPatient: relatedPatient, createdAt: createdAt, relatedBranch: relatedBranch, medicineItems: medicineItems } )
     // console.log("d")
     // if(checkDuplicate) return res.status(403).send({success: false, message: "Duplicate Vouchers"})
+
+    const FindBranch = await BranchModel.findOne({ _id: relatedBranch });
+
+    const branchName = FindBranch.name;
+
     let day = new Date().toISOString();
     let today = day.split("T");
     const latestDocument = await TreatmentVoucher.find({
@@ -330,13 +336,22 @@ exports.createSingleMedicineSale = async (req, res) => {
       .sort({ _id: -1 })
       .limit(1)
       .exec();
+
     if (latestDocument.length === 0) {
-      req.body["code"] = "MVC-" + today[0].replace(/-/g, "") + "-1"; // if seq is undefined set initial patientID and seq
+      req.body["code"] =
+        "MVC-" + branchName + "-" + today[0].replace(/-/g, "") + "-1"; // if seq is undefined set initial patientID and seq
       req.body["seq"] = 1;
     }
+
     if (latestDocument.length > 0 && latestDocument[0].seq) {
       const increment = latestDocument[0].seq + 1;
-      req.body["code"] = "MVC-" + today[0].replace(/-/g, "") + "-" + increment; // if seq is undefined set initial patientID and seq
+      req.body["code"] =
+        "MVC-" +
+        branchName +
+        "-" +
+        today[0].replace(/-/g, "") +
+        "-" +
+        increment; // if seq is undefined set initial patientID and seq
       req.body["seq"] = increment;
     }
     if (medicineItems !== undefined) {

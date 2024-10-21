@@ -18,6 +18,7 @@ const cacheHelper = require("../helper/cacheHelper");
 const {
   checkDuplicateVoucher,
 } = require("../helper/checkDuplicateVoucherHelper");
+const BranchModel = require("../models/branch");
 
 exports.listMultiTreatmentSelections = async (req, res) => {
   let { keyword, role, limit, skip } = req.query;
@@ -285,14 +286,25 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
       .limit(1)
       .exec();
 
+    const FindBranch = await BranchModel.findOne({ _id: relatedBranch });
+
+    const branchName = FindBranch.name;
+
     if (latestDocument.length === 0) {
-      req.body["code"] = "TVC-" + today[0].replace(/-/g, "") + "-1"; // if seq is undefined set initial patientID and seq
+      req.body["code"] =
+        "TVC-" + branchName + "-" + today[0].replace(/-/g, "") + "-1"; // if seq is undefined set initial patientID and seq
       req.body["seq"] = 1;
     }
 
     if (latestDocument.length > 0 && latestDocument[0].seq) {
       const increment = latestDocument[0].seq + 1;
-      req.body["code"] = "TVC-" + today[0].replace(/-/g, "") + "-" + increment; // if seq is undefined set initial patientID and seq
+      req.body["code"] =
+        "TVC-" +
+        branchName +
+        "-" +
+        today[0].replace(/-/g, "") +
+        "-" +
+        increment; // if seq is undefined set initial patientID and seq
       req.body["seq"] = increment;
     }
 
@@ -1107,11 +1119,20 @@ exports.createTreatmentSelection = async (req, res, next) => {
         .limit(1)
         .exec();
 
+      const FindBranch = await BranchModel.findOne({ _id: relatedBranch });
+
+      const branchName = FindBranch.name;
+
       if (latestDocument.length === 0)
         dataTVC = {
           ...dataTVC,
           seq: 1,
-          code: "TVC-" + today.split("T")[0].replace(/-/g, "") + "-1",
+          code:
+            "TVC-" +
+            branchName +
+            "-" +
+            today.split("T")[0].replace(/-/g, "") +
+            "-1",
         }; // if seq is undefined set initial patientID and seq
 
       if (latestDocument.length > 0) {
@@ -1119,7 +1140,12 @@ exports.createTreatmentSelection = async (req, res, next) => {
         dataTVC = {
           ...dataTVC,
           code:
-            "TVC-" + today.split("T")[0].replace(/-/g, "") + "-" + increment,
+            "TVC-" +
+            branchName +
+            "-" +
+            today.split("T")[0].replace(/-/g, "") +
+            "-" +
+            increment,
           seq: increment,
         };
       }
@@ -1166,22 +1192,38 @@ exports.createTreatmentSelection = async (req, res, next) => {
         isMedicineProduct,
       };
       let today = new Date().toISOString();
+
       const latestDocument = await TreatmentVoucher.find({}, { seq: 1 })
         .sort({ _id: -1 })
         .limit(1)
         .exec();
+
+      const FindBranch = await BranchModel.findOne({ _id: relatedBranch });
+
+      const branchName = FindBranch.name;
+
       if (latestDocument.length === 0)
         dataTVC = {
           ...dataTVC,
           seq: 1,
-          code: "TVC-" + today.split("T")[0].replace(/-/g, "") + "-1",
+          code:
+            "TVC-" +
+            branchName +
+            "-" +
+            today.split("T")[0].replace(/-/g, "") +
+            "-1",
         }; // if seq is undefined set initial patientID and seq
       if (latestDocument.length > 0) {
         const increment = latestDocument[0].seq + 1;
         dataTVC = {
           ...dataTVC,
           code:
-            "TVC-" + today.split("T")[0].replace(/-/g, "") + "-" + increment,
+            "TVC-" +
+            branchName +
+            "-" +
+            today.split("T")[0].replace(/-/g, "") +
+            "-" +
+            increment,
           seq: increment,
         };
       }
@@ -1230,22 +1272,38 @@ exports.createTreatmentSelection = async (req, res, next) => {
         isMedicineProduct,
       };
       let today = new Date().toISOString();
+
       const latestDocument = await TreatmentVoucher.find({}, { seq: 1 })
         .sort({ _id: -1 })
         .limit(1)
         .exec();
+
+      const FindBranch = await BranchModel.findOne({ _id: relatedBranch });
+
+      const branchName = FindBranch.name;
+
       if (latestDocument.length === 0)
         dataTVC = {
           ...dataTVC,
           seq: 1,
-          code: "TVC-" + today.split("T")[0].replace(/-/g, "") + "-1",
+          code:
+            "TVC-" +
+            branchName +
+            "-" +
+            today.split("T")[0].replace(/-/g, "") +
+            "-1",
         }; // if seq is undefined set initial patientID and seq
       if (latestDocument.length > 0) {
         const increment = latestDocument[0].seq + 1;
         dataTVC = {
           ...dataTVC,
           code:
-            "TVC-" + today.split("T")[0].replace(/-/g, "") + "-" + increment,
+            "TVC-" +
+            branchName +
+            "-" +
+            today.split("T")[0].replace(/-/g, "") +
+            "-" +
+            increment,
           seq: increment,
         };
       }
@@ -1546,22 +1604,38 @@ exports.treatmentPayment = async (req, res, next) => {
         relatedDoctor: req.body.relatedDoctor,
       };
       let today = new Date().toISOString();
+
       const latestDocument = await TreatmentVoucher.find({}, { seq: 1 })
         .sort({ _id: -1 })
         .limit(1)
         .exec();
+
+      const FindBranch = await BranchModel.findOne({ _id: relatedBranch });
+
+      const branchName = FindBranch.name;
+
       if (latestDocument.length === 0)
         dataTVC = {
           ...dataTVC,
           seq: 1,
-          code: "TVC-" + today.split("T")[0].replace(/-/g, "") + "-1",
+          code:
+            "TVC-" +
+            branchName +
+            "-" +
+            today.split("T")[0].replace(/-/g, "") +
+            "-1",
         }; // if seq is undefined set initial patientID and seq
       if (latestDocument.length > 0) {
         const increment = latestDocument[0].seq + 1;
         dataTVC = {
           ...dataTVC,
           code:
-            "TVC-" + today.split("T")[0].replace(/-/g, "") + "-" + increment,
+            "TVC-" +
+            branchName +
+            "-" +
+            today.split("T")[0].replace(/-/g, "") +
+            "-" +
+            increment,
           seq: increment,
         };
       }

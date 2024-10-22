@@ -20,6 +20,15 @@ const {
 } = require("../helper/checkDuplicateVoucherHelper");
 const BranchModel = require("../models/branch");
 
+const branchShortNames = {
+  "Taungyi": "TGY",
+  "SanChaung": "SC",
+  "Thingangyun": "TGG",
+  "KShopping": "KS",
+  "Hlaing Thar Yar": "HTY",
+  "Tamwe": "TM",
+};
+
 exports.listMultiTreatmentSelections = async (req, res) => {
   let { keyword, role, limit, skip } = req.query;
   let count = 0;
@@ -290,9 +299,11 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
 
     const branchName = FindBranch.name;
 
+    const shortBranchName = branchShortNames[branchName] || branchName;
+
     if (latestDocument.length === 0) {
       req.body["code"] =
-        "TVC-" + branchName + "-" + today[0].replace(/-/g, "") + "-1"; // if seq is undefined set initial patientID and seq
+        "TVC-" + shortBranchName + "-" + today[0].replace(/-/g, "") + "-1"; // if seq is undefined set initial patientID and seq
       req.body["seq"] = 1;
     }
 
@@ -300,7 +311,7 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
       const increment = latestDocument[0].seq + 1;
       req.body["code"] =
         "TVC-" +
-        branchName +
+        shortBranchName +
         "-" +
         today[0].replace(/-/g, "") +
         "-" +
@@ -1123,13 +1134,15 @@ exports.createTreatmentSelection = async (req, res, next) => {
 
       const branchName = FindBranch.name;
 
+      const shortBranchName = branchShortNames[branchName] || branchName;
+
       if (latestDocument.length === 0)
         dataTVC = {
           ...dataTVC,
           seq: 1,
           code:
             "TVC-" +
-            branchName +
+            shortBranchName +
             "-" +
             today.split("T")[0].replace(/-/g, "") +
             "-1",
@@ -1141,7 +1154,7 @@ exports.createTreatmentSelection = async (req, res, next) => {
           ...dataTVC,
           code:
             "TVC-" +
-            branchName +
+            shortBranchName +
             "-" +
             today.split("T")[0].replace(/-/g, "") +
             "-" +
@@ -1202,13 +1215,15 @@ exports.createTreatmentSelection = async (req, res, next) => {
 
       const branchName = FindBranch.name;
 
+      const shortBranchName = branchShortNames[branchName] || branchName;
+
       if (latestDocument.length === 0)
         dataTVC = {
           ...dataTVC,
           seq: 1,
           code:
             "TVC-" +
-            branchName +
+            shortBranchName +
             "-" +
             today.split("T")[0].replace(/-/g, "") +
             "-1",
@@ -1219,7 +1234,7 @@ exports.createTreatmentSelection = async (req, res, next) => {
           ...dataTVC,
           code:
             "TVC-" +
-            branchName +
+            shortBranchName +
             "-" +
             today.split("T")[0].replace(/-/g, "") +
             "-" +
@@ -1282,13 +1297,15 @@ exports.createTreatmentSelection = async (req, res, next) => {
 
       const branchName = FindBranch.name;
 
+      const shortBranchName = branchShortNames[branchName] || branchName;
+
       if (latestDocument.length === 0)
         dataTVC = {
           ...dataTVC,
           seq: 1,
           code:
             "TVC-" +
-            branchName +
+            shortBranchName +
             "-" +
             today.split("T")[0].replace(/-/g, "") +
             "-1",
@@ -1299,7 +1316,7 @@ exports.createTreatmentSelection = async (req, res, next) => {
           ...dataTVC,
           code:
             "TVC-" +
-            branchName +
+            shortBranchName +
             "-" +
             today.split("T")[0].replace(/-/g, "") +
             "-" +
@@ -1614,13 +1631,15 @@ exports.treatmentPayment = async (req, res, next) => {
 
       const branchName = FindBranch.name;
 
+      const shortBranchName = branchShortNames[branchName] || branchName;
+
       if (latestDocument.length === 0)
         dataTVC = {
           ...dataTVC,
           seq: 1,
           code:
             "TVC-" +
-            branchName +
+            shortBranchName +
             "-" +
             today.split("T")[0].replace(/-/g, "") +
             "-1",
@@ -1631,7 +1650,7 @@ exports.treatmentPayment = async (req, res, next) => {
           ...dataTVC,
           code:
             "TVC-" +
-            branchName +
+            shortBranchName +
             "-" +
             today.split("T")[0].replace(/-/g, "") +
             "-" +

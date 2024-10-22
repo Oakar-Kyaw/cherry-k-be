@@ -298,6 +298,15 @@ exports.combineMedicineSale = async (req, res) => {
   });
 };
 
+const branchShortNames = {
+  "Taungyi": "TGY",
+  "SanChaung": "SC",
+  "Thingangyun": "TGG",
+  "KShopping": "KS",
+  "Hlaing Thar Yar": "HTY",
+  "Tamwe": "TM",
+};
+
 exports.createSingleMedicineSale = async (req, res) => {
   try {
     //clear cache of voucher list
@@ -325,6 +334,8 @@ exports.createSingleMedicineSale = async (req, res) => {
 
     const branchName = FindBranch.name;
 
+    const shortBranchName = branchShortNames[branchName] || branchName;
+
     let day = new Date().toISOString();
     let today = day.split("T");
     const latestDocument = await TreatmentVoucher.find({
@@ -339,7 +350,7 @@ exports.createSingleMedicineSale = async (req, res) => {
 
     if (latestDocument.length === 0) {
       req.body["code"] =
-        "MVC-" + branchName + "-" + today[0].replace(/-/g, "") + "-1"; // if seq is undefined set initial patientID and seq
+        "MVC-" + shortBranchName + "-" + today[0].replace(/-/g, "") + "-1"; // if seq is undefined set initial patientID and seq
       req.body["seq"] = 1;
     }
 
@@ -347,7 +358,7 @@ exports.createSingleMedicineSale = async (req, res) => {
       const increment = latestDocument[0].seq + 1;
       req.body["code"] =
         "MVC-" +
-        branchName +
+        shortBranchName +
         "-" +
         today[0].replace(/-/g, "") +
         "-" +
@@ -563,6 +574,13 @@ exports.getCodeMS = async (req, res) => {
       .sort({ _id: -1 })
       .limit(1)
       .exec();
+
+    // const FindBranch = await BranchModel.findOne({ _id: relatedBranch });
+
+    // const branchName = FindBranch.name;
+
+    // const shortBranchName = branchShortNames[branchName] || branchName;
+
     if (latestDocument.length === 0)
       data = {
         ...data,

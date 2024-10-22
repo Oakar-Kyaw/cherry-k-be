@@ -1,81 +1,83 @@
-'use strict';
+"use strict";
 
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 mongoose.promise = global.Promise;
 const Schema = mongoose.Schema;
-
 
 let StockEditTransactionSchema = new Schema({
   relatedBranch: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Branches'
+    ref: "Branches",
   },
   relatedEditUser: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Users"
+    ref: "Users",
   },
   relatedGeneralItems: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'GeneralItems'
+    ref: "GeneralItems",
   },
   relatedProcedureItems: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'ProcedureItems'
+    ref: "ProcedureItems",
   },
   relatedMedicineItems: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'MedicineItems'
+    ref: "MedicineItems",
   },
   relatedAccessoryItems: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'AccessoryItems'
+    ref: "AccessoryItems",
   },
   relatedMachine: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'FixedAssets'
+    ref: "FixedAssets",
   },
   editQty: {
-    type: Number
+    type: Number,
   },
   editTotalUnit: {
-    type: Number
+    type: Number,
   },
   currentQty: {
-    type: Number
+    type: Number,
   },
   totalUnit: {
-    type: Number
+    type: Number,
   },
   isDeleted: {
     type: Boolean,
     required: true,
-    default: false
+    default: false,
   },
   location: {
-    type: String
+    type: String,
   },
   editTime: {
-    type: String
+    type: String,
   },
   editEmail: {
-    type: String
+    type: String,
   },
   editPerson: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Users"
+    ref: "Users",
   },
   deleteTime: {
-    type: String
+    type: String,
   },
   deletePerson: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Users"
+    ref: "Users",
   },
   deleteEmail: {
-    type: String
+    type: String,
   },
 });
 
-module.exports = mongoose.model('StockEditTransactions', StockEditTransactionSchema);
+module.exports = mongoose.model(
+  "StockEditTransactions",
+  StockEditTransactionSchema
+);
 
 //Author: Oakar Kyaw

@@ -106,4 +106,8 @@ module.exports = (app) => {
   app
     .route("/api/treatment-vouchers/add-delivery-date/:id")
     .put(verifyToken, catchError(treatmentVoucher.addDeliveryInfo));
+
+  app
+    .route("/api/treatment-vouchers/phone-filter")
+    .get(catchError(treatmentVoucher.FilterTreatmentVoucherWithPhone));
 };

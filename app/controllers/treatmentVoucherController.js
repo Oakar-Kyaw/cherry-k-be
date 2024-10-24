@@ -25,6 +25,9 @@ const MedicineItemsRecordModel = require("../models/medicineItemRecord");
 const MedicineSalesModel = require("../models/medicineSale");
 const BranchModel = require("../models/branch");
 const mongoose = require("mongoose");
+const {
+  getTreatmentVoucherWithCustomerPhone,
+} = require("../helper/treatmentVoucherFilter");
 
 exports.combineMedicineSale = async (req, res) => {
   let data = req.body;
@@ -2851,5 +2854,22 @@ exports.addDeliveryInfo = async (req, res, next) => {
     });
   } catch (error) {
     return res.status(500).send({ error: true, message: error.message });
+  }
+};
+
+exports.FilterTreatmentVoucherWithPhone = async (req, res) => {
+  try {
+    const { phone } = req.query;
+
+    const result = await getTreatmentVoucherWithCustomerPhone(phone);
+
+    return res.status(200).send({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    return res
+      .status(500)
+      .send({ error: true, message: "Error on filter treatment voucher" });
   }
 };

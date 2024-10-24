@@ -10,7 +10,13 @@ const express = require("express"),
 const {
   startChangeStreams,
 } = require("./app/controllers/treatmentVoucherIsDeletedHandler");
-app.use(cors({ origin: "*" }));
+
+app.use(
+  cors({
+    origin: "*",
+    credentials: true, // Allow credentials (cookies, tokens) from any origin
+  })
+);
 // app.use(express.json());
 // app.use(express.urlencoded({extended:true}));
 // app.use(express.multipart());

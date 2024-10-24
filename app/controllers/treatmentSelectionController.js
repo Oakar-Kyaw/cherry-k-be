@@ -273,6 +273,9 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
       relatedBranch: relatedBranch,
       relatedDoctor: relatedDoctor,
       multiTreatment: multiTreatment,
+      paymentMethod: paymentType,
+      relatedBank: relatedBank,
+      relatedCash: relatedCash,
     });
 
     if (checkDuplicate)

@@ -306,15 +306,22 @@ exports.checkDuplicateVoucher = async (data) => {
     }
 
     if (v.paymentMethod === "Cash") {
-      return v.relatedCash?.toString() !== newRelatedCash?.toString();
+      return (
+        v.relatedCash &&
+        v.relatedCash.toString() !==
+          (newRelatedCash ? newRelatedCash.toString() : "")
+      );
     }
 
     if (v.paymentMethod === "Bank") {
-      return v.relatedBank?.toString() !== newRelatedBank?.toString();
-      t;
+      return (
+        v.relatedBank &&
+        v.relatedBank.toString() !==
+          (newRelatedBank ? newRelatedBank.toString() : "")
+      );
     }
 
-    return false; // Prevent opening if payment method and IDs are the same
+    return false;
   };
 
   for (const v of vouchers) {

@@ -13,10 +13,13 @@ const {
 
 app.use(
   cors({
-    origin: "*",
-    credentials: true, // Allow credentials (cookies, tokens) from any origin
+    origin: "http://cherrykpos.cherrykmyanmar.com",
+    methods: "GET,POST,PUT,DELETE",
+    allowedHeaders: "Content-Type,Authorization",
+    credentials: true,
   })
 );
+
 // app.use(express.json());
 // app.use(express.urlencoded({extended:true}));
 // app.use(express.multipart());

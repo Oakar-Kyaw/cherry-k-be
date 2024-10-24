@@ -301,18 +301,17 @@ exports.checkDuplicateVoucher = async (data) => {
     newRelatedCash,
     newRelatedBank
   ) => {
-    // Case 1: Different payment methods allow opening the voucher
     if (v.paymentMethod !== newPaymentMethod) {
-      return true; // Allow opening if the payment method has changed
+      return true;
     }
 
-    // Case 2: Same payment method, check IDs
     if (v.paymentMethod === "Cash") {
-      return v.relatedCash?.toString() !== newRelatedCash?.toString(); // Allow if relatedCash IDs are different
+      return v.relatedCash?.toString() !== newRelatedCash?.toString();
     }
 
     if (v.paymentMethod === "Bank") {
-      return v.relatedBank?.toString() !== newRelatedBank?.toString(); // Allow if relatedBank IDs are different
+      return v.relatedBank?.toString() !== newRelatedBank?.toString();
+      t;
     }
 
     return false; // Prevent opening if payment method and IDs are the same

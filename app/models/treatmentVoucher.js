@@ -317,6 +317,10 @@ let TreatmentVoucherSchema = new Schema({
     type: Boolean,
     default: false,
   },
+  relatedRefundPackage: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "RefundPackages",
+  },
 });
 
 module.exports = mongoose.model("TreatmentVouchers", TreatmentVoucherSchema);

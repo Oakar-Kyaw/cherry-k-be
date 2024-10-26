@@ -45,6 +45,22 @@ let RefundPackageSchema = new Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Branches",
   },
+  relatedBank: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "AccountingLists",
+  },
+  relatedCash: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "AccountingLists",
+  },
+  refundTotalAmount: {
+    type: Number,
+    default: 0,
+  },
+  refundPaymentType: {
+    type: String,
+    enum: ["Cash", "Bank"],
+  },
 });
 
 module.exports = mongoose.model("RefundPackages", RefundPackageSchema);

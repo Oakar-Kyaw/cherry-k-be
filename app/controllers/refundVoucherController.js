@@ -307,6 +307,10 @@ exports.RefundPackage = async (req, res, next) => {
       tsType,
       refundType,
       refundPerson,
+      relatedBank,
+      relatedCash,
+      refundTotalAmount,
+      refundPaymentType,
     } = req.body;
 
     const branchShortNames = {
@@ -371,6 +375,22 @@ exports.RefundPackage = async (req, res, next) => {
       replaceTreatmentId: replaceTreatment,
       voucherCode: voucherCode,
     };
+
+    if (relatedBank) {
+      formattedData.relatedBranch = relatedBank;
+    }
+
+    if (relatedCash) {
+      formattedData.relatedCash = relatedCash;
+    }
+
+    if (refundTotalAmount) {
+      formattedData.refundTotalAmount = refundTotalAmount;
+    }
+
+    if (refundPaymentType) {
+      formattedData.refundPaymentType = refundPaymentType;
+    }
 
     const refundPackage = await RefundPackageModel.create(formattedData);
 

@@ -296,6 +296,12 @@ exports.createRefundVoucher = async (req, res, next) => {
     res.status(500).send({ error: "can't created ", message: error.message });
   }
 };
+async function updateAmount(accountId, amount) {
+  return await AccountingList.findByIdAndUpdate(
+    { _id: accountId },
+    { $inc: { amount } }
+  );
+}
 
 exports.RefundPackage = async (req, res, next) => {
   try {
@@ -376,16 +382,20 @@ exports.RefundPackage = async (req, res, next) => {
       voucherCode: voucherCode,
     };
 
+    if (refundTotalAmount) {
+      formattedData.refundTotalAmount = refundTotalAmount;
+    }
+
     if (relatedBank) {
       formattedData.relatedBranch = relatedBank;
+
+      await updateAmount(relatedBank, refundTotalAmount);
     }
 
     if (relatedCash) {
       formattedData.relatedCash = relatedCash;
-    }
 
-    if (refundTotalAmount) {
-      formattedData.refundTotalAmount = refundTotalAmount;
+      await updateAmount(relatedBank, refundTotalAmount);
     }
 
     if (refundPaymentType) {

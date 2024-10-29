@@ -150,31 +150,41 @@ exports.getAppointment = async (req, res) => {
 };
 
 exports.createAppointment = async (req, res, next) => {
+  console.log("createAppointment function triggered");
+
   let data = req.body;
   data = { ...data, isGeneral: true }; // general filter
+  console.log("Request Body:", data);
+
   try {
     if (req.body.pstatus == "New") {
       const latestDocument = await Patient.find({}, { seq: 1 })
         .sort({ _id: -1 })
         .limit(1)
         .exec();
-      console.log(latestDocument);
-      if (latestDocument.length === 0)
-        data = { ...data, seq: "1", patientID: "CUS-1" }; // if seq is undefined set initial patientID and seq
-      console.log(data);
+
+      console.log("Latest Patient Document:", latestDocument);
+
+      if (latestDocument.length === 0) {
+        data = { ...data, seq: "1", patientID: "CUS-1" }; // Initial patientID and seq
+      }
+
       if (latestDocument.length) {
         const increment = latestDocument[0].seq + 1;
         data = { ...data, patientID: "CUS-" + increment, seq: increment };
       }
-      console.log(data);
+
       const newPatient = new Patient(data);
       var pResult = await newPatient.save();
+      console.log("New Patient Saved:", pResult);
+
       data = { ...data, relatedPatient: pResult._id };
     }
-    // const dateAndTime = formatDateAndTime(req.body.originalDate)
-    // const newBody = { ...req.body, date: dateAndTime[0], time: dateAndTime[1] }
+
     const newAppointment = new Appointment(data);
     const result = await newAppointment.save();
+    console.log("New Appointment Saved:", result);
+
     res.status(200).send({
       message: "Appointment create success",
       success: true,
@@ -182,6 +192,7 @@ exports.createAppointment = async (req, res, next) => {
       patientResult: pResult,
     });
   } catch (error) {
+    console.error("Error occurred:", error);
     return res.status(500).send({ error: true, message: error.message });
   }
 };

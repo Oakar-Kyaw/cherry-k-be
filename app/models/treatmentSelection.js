@@ -113,7 +113,7 @@ let TreatmentSelectionSchema = new Schema({
   },
   selectionStatus: {
     type: String,
-    enum: ["Ongoing", "Done"],
+    enum: ["Ongoing", "Done", "Due"],
   },
   relatedPatient: {
     type: mongoose.Schema.Types.ObjectId,
@@ -215,6 +215,10 @@ let TreatmentSelectionSchema = new Schema({
   },
   deleteEmail: {
     type: String,
+  },
+  dueDate: {
+    type: Date,
+    default: Date.now,
   },
 });
 const patient = mongoose.model("TreatmentSelections", TreatmentSelectionSchema);

@@ -133,11 +133,14 @@ exports.appointmentGenerate = async (req, res) => {
     relatedTreatment,
     phone,
   } = req.body;
+
   console.log("req.body", req.body);
+
   if (originalDate === undefined)
     return res
       .status(500)
       .send({ error: true, message: "Original Date is required" });
+
   const appointmentConfig = {
     relatedPatient: relatedPatient,
     relatedDoctor: relatedDoctor,
@@ -150,6 +153,7 @@ exports.appointmentGenerate = async (req, res) => {
   };
 
   const numTreatments = treatmentTimes;
+
   for (let i = 0; i < numTreatments; i++) {
     const date = new Date(appointmentConfig.originalDate);
     date.setDate(date.getDate() + i * inBetweenDuration); // Add 7 days for each iteration
@@ -165,19 +169,25 @@ exports.appointmentGenerate = async (req, res) => {
   const dividedPrice = (totalAmount / treatmentTimes).toFixed(2);
   const perAppointmentPrices = (totalAmount / treatmentTimes).toFixed(2);
   const deferRevenues = totalAmount;
+
   console.log(
     "reached ",
     JSON.stringify(perAppointmentPrices),
     JSON.stringify(deferRevenues)
   );
+
   console.log(
     "relatedTreatmentSelction",
     req.body.relatedTreatmentSelection,
     relatedAppointments
   );
+
   const treatmentSelectionUpdate = await TreatmentSelection.findOneAndUpdate(
     { _id: req.body.relatedTreatmentSelection },
-    { $push: { relatedAppointments: relatedAppointments } }, // perAppointmentPrices, deferRevenues,
+    {
+      $push: { relatedAppointments: relatedAppointments },
+      dueDate: req.body.originalDate,
+    }, // perAppointmentPrices, deferRevenues,
     { new: true }
   );
 

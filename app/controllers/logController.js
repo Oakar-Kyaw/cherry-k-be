@@ -8,6 +8,7 @@ const Usage = require("../models/usage");
 const Stock = require("../models/stock");
 const UsageRecords = require("../models/usageRecord");
 const Appointment = require("../models/appointment");
+const TreatmentSelection = require("../models/treatmentSelection");
 
 const {
   updateStocksBasedOnUsage,
@@ -828,6 +829,14 @@ exports.createUsage = async (req, res) => {
         },
         { new: true }
       );
+
+      if (status === "Finished") {
+        await TreatmentSelection.findOneAndUpdate(
+          { _id: relatedTreatmentSelection },
+          { $unset: { dueDate: "" } }
+        );
+      }
+
       var usageRecordResult = await UsageRecords.create({
         relatedUsage: usageUpdate._id,
         usageStatus: status,

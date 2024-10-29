@@ -1,5 +1,7 @@
 "use strict";
 const Patient = require("../models/patient");
+const TreatmentSelections = require("../models/treatmentSelection");
+const TreatmentVoucherModel = require("../models/treatmentVoucher");
 const Attachment = require("../models/attachment");
 const Physical = require("../models/physicalExamination");
 const History = require("../models/history");
@@ -322,6 +324,35 @@ exports.filterPatientInfo = async (req, res, next) => {
   try {
     const patients = await filterPatient(name, phone, relatedBranch);
     return res.status(200).send({ success: true, data: patients });
+  } catch (error) {
+    return res.status(500).send({ error: true, message: error.message });
+  }
+};
+
+exports.getTreatmentVoucher = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const patientDoc = await Patient.findById(id);
+
+    if (!patientDoc)
+      return res
+        .status(404)
+        .send({ error: true, message: "Patient not found!" });
+
+    const { relatedTreatmentSelection } = patientDoc;
+
+    const getTreatmentVoucher = relatedTreatmentSelection.map((voucher) => {
+      return TreatmentVoucherModel.find({
+        relatedTreatmentSelection: voucher,
+      });
+    });
+
+    const result = await Promise.all(getTreatmentVoucher);
+
+    const flattenResult = result.flat();
+
+    return res.status(200).send({ success: true, data: flattenResult });
   } catch (error) {
     return res.status(500).send({ error: true, message: error.message });
   }

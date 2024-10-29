@@ -41,4 +41,8 @@ module.exports = (app) => {
   app
     .route("/api/patients/filter/info")
     .get(catchError(patient.filterPatientInfo));
+
+  app
+    .route("/api/patients/get-voucher/:id")
+    .get(catchError(patient.getTreatmentVoucher));
 };

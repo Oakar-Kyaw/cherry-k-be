@@ -345,7 +345,7 @@ exports.getTreatmentVoucher = async (req, res) => {
     const getTreatmentVoucher = relatedTreatmentSelection.map((voucher) => {
       return TreatmentVoucherModel.find({
         relatedTreatmentSelection: voucher,
-      });
+      }).populate("relatedPatient relatedTreatmentSelection relatedTreatment");
     });
 
     const result = await Promise.all(getTreatmentVoucher);

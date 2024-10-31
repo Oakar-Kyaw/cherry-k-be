@@ -114,6 +114,7 @@ let TreatmentSelectionSchema = new Schema({
   selectionStatus: {
     type: String,
     enum: ["Ongoing", "Done", "Due"],
+    default: "Due",
   },
   relatedPatient: {
     type: mongoose.Schema.Types.ObjectId,

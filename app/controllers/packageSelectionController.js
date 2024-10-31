@@ -150,6 +150,7 @@ exports.appointmentGenerate = async (req, res) => {
     relatedPackageSelection: relatedPackageSelection,
     relatedTreatmentSelection: relatedTreatmentSelection,
     relatedTreatment: relatedTreatment,
+    usageStatus: "Due",
   };
 
   const numTreatments = treatmentTimes;
@@ -187,6 +188,7 @@ exports.appointmentGenerate = async (req, res) => {
     {
       $push: { relatedAppointments: relatedAppointments },
       dueDate: req.body.originalDate,
+      selectionStatus: "Ongoing",
     }, // perAppointmentPrices, deferRevenues,
     { new: true }
   );

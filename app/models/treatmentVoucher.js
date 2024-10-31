@@ -321,6 +321,9 @@ let TreatmentVoucherSchema = new Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "RefundPackages",
   },
+  // dueDate: {
+  //   type: Date,
+  // },
 });
 
 module.exports = mongoose.model("TreatmentVouchers", TreatmentVoucherSchema);

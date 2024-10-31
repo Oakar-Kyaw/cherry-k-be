@@ -521,6 +521,7 @@ exports.createMultiTreatmentSelection = async (req, res, next) => {
         createdAt: req.body.createdAt,
         balance: req.body.balance,
         isMedicineProduct: isMedicineProduct,
+        // dueDate: req.body.dueDate,
       };
 
       dataTVC.multiTreatment = parsedMulti;
@@ -1124,6 +1125,7 @@ exports.createTreatmentSelection = async (req, res, next) => {
         paidAmount: req.body.paidAmount,
         balance: req.body.balance,
         isMedicineProduct,
+        // dueDate: req.body.dueDate,
       };
 
       let today = new Date().toISOString();
@@ -1206,6 +1208,7 @@ exports.createTreatmentSelection = async (req, res, next) => {
         relatedDiscount: req.body.relatedDiscount,
         relatedDoctor: req.body.relatedDoctor,
         isMedicineProduct,
+        // dueDate: req.body.dueDate,
       };
       let today = new Date().toISOString();
 
@@ -1288,6 +1291,7 @@ exports.createTreatmentSelection = async (req, res, next) => {
         relatedDiscount: req.body.relatedDiscount,
         relatedDoctor: req.body.relatedDoctor,
         isMedicineProduct,
+        // dueDate: req.body.dueDate,
       };
       let today = new Date().toISOString();
 
@@ -1622,6 +1626,7 @@ exports.treatmentPayment = async (req, res, next) => {
         payment: attachID,
         relatedDiscount: req.body.relatedDiscount,
         relatedDoctor: req.body.relatedDoctor,
+        // dueDate: req.body.dueDate,
       };
       let today = new Date().toISOString();
 

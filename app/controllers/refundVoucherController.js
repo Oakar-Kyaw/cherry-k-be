@@ -10,6 +10,7 @@ const ProcedureItem = require("../models/procedureItem");
 const cacheHelper = require("../helper/cacheHelper");
 const RefundPackageModel = require("../models/refundPackage");
 const BranchModels = require("../models/branch");
+const TreatmentsModel = require("../models/treatment");
 
 //loopItems function
 const loopItems = (length, fn) => {
@@ -296,17 +297,50 @@ exports.createRefundVoucher = async (req, res, next) => {
     res.status(500).send({ error: "can't created ", message: error.message });
   }
 };
-async function updateAmount(accountId, amount) {
-  return await AccountingList.findByIdAndUpdate(
-    { _id: accountId },
-    { $inc: { amount } }
-  );
+
+async function updateAmount(
+  accountId,
+  refundAmount = 0,
+  refundType,
+  payAmount = 0
+) {
+  console.log("Update Amount", accountId, refundAmount, refundType, payAmount);
+
+  const updateOperation = {};
+
+  if (refundType === "CashBack") {
+    updateOperation.$inc = { amount: -refundAmount };
+  } else if (refundType === "Treatment") {
+    if (refundAmount >= 0) {
+      updateOperation.$inc = { amount: -refundAmount };
+    } else if (payAmount >= 0) {
+      updateOperation.$inc = { amount: payAmount };
+    }
+  } else {
+    throw new Error("Invalid refund type");
+  }
+
+  console.log("Update Operation", updateOperation);
+
+  try {
+    const result = await AccountingList.findByIdAndUpdate(
+      accountId,
+      updateOperation,
+      { new: true }
+    );
+
+    console.log("Update Result:", result);
+  } catch (error) {
+    console.error("Error updating amount:", error);
+  }
 }
 
 exports.RefundPackage = async (req, res, next) => {
   try {
     let {
       oldTreatmentVoucher,
+      oldReplaceTreatment,
+      differenceAmount,
       replaceTreatment,
       relatedPatient,
       relatedBranch,
@@ -317,7 +351,13 @@ exports.RefundPackage = async (req, res, next) => {
       relatedCash,
       refundTotalAmount,
       refundPaymentType,
+      payAmount,
+      refundAmount,
+      remark,
+      refundDate,
     } = req.body;
+
+    console.log("Body", req.body);
 
     const branchShortNames = {
       "Taungyi": "TGY",
@@ -331,6 +371,7 @@ exports.RefundPackage = async (req, res, next) => {
     const treatmentVoucher = await TreatmentVoucher.findById(
       oldTreatmentVoucher
     );
+
     if (!treatmentVoucher) {
       return res.status(404).send({ error: "Treatment Voucher not found" });
     }
@@ -339,29 +380,24 @@ exports.RefundPackage = async (req, res, next) => {
     const branchName = FindBranch.name;
     const shortBranchName = branchShortNames[branchName] || branchName;
 
-    const currentDate = new Date();
-    const dateCode = `${currentDate.getDate()}${
-      currentDate.getMonth() + 1
-    }${String(currentDate.getFullYear()).slice(-2)}`;
+    const day = new Date().toISOString();
+    const today = day.split("T")[0].replace(/-/g, "");
 
-    const latestVoucher = await TreatmentVoucher.findOne({
-      createdAt: {
-        $gte: new Date(currentDate.setHours(0, 0, 0, 0)),
-        $lt: new Date(currentDate.setHours(23, 59, 59, 999)),
-      },
+    const latestVoucher = await RefundPackageModel.findOne({
       relatedBranch: relatedBranch,
-      Refund: false,
       isDeleted: false,
-      tsType: { $in: ["TS", "TSMulti"] },
     })
-      .sort({ createdAt: -1 })
+      .sort({ _id: -1 })
+      .limit(1)
       .exec();
+
+    console.log("Latest Voucher", latestVoucher);
 
     let sequenceNumber = 1;
 
     if (latestVoucher && latestVoucher.voucherCode) {
       const lastSequence = parseInt(
-        latestVoucher.voucherCode.split("-")[3],
+        latestVoucher.voucherCode.split("-").pop(),
         10
       );
       sequenceNumber = lastSequence + 1;
@@ -369,7 +405,11 @@ exports.RefundPackage = async (req, res, next) => {
 
     const formattedSequence = String(sequenceNumber).padStart(3, "0");
 
-    const voucherCode = `TVC-RF-${dateCode}-${shortBranchName}-${formattedSequence}`;
+    console.log("Sequence Number", sequenceNumber, formattedSequence);
+
+    const prefix = tsType === "MS" ? "MVC-RF" : "TVC-RF";
+
+    const voucherCode = `${prefix}-${today}-${shortBranchName}-${formattedSequence}`;
 
     const formattedData = {
       relatedTreatmentVoucherId: oldTreatmentVoucher,
@@ -380,22 +420,30 @@ exports.RefundPackage = async (req, res, next) => {
       relatedBranch: relatedBranch,
       replaceTreatmentId: replaceTreatment,
       voucherCode: voucherCode,
+      oldReplaceTreatment: oldReplaceTreatment,
+      remark: remark,
+      differenceAmount: differenceAmount || 0,
+      refundDate: refundDate,
+      payAmount: payAmount,
+      refundAmount: refundAmount || refundTotalAmount || differenceAmount || 0,
     };
 
-    if (refundTotalAmount) {
-      formattedData.refundTotalAmount = refundTotalAmount;
+    console.log("Formatted Data", formattedData);
+
+    if (refundAmount && relatedBank) {
+      await updateAmount(relatedBank, refundAmount, refundType, payAmount);
     }
 
-    if (relatedBank) {
-      formattedData.relatedBranch = relatedBank;
-
-      await updateAmount(relatedBank, refundTotalAmount);
+    if (refundAmount && relatedCash) {
+      await updateAmount(relatedCash, refundAmount, refundType, payAmount);
     }
 
-    if (relatedCash) {
-      formattedData.relatedCash = relatedCash;
+    if (payAmount && relatedBank) {
+      await updateAmount(relatedBank, payAmount, refundType, payAmount);
+    }
 
-      await updateAmount(relatedBank, refundTotalAmount);
+    if (payAmount && relatedCash) {
+      await updateAmount(relatedCash, payAmount, refundType, payAmount);
     }
 
     if (refundPaymentType) {
@@ -404,17 +452,53 @@ exports.RefundPackage = async (req, res, next) => {
 
     const refundPackage = await RefundPackageModel.create(formattedData);
 
-    await TreatmentVoucher.findByIdAndUpdate(
-      { _id: oldTreatmentVoucher },
-      {
-        Refund: true,
-        relatedRefundPackage: refundPackage._id,
+    const newTreatment = await TreatmentsModel.findById(replaceTreatment);
+
+    if (tsType !== "MS") {
+      if (!newTreatment) {
+        return res.status(404).send({ error: "New Treatment not found" });
       }
-    );
+
+      await TreatmentVoucher.updateOne(
+        {
+          _id: oldTreatmentVoucher,
+          "multiTreatment.item_id": oldReplaceTreatment,
+        },
+        {
+          $set: {
+            Refund: true,
+            relatedRefundPackage: refundPackage._id,
+            "multiTreatment.$.item_id": replaceTreatment,
+            "multiTreatment.$.price": newTreatment.sellingPrice,
+          },
+        }
+      );
+
+      const relatedTreatmentSelectionIds =
+        treatmentVoucher.relatedTreatmentSelection.map((ts) => ts._id);
+
+      await Promise.all(
+        relatedTreatmentSelectionIds.map(async (selectionId) => {
+          await TreatmentSelection.updateOne(
+            {
+              _id: selectionId,
+              "multiTreatment.item_id": oldReplaceTreatment,
+            },
+            {
+              $set: {
+                Refund: true,
+                relatedRefundPackage: refundPackage._id,
+                "multiTreatment.$.item_id": replaceTreatment,
+                "multiTreatment.$.price": newTreatment.sellingPrice,
+              },
+            }
+          );
+        })
+      );
+    }
 
     res.status(200).send({
       message: "Refund Package created successfully",
-      refundPackage: refundPackage,
     });
   } catch (error) {
     res
@@ -424,33 +508,42 @@ exports.RefundPackage = async (req, res, next) => {
 };
 
 exports.getAllRefundPackage = async (req, res, next) => {
-  let { relatedBranch, page = 1, limit = 10 } = req.query;
+  let { relatedBranch, startDate, endDate } = req.query;
 
-  page = parseInt(page);
-  limit = parseInt(limit);
+  // page = parseInt(page);
+  // limit = parseInt(limit);
 
   try {
-    const skip = (page - 1) * limit;
+    // const skip = (page - 1) * limit;
 
-    const refundPackages = await RefundPackageModel.find({
-      relatedBranch: relatedBranch,
-    })
-      .populate("relatedTreatmentVoucherId relatedPatient")
-      .skip(skip)
-      .limit(limit)
+    // Build the query object
+    let query = { relatedBranch: relatedBranch };
+
+    // Add date filter to the query if startDate and endDate are provided
+    if (startDate && endDate) {
+      query.refundDate = {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate),
+      };
+    }
+
+    const refundPackages = await RefundPackageModel.find(query)
+      .populate(
+        "relatedTreatmentVoucherId relatedPatient oldReplaceTreatment replaceTreatmentId relatedBranch relatedBank relatedCash"
+      )
       .exec();
+    // .skip(skip)
+    // .limit(limit)
 
-    const totalRefundPackages = await RefundPackageModel.countDocuments({
-      relatedBranch: relatedBranch,
-    });
+    // const totalRefundPackages = await RefundPackageModel.countDocuments(query);
 
-    const totalPages = Math.ceil(totalRefundPackages / limit);
+    // const totalPages = Math.ceil(totalRefundPackages / limit);
 
     res.status(200).send({
       refundPackages: refundPackages,
-      totalPages: totalPages,
-      currentPage: page,
-      totalRefundPackages: totalRefundPackages,
+      // totalPages: totalPages,
+      // currentPage: page,
+      // totalRefundPackages: totalRefundPackages,
     });
   } catch (error) {
     res.status(500).send({

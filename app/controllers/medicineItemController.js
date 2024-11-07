@@ -57,7 +57,11 @@ exports.getMedicineItem = async (req, res) => {
   // let query = req.mongoQuery;
   // query = { ...query, _id: req.params.id }
   const query = req.params;
-  const result = await MedicineItem.find(query).populate("name");
+  const result = await MedicineItem.find({
+    _id: req.params.id,
+    isDeleted: false,
+  }).populate("name");
+
   if (!result)
     return res.status(500).json({ error: true, message: "No Record Found" });
   return res.status(200).send({ success: true, data: result });

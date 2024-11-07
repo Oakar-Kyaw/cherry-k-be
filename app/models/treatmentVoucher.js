@@ -317,10 +317,12 @@ let TreatmentVoucherSchema = new Schema({
     type: Boolean,
     default: false,
   },
-  relatedRefundPackage: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "RefundPackages",
-  },
+  relatedRefundPackage: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "RefundPackages",
+    },
+  ],
   // dueDate: {
   //   type: Date,
   // },

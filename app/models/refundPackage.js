@@ -17,25 +17,41 @@ let RefundPackageSchema = new Schema({
     type: Date,
     default: Date.now,
   },
-  replaceTreatmentId: [
-    {
-      item_id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Treatments",
-      },
-    },
-  ],
+  replaceTreatmentId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Treatments",
+  },
+  differenceAmount: {
+    type: Number,
+    default: 0,
+  },
+  oldReplaceTreatment: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Treatments",
+  },
   relatedPatient: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Patients",
   },
+  payAmount: {
+    type: Number,
+    default: 0,
+  },
+  refundAmount: {
+    type: Number,
+    default: 0,
+  },
+  treatmentRefundCondition: {
+    type: String,
+    enum: ["Pay", "Recieve"],
+  },
   tsType: {
     type: String,
-    enum: ["TS", "TSMulti"],
+    enum: ["TS", "TSMulti", "MS"],
   },
   refundType: {
     type: String,
-    enum: ["Treatment", "Package"],
+    enum: ["Treatment", "Refund", "CashBack"],
   },
   refundPerson: {
     type: mongoose.Schema.Types.ObjectId,
@@ -60,6 +76,9 @@ let RefundPackageSchema = new Schema({
   refundPaymentType: {
     type: String,
     enum: ["Cash", "Bank"],
+  },
+  remark: {
+    type: String,
   },
 });
 

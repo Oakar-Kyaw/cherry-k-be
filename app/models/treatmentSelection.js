@@ -221,6 +221,12 @@ let TreatmentSelectionSchema = new Schema({
     type: Date,
     default: Date.now,
   },
+  relatedRefundPackage: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "RefundPackages",
+    },
+  ],
 });
 const patient = mongoose.model("TreatmentSelections", TreatmentSelectionSchema);
 module.exports = patient;

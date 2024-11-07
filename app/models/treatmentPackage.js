@@ -33,75 +33,99 @@ const treatmentPackageSchema = Schema({
   ],
   TCLSellingPrice: {
     type: Number,
+    default: 0,
   },
   TCLEstimateTotalPrice: {
     type: Number,
+    default: 0,
   },
   SOKSellingPrice: {
     type: Number,
+    default: 0,
   },
   SOKEstimateTotalPrice: {
     type: Number,
+    default: 0,
   },
   TGISellingPrice: {
     type: Number,
+    default: 0,
   },
   TGIEstimateTotalPrice: {
     type: Number,
+    default: 0,
   },
   EightMileSellingPrice: {
     type: Number,
+    default: 0,
   },
   EightMileEstimateTotalPrice: {
     type: Number,
+    default: 0,
   },
   NPTSellingPrice: {
     type: Number,
+    default: 0,
   },
   NPTEstimateTotalPrice: {
     type: Number,
+    default: 0,
   },
   LSHSellingPrice: {
     type: Number,
+    default: 0,
   },
   LSHEstimateTotalPrice: {
     type: Number,
+    default: 0,
   },
   MDYSellingPrice: {
     type: Number,
+    default: 0,
   },
   MDYEstimateTotalPrice: {
     type: Number,
+    default: 0,
   },
   KShoppingSellingPrice: {
     type: Number,
+    default: 0,
   },
   KShoppingEstimateTotalPrice: {
     type: Number,
+    default: 0,
   },
   SanChaungSellingPrice: {
     type: Number,
+    default: 0,
   },
   SanChaungEstimateTotalPrice: {
     type: Number,
+    default: 0,
   },
   ThingangyunSellingPrice: {
     type: Number,
+    default: 0,
   },
   ThingangyunEstimateTotalPrice: {
     type: Number,
+    default: 0,
   },
   HlaingTharYarSellingPrice: {
     type: Number,
+    default: 0,
   },
   HlaingTharYarEstimateTotalPrice: {
     type: Number,
+    default: 0,
   },
   TamweSellingPrice: {
     type: Number,
+    default: 0,
   },
   TamweEstimateTotalPrice: {
     type: Number,
+    default: 0,
   },
   relatedBranch: {
     type: mongoose.Schema.Types.ObjectId,

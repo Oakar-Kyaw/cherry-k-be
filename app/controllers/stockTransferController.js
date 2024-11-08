@@ -196,7 +196,7 @@ exports.createStockTransfer = async (req, res, next) => {
     case "KNAS":
       secID = "651f84c519683c5a91239741";
       break;
-    case "SanChaung":
+    case "SanChung":
       secID = "6535f7fef68b0525e0eaf151";
       break;
     case "Thingangyun":

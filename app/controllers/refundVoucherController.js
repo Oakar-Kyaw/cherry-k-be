@@ -426,6 +426,8 @@ exports.RefundPackage = async (req, res, next) => {
       refundDate: refundDate,
       payAmount: payAmount,
       refundAmount: refundAmount || refundTotalAmount || differenceAmount || 0,
+      relatedBank: relatedBank ? relatedBank : null,
+      relatedCash: relatedCash ? relatedCash : null,
     };
 
     console.log("Formatted Data", formattedData);
@@ -452,9 +454,9 @@ exports.RefundPackage = async (req, res, next) => {
 
     const refundPackage = await RefundPackageModel.create(formattedData);
 
-    const newTreatment = await TreatmentsModel.findById(replaceTreatment);
+    if (tsType !== "MS" && replaceTreatment) {
+      const newTreatment = await TreatmentsModel.findById(replaceTreatment);
 
-    if (tsType !== "MS") {
       if (!newTreatment) {
         return res.status(404).send({ error: "New Treatment not found" });
       }
@@ -528,8 +530,14 @@ exports.getAllRefundPackage = async (req, res, next) => {
     }
 
     const refundPackages = await RefundPackageModel.find(query)
+      .populate({
+        path: "relatedTreatmentVoucherId",
+        populate: {
+          path: "relatedPatient",
+        },
+      })
       .populate(
-        "relatedTreatmentVoucherId relatedPatient oldReplaceTreatment replaceTreatmentId relatedBranch relatedBank relatedCash"
+        "relatedPatient oldReplaceTreatment replaceTreatmentId relatedBranch relatedBank relatedCash"
       )
       .exec();
     // .skip(skip)

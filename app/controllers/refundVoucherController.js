@@ -425,7 +425,7 @@ exports.RefundPackage = async (req, res, next) => {
       differenceAmount: differenceAmount || 0,
       refundDate: refundDate,
       payAmount: payAmount,
-      refundAmount: refundAmount || refundTotalAmount || differenceAmount || 0,
+      refundAmount: refundAmount || refundTotalAmount || 0,
       relatedBank: relatedBank ? relatedBank : null,
       relatedCash: relatedCash ? relatedCash : null,
     };
@@ -453,6 +453,20 @@ exports.RefundPackage = async (req, res, next) => {
     }
 
     const refundPackage = await RefundPackageModel.create(formattedData);
+
+    if (refundType === "CashBack") {
+      await TreatmentVoucher.updateOne(
+        {
+          _id: oldTreatmentVoucher,
+        },
+        {
+          $set: {
+            Refund: true,
+            relatedRefundPackage: refundPackage._id,
+          },
+        }
+      );
+    }
 
     if (tsType !== "MS" && replaceTreatment) {
       const newTreatment = await TreatmentsModel.findById(replaceTreatment);

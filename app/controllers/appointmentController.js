@@ -386,6 +386,7 @@ exports.updateAppointment = async (req, res, next) => {
       .populate("relatedPatient")
       .populate("relatedDoctor")
       .populate("relatedTherapist relatedNurse");
+
     if (relatedPatient) {
       const patientUpdate = await Patient.findOneAndUpdate(
         { _id: relatedPatient },
@@ -397,10 +398,13 @@ exports.updateAppointment = async (req, res, next) => {
     let actualRevenue =
       treatmentSelectQuery.actualRevenue +
       treatmentSelectQuery.perAppointmentPrice;
+
     let deferRevenue =
       treatmentSelectQuery.deferRevenue -
       treatmentSelectQuery.perAppointmentPrice;
+
     console.log("Actual Revenue 1 " + actualRevenue);
+
     if (deferRevenue >= 0) {
       const treatmentUpdate = await TreatmentSelection.findByIdAndUpdate(
         treatmentSelectId,
@@ -413,22 +417,50 @@ exports.updateAppointment = async (req, res, next) => {
 
     const treatmentSelect = await TreatmentSelection.findById(
       treatmentSelectId
-    );
-    //if status of all appoointment is true, 'ongoing' flag wil be true
-    let filter = treatmentSelect.relatedAppointments.filter(
-      (appointments) => appointments.status == false
+    ).populate("relatedAppointments");
+
+    if (!treatmentSelect) {
+      return res.status(404).send({
+        success: false,
+        message: "Updated Treatment Selection not found",
+      });
+    }
+
+    const filter = treatmentSelect.relatedAppointments.filter(
+      (appointment) => !appointment.status
     );
 
-    if (filter.length == 0)
+    // console.log("Filter", filter);
+
+    //if status of all appoointment is true, 'ongoing' flag wil be true
+    if (filter.length == 0) {
       await TreatmentSelection.findByIdAndUpdate(treatmentSelectId, {
         selectionStatus: "Done",
       });
 
+      console.log("All Appointments are finished");
+    } else {
+      console.log("Not All Appointments are finished");
+    }
+
     // updateStocksBasedOnUsage(treatmentSelectId, relatedPatient, req.body.id);
 
-    return res
-      .status(200)
-      .send({ success: true, data: result, treatmentSelect: treatmentSelect });
+    const treatmentSelectDoc = await TreatmentSelection.findById(
+      treatmentSelectId
+    ).populate("relatedAppointments");
+
+    if (!treatmentSelectDoc) {
+      return res.status(404).send({
+        success: false,
+        message: "No Treatment Selection Found",
+      });
+    }
+
+    return res.status(200).send({
+      success: true,
+      data: result,
+      treatmentSelect: treatmentSelectDoc,
+    });
   } catch (error) {
     return res.status(500).send({ error: true, message: error.message });
   }

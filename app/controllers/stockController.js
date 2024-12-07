@@ -11,6 +11,9 @@ const { relative } = require("path");
 const moment = require("moment");
 const stockEditTransactionModel = require("../models/stockEditTransactionModel");
 const stockTransfer = require("../models/stockTransfer");
+const {
+  fetchPurchaseAndTransferByBranchID,
+} = require("../helper/stockHistory");
 
 exports.listAllStocks = async (req, res) => {
   let query = req.mongoQuery;
@@ -82,32 +85,42 @@ exports.getStockByBranchID = async (req, res) => {
       relatedProcedureItems: { $exists: true },
       isDeleted: false,
     };
+
     let medicinequery = {
       relatedMedicineItems: { $exists: true },
       isDeleted: false,
     };
+
     let accessoryquery = {
       relatedAccessoryItems: { $exists: true },
       isDeleted: false,
     };
+
     let generalquery = {
       relatedGeneralItems: { $exists: true },
       isDeleted: false,
     };
+
     procedurequery = {
       ...procedurequery,
       relatedBranch: req.query.relatedBranch,
     };
+
     medicinequery = {
       ...medicinequery,
       relatedBranch: req.query.relatedBranch,
     };
+
     accessoryquery = {
       ...accessoryquery,
       relatedBranch: req.query.relatedBranch,
     };
     generalquery = { ...generalquery, relatedBranch: req.query.relatedBranch };
+
+    fetchPurchaseAndTransferByBranchID(req.query.relatedBranch);
+
     console.log(procedurequery, medicinequery, accessoryquery);
+
     const procedureResult = await Stock.find(procedurequery)
       .populate("relatedBranch relatedMachine")
       .populate({
@@ -146,6 +159,7 @@ exports.getStockByBranchID = async (req, res) => {
           },
         },
       });
+
     const medicineResult = await Stock.find(medicinequery)
       .populate("relatedBranch relatedMachine")
       .populate({
@@ -184,6 +198,7 @@ exports.getStockByBranchID = async (req, res) => {
           },
         },
       });
+
     const accessoryResult = await Stock.find(accessoryquery)
       .populate("relatedBranch relatedMachine")
       .populate({
@@ -222,6 +237,7 @@ exports.getStockByBranchID = async (req, res) => {
           },
         },
       });
+
     const generalItemResult = await Stock.find(generalquery)
       .populate("relatedBranch relatedMachine")
       .populate({
@@ -272,6 +288,7 @@ exports.getStockByBranchID = async (req, res) => {
           },
         },
       });
+
     return res.status(200).send({
       success: true,
       data: {
@@ -284,6 +301,305 @@ exports.getStockByBranchID = async (req, res) => {
   } catch (error) {
     console.log(error);
     return res.status(500).send({ error: true, message: error.message });
+  }
+};
+
+// exports.getStockByBranchID = async (req, res) => {
+//   try {
+//     const branchId = req.query.relatedBranch;
+
+//     // Fetch stock data
+//     const stockResults = await Stock.find({
+//       relatedBranch: branchId,
+//       isDeleted: false,
+//     })
+//       .populate("relatedBranch relatedMachine")
+//       .populate({
+//         path: "relatedProcedureItems",
+//         model: "ProcedureItems",
+//         populate: {
+//           path: "name",
+//           model: "ProcedureMedicines",
+//           populate: {
+//             path: "relatedBrand",
+//             model: "Brands",
+//           },
+//         },
+//       })
+//       .populate({
+//         path: "relatedMedicineItems",
+//         model: "MedicineItems",
+//         populate: {
+//           path: "name",
+//           model: "MedicineLists",
+//           populate: {
+//             path: "relatedBrand",
+//             model: "Brands",
+//           },
+//         },
+//       })
+//       .populate({
+//         path: "relatedAccessoryItems",
+//         model: "AccessoryItems",
+//         populate: {
+//           path: "name",
+//           model: "ProcedureAccessories",
+//           populate: {
+//             path: "relatedBrand",
+//             model: "Brands",
+//           },
+//         },
+//       })
+//       .populate({
+//         path: "relatedGeneralItems",
+//         model: "GeneralItems",
+//         populate: {
+//           path: "name",
+//           model: "GeneralUnits",
+//           populate: {
+//             path: "relatedBrand",
+//             model: "Brands",
+//           },
+//         },
+//       });
+
+//     // Fetch purchase data
+//     const purchaseItems = await fetchPurchaseAndTransferByBranchID(branchId);
+
+//     // Enrich stock data with purchase data
+//     const enrichedStock = enrichStockWithPurchases(
+//       stockResults,
+//       purchaseItems.relatedPurchases
+//     );
+
+//     // Log enriched stock to verify
+//     // console.log("Enriched Stock with Quantities:", enrichedStock);
+
+//     // Send the response
+//     return res.status(200).send({
+//       success: true,
+//       data: {
+//         ProcedureItems: enrichedStock.filter(
+//           (stock) => stock.relatedProcedureItems
+//         ),
+//         MedicineItems: enrichedStock.filter(
+//           (stock) => stock.relatedMedicineItems
+//         ),
+//         AccessoryItems: enrichedStock.filter(
+//           (stock) => stock.relatedAccessoryItems
+//         ),
+//         GeneralItems: enrichedStock.filter(
+//           (stock) => stock.relatedGeneralItems
+//         ),
+//       },
+//     });
+//   } catch (error) {
+//     console.error("Error in getStockByBranchID:", error);
+//     return res.status(500).send({ error: true, message: error.message });
+//   }
+// };
+
+// const enrichStockWithPurchases = (stockResults, purchaseItems) => {
+//   return stockResults.map((stock) => {
+//     // Default values for quantities in case no purchase info is found
+//     let requestedQty = 0;
+//     let transferQty = 0;
+
+//     // Ensure requestedQty and transferQty exist in the stock even if not found
+//     stock.requestedQty = requestedQty;
+//     stock.transferQty = transferQty;
+
+//     // Check and enrich relatedProcedureItems with requestedQty and transferQty
+//     if (stock.relatedProcedureItems && stock.relatedProcedureItems._id) {
+//       const matchingPurchase = purchaseItems.find((purchase) =>
+//         purchase.procedureItems.some(
+//           (procItem) =>
+//             procItem.itemId.toString() ===
+//             stock.relatedProcedureItems._id.toString()
+//         )
+//       );
+
+//       if (matchingPurchase) {
+//         const matchingProcItem = matchingPurchase.procedureItems.find(
+//           (procItem) =>
+//             procItem.itemId.toString() ===
+//             stock.relatedProcedureItems._id.toString()
+//         );
+
+//         if (matchingProcItem) {
+//           requestedQty = matchingProcItem.requestedQty || 0;
+//           transferQty = matchingProcItem.transferQty || 0;
+//         }
+//       }
+//     }
+
+//     // Set quantities in stock
+//     stock.requestedQty = requestedQty;
+//     stock.transferQty = transferQty;
+
+//     // Handle relatedMedicineItems and ensure they have requestedQty and transferQty
+//     if (Array.isArray(stock.relatedMedicineItems)) {
+//       stock.relatedMedicineItems = stock.relatedMedicineItems.map((item) => {
+//         const purchase = purchaseItems.find((p) =>
+//           p.medicineItems.some(
+//             (medItem) => medItem.itemId.toString() === item._id.toString()
+//           )
+//         );
+
+//         return {
+//           ...item.toObject(),
+//           requestedQty: purchase
+//             ? purchase.medicineItems.find(
+//                 (medItem) => medItem.itemId.toString() === item._id.toString()
+//               ).requestedQty || 0
+//             : 0,
+//           transferQty: purchase
+//             ? purchase.medicineItems.find(
+//                 (medItem) => medItem.itemId.toString() === item._id.toString()
+//               ).transferQty || 0
+//             : 0,
+//         };
+//       });
+//     }
+
+//     // Handle relatedAccessoryItems and ensure they have requestedQty and transferQty
+//     if (Array.isArray(stock.relatedAccessoryItems)) {
+//       stock.relatedAccessoryItems = stock.relatedAccessoryItems.map((item) => {
+//         const purchase = purchaseItems.find((p) =>
+//           p.accessoryItems.some(
+//             (accItem) => accItem.itemId.toString() === item._id.toString()
+//           )
+//         );
+
+//         return {
+//           ...item.toObject(),
+//           requestedQty: purchase
+//             ? purchase.accessoryItems.find(
+//                 (accItem) => accItem.itemId.toString() === item._id.toString()
+//               ).requestedQty || 0
+//             : 0,
+//           transferQty: purchase
+//             ? purchase.accessoryItems.find(
+//                 (accItem) => accItem.itemId.toString() === item._id.toString()
+//               ).transferQty || 0
+//             : 0,
+//         };
+//       });
+//     }
+
+//     // Handle relatedGeneralItems and ensure they have requestedQty and transferQty
+//     if (Array.isArray(stock.relatedGeneralItems)) {
+//       stock.relatedGeneralItems = stock.relatedGeneralItems.map((item) => {
+//         const purchase = purchaseItems.find((p) =>
+//           p.generalItems.some(
+//             (genItem) => genItem.itemId.toString() === item._id.toString()
+//           )
+//         );
+
+//         return {
+//           ...item.toObject(),
+//           requestedQty: purchase
+//             ? purchase.generalItems.find(
+//                 (genItem) => genItem.itemId.toString() === item._id.toString()
+//               ).requestedQty || 0
+//             : 0,
+//           transferQty: purchase
+//             ? purchase.generalItems.find(
+//                 (genItem) => genItem.itemId.toString() === item._id.toString()
+//               ).transferQty || 0
+//             : 0,
+//         };
+//       });
+//     }
+
+//     // Return enriched stock
+//     return stock;
+//   });
+// };
+
+exports.getPurchaseStockHistory = async (req, res) => {
+  try {
+    const branchId = req.query.relatedBranch;
+
+    // Fetch stock and purchase data
+    const purchaseData = await fetchPurchaseAndTransferByBranchID(branchId);
+
+    // Handle errors if fetchPurchaseAndTransferByBranchID fails
+    if (purchaseData.error) {
+      return res
+        .status(400)
+        .send({ success: false, message: purchaseData.message });
+    }
+
+    const { relatedPurchases } = purchaseData;
+
+    // Prepare the response data based on the structured format requested
+    const response = {
+      ProcedureItems: [],
+      MedicineItems: [],
+      AccessoryItems: [],
+      GeneralItems: [],
+    };
+
+    // Loop through the purchases and organize them into respective arrays
+    relatedPurchases.forEach((purchase) => {
+      // Procedure Items
+      if (purchase.procedureItems && purchase.procedureItems.length > 0) {
+        purchase.procedureItems.forEach((item) => {
+          response.ProcedureItems.push({
+            itemId: item.itemId,
+            requestedQty: item.requestedQty || 0,
+            transferQty: item.transferQty || 0,
+            stockId: item.stockId,
+          });
+        });
+      }
+
+      // Medicine Items
+      if (purchase.medicineItems && purchase.medicineItems.length > 0) {
+        purchase.medicineItems.forEach((item) => {
+          response.MedicineItems.push({
+            itemId: item.itemId,
+            requestedQty: item.requestedQty || 0,
+            transferQty: item.transferQty || 0,
+            stockId: item.stockId,
+          });
+        });
+      }
+
+      // Accessory Items
+      if (purchase.accessoryItems && purchase.accessoryItems.length > 0) {
+        purchase.accessoryItems.forEach((item) => {
+          response.AccessoryItems.push({
+            itemId: item.itemId,
+            requestedQty: item.requestedQty || 0,
+            transferQty: item.transferQty || 0,
+            stockId: item.stockId,
+          });
+        });
+      }
+
+      // General Items
+      if (purchase.generalItems && purchase.generalItems.length > 0) {
+        purchase.generalItems.forEach((item) => {
+          response.GeneralItems.push({
+            itemId: item.itemId,
+            requestedQty: item.requestedQty || 0,
+            transferQty: item.transferQty || 0,
+            stockId: item.stockId,
+          });
+        });
+      }
+    });
+
+    // Send the structured response
+    return res.status(200).send({
+      success: true,
+      data: response,
+    });
+  } catch (error) {
+    console.error("Error in getPurchaseStockHistory:", error);
+    return res.status(500).send({ success: false, message: error.message });
   }
 };
 
@@ -1102,6 +1418,35 @@ exports.stockRecieved = async (req, res) => {
     //return res.status(200).send({ success: true, sqResult: sqResult })
   } catch (error) {
     console.log(error);
+    return res.status(500).send({ error: true, message: error.message });
+  }
+};
+
+exports.stockOpeningClosingBranch = async (req, res) => {
+  try {
+    const { relatedBranch } = req.query;
+
+    const query = {
+      relatedBranch,
+      isDeleted: false,
+    };
+
+    const stockDoc = await Stock.find(query);
+
+    return res.status(200).send({
+      success: true,
+      data: stockDoc,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).send({ error: true, message: error.message });
+  }
+};
+
+exports.CalculateAllStock = async (req, res) => {
+  try {
+  } catch (error) {
+    console.error(error);
     return res.status(500).send({ error: true, message: error.message });
   }
 };

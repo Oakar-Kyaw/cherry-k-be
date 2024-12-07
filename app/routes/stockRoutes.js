@@ -21,14 +21,21 @@ module.exports = (app) => {
 
   app.route("/api/stocks/copy").get(verifyToken, catchError(stock.copyStock));
 
-  app
-    .route("/api/stocks/branch")
-    .get(verifyToken, catchError(stock.getStockByBranchID));
+  app.route("/api/stocks/branch").get(catchError(stock.getStockByBranchID));
 
   app
     .route("/api/stocks/reorder")
     .get(verifyToken, catchError(stock.checkReorder));
+
   app
     .route("/api/stocks/recieved")
     .put(verifyToken, catchError(stock.stockRecieved));
+
+  app
+    .route("/api/stocks/opening-closing/branch")
+    .get(stock.stockOpeningClosingBranch);
+
+  app.route("/api/stocks/calculate-stock").get(stock.CalculateAllStock);
+
+  app.route("/api/stocks/stock-history").get(stock.getPurchaseStockHistory);
 };

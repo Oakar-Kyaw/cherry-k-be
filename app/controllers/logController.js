@@ -658,12 +658,52 @@ exports.createUsage = async (req, res) => {
         return match;
       });
 
-      const newPA = req.body.procedureAccessory.filter((value) => {
-        const match = URResult[0].accessoryItemsError.some(
-          (errorItem) => errorItem.item_id.toString() === value.item_id
-        );
-        return match;
-      });
+      if (req.body.procedureAccessory) {
+        const newPA = req.body.procedureAccessory.filter((value) => {
+          const match = URResult[0].accessoryItemsError.some(
+            (errorItem) => errorItem.item_id.toString() === value.item_id
+          );
+          return match;
+        });
+
+        if (newPA !== undefined) {
+          for (const e of newPA) {
+            if (e.stock < e.actual) {
+              accessoryItemsError.push(e);
+            } else if (e.stock >= e.actual) {
+              let totalUnit = e.stock - e.actual;
+              const result = await AccessoryItem.find({ _id: e.item_id });
+              const from = result[0].fromUnit;
+              const to = result[0].toUnit;
+              const currentQty = (from * totalUnit) / to;
+              try {
+                accessoryItemsFinished.push(e);
+                const result = await Stock.findOneAndUpdate(
+                  {
+                    relatedAccessoryItems: e.item_id,
+                    relatedBranch: relatedBranch,
+                  },
+                  { totalUnit: totalUnit, currentQty: currentQty },
+                  { new: true }
+                );
+              } catch (error) {
+                accessoryItemsError.push(e);
+              }
+              const logResult = await Log.create({
+                relatedTreatmentSelection: relatedTreatmentSelection,
+                relatedAppointment: relatedAppointment,
+                relatedAccessoryItems: e.item_id,
+                currentQty: e.stock,
+                actualQty: e.actual,
+                finalQty: totalUnit,
+                type: "Usage",
+                relatedBranch: relatedBranch,
+                createdBy: createdBy,
+              });
+            }
+          }
+        }
+      }
 
       const newPM = req.body.procedureMedicine.filter((value) => {
         const match = URResult[0].procedureItemsError.some(
@@ -711,44 +751,6 @@ exports.createUsage = async (req, res) => {
       }
 
       //procedureAccessory
-
-      if (newPA !== undefined) {
-        for (const e of newPA) {
-          if (e.stock < e.actual) {
-            accessoryItemsError.push(e);
-          } else if (e.stock >= e.actual) {
-            let totalUnit = e.stock - e.actual;
-            const result = await AccessoryItem.find({ _id: e.item_id });
-            const from = result[0].fromUnit;
-            const to = result[0].toUnit;
-            const currentQty = (from * totalUnit) / to;
-            try {
-              accessoryItemsFinished.push(e);
-              const result = await Stock.findOneAndUpdate(
-                {
-                  relatedAccessoryItems: e.item_id,
-                  relatedBranch: relatedBranch,
-                },
-                { totalUnit: totalUnit, currentQty: currentQty },
-                { new: true }
-              );
-            } catch (error) {
-              accessoryItemsError.push(e);
-            }
-            const logResult = await Log.create({
-              relatedTreatmentSelection: relatedTreatmentSelection,
-              relatedAppointment: relatedAppointment,
-              relatedAccessoryItems: e.item_id,
-              currentQty: e.stock,
-              actualQty: e.actual,
-              finalQty: totalUnit,
-              type: "Usage",
-              relatedBranch: relatedBranch,
-              createdBy: createdBy,
-            });
-          }
-        }
-      }
 
       //machine
 
@@ -879,7 +881,7 @@ exports.createUsage = async (req, res) => {
 
     return res.status(200).send(response);
   } catch (error) {
-    // console.log(error)
+    console.log(error);
     return res.status(500).send({ error: true, message: error.message });
   }
 };

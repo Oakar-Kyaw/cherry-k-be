@@ -124,9 +124,9 @@ exports.listAllTreatmentSelections = async (req, res) => {
 };
 
 exports.getTreatmentSelection = async (req, res) => {
-  let query = req.mongoQuery;
-  if (req.params.id) query._id = req.params.id;
-  const result = await TreatmentSelection.find(query)
+  const { id } = req.params;
+
+  const result = await TreatmentSelection.findById(id)
     .populate(
       "createdBy relatedAppointments remainingAppointments relatedTransaction relatedPatient relatedTreatmentList"
     )
@@ -151,6 +151,7 @@ exports.getTreatmentSelection = async (req, res) => {
         },
       ],
     });
+
   if (!result)
     return res.status(500).json({ error: true, message: "No Record Found" });
   return res.status(200).send({ success: true, data: result });

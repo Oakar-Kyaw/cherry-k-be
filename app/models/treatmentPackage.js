@@ -127,6 +127,14 @@ const treatmentPackageSchema = Schema({
     type: Number,
     default: 0,
   },
+  LMDSellingPrice: {
+    type: Number,
+    default: 0,
+  },
+  LMDEstimateTotalPrice: {
+    type: Number,
+    default: 0,
+  },
   relatedBranch: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Branches",

@@ -104,6 +104,74 @@ const fetchPurchaseAndTransferByBranchID = async (relatedBranch) => {
   }
 };
 
+const HeadOfficeIncomeOutComeStock = async () => {
+  try {
+    const purchasesDoc = await PurchaseModel.find({
+      isDeleted: false,
+      relatedBranch: { $exists: false },
+    });
+
+    if (!purchasesDoc?.length) {
+      return {
+        success: false,
+        message: "No purchases found",
+      };
+    }
+
+    const accessoryItemsArray = [];
+    const medicineItemsArray = [];
+    const procedureItemsArray = [];
+    const generalItemsArray = [];
+
+    const purchases = purchasesDoc.map(
+      ({
+        _id,
+        purchaseDate,
+        accessoryItems = [],
+        medicineItems = [],
+        procedureItems = [],
+        generalItems = [],
+      }) => {
+        accessoryItemsArray.push(...accessoryItems);
+        medicineItemsArray.push(...medicineItems);
+        procedureItemsArray.push(...procedureItems);
+        generalItemsArray.push(...generalItems);
+
+        return {
+          purchaseId: _id,
+          purchaseDate,
+          accessoryItems,
+          medicineItems,
+          procedureItems,
+          generalItems,
+        };
+      }
+    );
+
+    return {
+      success: true,
+      purchases,
+      aggregatedItems: {
+        accessoryItems: accessoryItemsArray,
+        medicineItems: medicineItemsArray,
+        procedureItems: procedureItemsArray,
+        generalItems: generalItemsArray,
+      },
+    };
+  } catch (error) {
+    console.error(
+      "Error in HeadOfficeIncomeOutComeStock:",
+      error.stack || error
+    );
+    return {
+      success: false,
+      message: "Error in HeadOfficeIncomeOutComeStock",
+      error: error.message,
+    };
+  }
+};
+
 module.exports = {
   fetchPurchaseAndTransferByBranchID,
+  HeadOfficeIncomeOutComeStock,
 };

@@ -10,10 +10,13 @@ const StockRequest = require("../models/stockRequest");
 const { relative } = require("path");
 const moment = require("moment");
 const stockEditTransactionModel = require("../models/stockEditTransactionModel");
+const PurchaseModel = require("../models/purchase");
 const stockTransfer = require("../models/stockTransfer");
 const {
   fetchPurchaseAndTransferByBranchID,
+  HeadOfficeIncomeOutComeStock,
 } = require("../helper/stockHistory");
+const { stockHistoryBranch } = require("../helper/branchStockHistory");
 
 exports.listAllStocks = async (req, res) => {
   let query = req.mongoQuery;
@@ -1445,6 +1448,88 @@ exports.stockOpeningClosingBranch = async (req, res) => {
 
 exports.CalculateAllStock = async (req, res) => {
   try {
+  } catch (error) {
+    console.error(error);
+    return res.status(500).send({ error: true, message: error.message });
+  }
+};
+
+exports.HeadOfficeStock = async (req, res) => {
+  try {
+    const purchasesDoc = await PurchaseModel.find({
+      isDeleted: false,
+      relatedBranch: { $exists: false },
+    });
+
+    if (!purchasesDoc?.length) {
+      return {
+        success: false,
+        message: "No purchases found",
+      };
+    }
+
+    const accessoryItemsArray = [];
+    const medicineItemsArray = [];
+    const procedureItemsArray = [];
+    const generalItemsArray = [];
+
+    purchasesDoc.map(
+      ({
+        _id,
+        purchaseDate,
+        accessoryItems = [],
+        medicineItems = [],
+        procedureItems = [],
+        generalItems = [],
+      }) => {
+        accessoryItemsArray.push(...accessoryItems);
+        medicineItemsArray.push(...medicineItems);
+        procedureItemsArray.push(...procedureItems);
+        generalItemsArray.push(...generalItems);
+
+        return {
+          purchaseId: _id,
+          purchaseDate,
+          accessoryItems,
+          medicineItems,
+          procedureItems,
+          generalItems,
+        };
+      }
+    );
+
+    return res.status(200).send({
+      isSuccess: true,
+      aggregatedItems: {
+        medicineItems: medicineItemsArray,
+        procedureItems: procedureItemsArray,
+        accessoryItems: accessoryItemsArray,
+        generalItems: generalItemsArray,
+      },
+    });
+  } catch (error) {
+    console.error(
+      "Error in HeadOfficeIncomeOutComeStock:",
+      error.stack || error
+    );
+
+    return res.status(500).send({
+      error: true,
+      message: error.message || "Error On Retrieving Head-Office Stock",
+    });
+  }
+};
+
+exports.getStockHistoryByBranchID = async (req, res) => {
+  const { relatedBranch } = req.query;
+
+  try {
+    const stockHistory = await stockHistoryBranch(relatedBranch);
+
+    return res.status(200).send({
+      success: true,
+      data: stockHistory,
+    });
   } catch (error) {
     console.error(error);
     return res.status(500).send({ error: true, message: error.message });

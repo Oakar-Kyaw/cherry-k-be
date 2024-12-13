@@ -38,4 +38,10 @@ module.exports = (app) => {
   app.route("/api/stocks/calculate-stock").get(stock.CalculateAllStock);
 
   app.route("/api/stocks/stock-history").get(stock.getPurchaseStockHistory);
+
+  app.route("/api/stocks/stock-history-ho").get(stock.HeadOfficeStock);
+
+  app
+    .route("/api/stocks/stock-history-branch")
+    .get(stock.getStockHistoryByBranchID);
 };

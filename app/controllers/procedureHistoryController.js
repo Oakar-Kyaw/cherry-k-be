@@ -86,7 +86,11 @@ exports.getRelatedProcedureHistory = async (req, res) => {
 
     let medItems = [];
 
-    if (result[0]?.medicineItems?.length > 0) {
+    if (
+      result[0] &&
+      result[0].medicineItems &&
+      result[0].medicineItems.length > 0
+    ) {
       for (const i of result[0].medicineItems) {
         const stock = await Stock.findOne({
           relatedMedicineItems: i.item_id,

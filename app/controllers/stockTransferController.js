@@ -207,6 +207,9 @@ exports.createStockTransfer = async (req, res, next) => {
     case "Tamwe":
       secID = "66ed176674f503bf95858cf8";
       break;
+    case "LMD":
+      secID = "675a5d8fb2a9c1d91266a144";
+      break;
     default:
       return null;
   }

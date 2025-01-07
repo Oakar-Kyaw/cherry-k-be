@@ -5,6 +5,8 @@ const stock = require("../controllers/stockController");
 const { catchError } = require("../lib/errorHandler");
 const verifyToken = require("../lib/verifyToken");
 
+const { HeadOfficeStockHistory } = require("../HOStockHistory/stockHistoryHO");
+
 module.exports = (app) => {
   app
     .route("/api/stock")
@@ -39,7 +41,7 @@ module.exports = (app) => {
 
   app.route("/api/stocks/stock-history").get(stock.getPurchaseStockHistory);
 
-  app.route("/api/stocks/stock-history-ho").get(stock.HeadOfficeStock);
+  app.route("/api/stocks/stock-history-ho").get(HeadOfficeStockHistory);
 
   app
     .route("/api/stocks/stock-history-branch")

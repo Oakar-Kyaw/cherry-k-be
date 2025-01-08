@@ -3,7 +3,6 @@ const MedicineItems = require("../models/medicineItem");
 const ProcedureItems = require("../models/procedureItem");
 const AccessoryItems = require("../models/accessoryItem");
 const GeneralItems = require("../models/generalItem");
-const GeneralUnits = require("../models/generalUnit"); // Assuming generalItems references generalUnits
 const TransferToHoRequests = require("../models/transferToHoRequest");
 const PurchaseRequests = require("../models/purchaseRequest");
 const Logs = require("../models/log");
@@ -119,6 +118,7 @@ const HeadOfficeStockHistory = async (req, res) => {
       generalItems: [],
     };
 
+    // Aggregating stock data with the correct formula
     const aggregateData = (requests, type, field) => {
       const tempData = new Map();
 
@@ -127,20 +127,28 @@ const HeadOfficeStockHistory = async (req, res) => {
           const itemId = item.item_id.toString();
           if (validItems[type].has(itemId)) {
             if (!tempData.has(itemId)) {
-              const { code, name } = validItems[type].get(itemId);
+              const { code, name, qty } = validItems[type].get(itemId);
               tempData.set(itemId, {
                 item_id: itemId,
                 code,
                 name,
-                openingQty: 0,
-                closingQty: 0,
+                openingQty: qty,
+                closingQty: qty, // Start with opening quantity
                 transferToHoRequest: 0,
-                transferedQty: 0,
+                transferredQty: 0,
                 purchaseRequest: 0,
               });
             }
+
             const dataItem = tempData.get(itemId);
-            dataItem[field] += item.qty || item.requestedQty || 0;
+
+            if (field === "transferToHoRequest") {
+              dataItem[field] += item.qty || 0;
+              dataItem.closingQty += item.qty || 0;
+            } else if (field === "purchaseRequest") {
+              dataItem[field] += item.requestedQty || 0;
+              dataItem.closingQty += item.requestedQty || 0;
+            }
           }
         });
       });
@@ -153,22 +161,26 @@ const HeadOfficeStockHistory = async (req, res) => {
       "medicineItems",
       "transferToHoRequest"
     );
+
     finalData.procedureItems = aggregateData(
       transferRequests,
       "procedureItems",
       "transferToHoRequest"
     );
+
     finalData.accessoryItems = aggregateData(
       transferRequests,
       "accessoryItems",
       "transferToHoRequest"
     );
+
     finalData.generalItems = aggregateData(
       transferRequests,
       "generalItems",
       "transferToHoRequest"
     );
 
+    // Handling logs (e.g., branch transfers)
     logs.forEach((log) => {
       const typeMapping = {
         relatedMedicineItems: "medicineItems",
@@ -186,9 +198,9 @@ const HeadOfficeStockHistory = async (req, res) => {
             code,
             name,
             openingQty: validItems[type].get(itemId).qty,
-            closingQty: validItems[type].get(itemId).qty,
+            closingQty: validItems[type].get(itemId).qty - log.actualQty, // Subtract transferred qty for closing
             transferToHoRequest: 0,
-            transferedQty: log.actualQty,
+            transferredQty: log.actualQty,
             purchaseRequest: 0,
           });
         }

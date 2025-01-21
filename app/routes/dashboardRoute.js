@@ -22,7 +22,7 @@ module.exports = (app) => {
     .get(catchError(getTop20TreatmentByBranchDashboard));
 
   app
-    .route("/api/dashboard/top-twenty-customers-by-branch")
+    .route("/api/dashboard/top-twenty-customer-by-branch")
     .get(catchError(getTop20CustomersByBranchDashboard));
 
   app

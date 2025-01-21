@@ -41,7 +41,7 @@ const getTop20Customers = async (
       },
     },
     { $sort: { totalSpent: -1 } },
-    { $limit: 10 },
+    { $limit: 20 },
     {
       $lookup: {
         from: "patients",

@@ -1,6 +1,9 @@
 const branchModel = require("../models/branch");
 const { getTop20Medicines } = require("../dashboard/top20Medicine");
 const { getTop20Treatment } = require("../dashboard/top20Treatment");
+const { getTop20Customers } = require("../dashboard/top20Customer");
+const { dashboardIncome } = require("../dashboard/dashboardIncome");
+const { dashboardExpense } = require("../dashboard/dashboardExpense");
 
 exports.dashBoardListAllBranches = async (req, res) => {
   try {
@@ -76,6 +79,74 @@ exports.getTop20TreatmentByBranchDashboard = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Error on getTopTwentyTreatmentByBranchDashboard",
+      data: error,
+    });
+  }
+};
+
+exports.getTop20CustomersByBranchDashboard = async (req, res) => {
+  try {
+    const { startDate, endDate, relatedBranch, treatmentType } = req.query;
+
+    const topCustomers = await getTop20Customers(
+      startDate,
+      endDate,
+      relatedBranch,
+      treatmentType
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Top 20 Customers",
+      data: topCustomers,
+    });
+  } catch (error) {
+    console.error("Error on getTopTwentyCustomersByBranchDashboard", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error on getTopTwentyCustomersByBranchDashboard",
+      data: error,
+    });
+  }
+};
+
+exports.getDashboardIncomeByBranchDashboard = async (req, res) => {
+  try {
+    const { startDate, endDate, relatedBranch } = req.query;
+
+    const income = await dashboardIncome(startDate, endDate, relatedBranch);
+
+    return res.status(200).json({
+      success: true,
+      message: "Dashboard Income",
+      data: income,
+    });
+  } catch (error) {
+    console.error("Error on getDashboardIncomeByBranchDashboard", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error on getDashboardIncomeByBranchDashboard",
+      data: error,
+    });
+  }
+};
+
+exports.getDashboardExpenseByBranchDashboard = async (req, res) => {
+  try {
+    const { startDate, endDate, relatedBranch } = req.query;
+
+    const expense = await dashboardExpense(startDate, endDate, relatedBranch);
+
+    return res.status(200).json({
+      success: true,
+      message: "Dashboard Expense",
+      data: expense,
+    });
+  } catch (error) {
+    console.error("Error on getDashboardExpenseByBranchDashboard", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error on getDashboardExpenseByBranchDashboard",
       data: error,
     });
   }

@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const TreatmentVoucherModel = require("../models/treatmentVoucher");
 
-const getTop10Customers = async (
+const getTop20Customers = async (
   startDate,
   endDate,
   relatedBranch,
@@ -63,5 +63,5 @@ const getTop10Customers = async (
 };
 
 module.exports = {
-  getTop10Customers,
+  getTop20Customers,
 };

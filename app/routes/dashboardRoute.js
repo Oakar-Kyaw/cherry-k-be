@@ -4,32 +4,33 @@ const {
   getTop20MeidcineByBranchDashboard,
   getTop20TreatmentByBranchDashboard,
   getTop20CustomersByBranchDashboard,
-  getDashboardIncomeByBranchDashboard,
+  getDashboardIncomeExpenseByBranchDashboard,
   getDashboardExpenseByBranchDashboard,
 } = require("../controllers/dashboardController");
+const verifyToken = require("../lib/verifyToken");
 
 module.exports = (app) => {
   app
     .route("/api/dashboard/branches")
-    .get(catchError(dashBoardListAllBranches));
+    .get(verifyToken, catchError(dashBoardListAllBranches));
 
   app
     .route("/api/dashboard/top-twenty-medicine-by-branch")
-    .get(catchError(getTop20MeidcineByBranchDashboard));
+    .get(verifyToken, catchError(getTop20MeidcineByBranchDashboard));
 
   app
     .route("/api/dashboard/top-twenty-treatment-by-branch")
-    .get(catchError(getTop20TreatmentByBranchDashboard));
+    .get(verifyToken, catchError(getTop20TreatmentByBranchDashboard));
 
   app
     .route("/api/dashboard/top-twenty-customer-by-branch")
-    .get(catchError(getTop20CustomersByBranchDashboard));
+    .get(verifyToken, catchError(getTop20CustomersByBranchDashboard));
 
   app
-    .route("/api/dashboard/income-by-branch")
-    .get(catchError(getDashboardIncomeByBranchDashboard));
+    .route("/api/dashboard/income-expense-by-branch")
+    .get(verifyToken, catchError(getDashboardIncomeExpenseByBranchDashboard));
 
   app
     .route("/api/dashboard/expense-by-branch")
-    .get(catchError(getDashboardExpenseByBranchDashboard));
+    .get(verifyToken, catchError(getDashboardExpenseByBranchDashboard));
 };

@@ -2,7 +2,7 @@ const branchModel = require("../models/branch");
 const { getTop20Medicines } = require("../dashboard/top20Medicine");
 const { getTop20Treatment } = require("../dashboard/top20Treatment");
 const { getTop20Customers } = require("../dashboard/top20Customer");
-const { dashboardIncome } = require("../dashboard/dashboardIncome");
+const { getIncomeExpenseReports } = require("../dashboard/dashboardIncome");
 const { dashboardExpense } = require("../dashboard/dashboardExpense");
 
 exports.dashBoardListAllBranches = async (req, res) => {
@@ -110,15 +110,15 @@ exports.getTop20CustomersByBranchDashboard = async (req, res) => {
   }
 };
 
-exports.getDashboardIncomeByBranchDashboard = async (req, res) => {
+exports.getDashboardIncomeExpenseByBranchDashboard = async (req, res) => {
   try {
-    const { startDate, endDate, relatedBranch } = req.query;
+    const { relatedBranch, year } = req.query;
 
-    const income = await dashboardIncome(startDate, endDate, relatedBranch);
+    const income = await getIncomeExpenseReports(relatedBranch, year);
 
     return res.status(200).json({
       success: true,
-      message: "Dashboard Income",
+      message: `Expense-Income for ${year}`,
       data: income,
     });
   } catch (error) {
